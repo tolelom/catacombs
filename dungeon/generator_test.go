@@ -40,3 +40,19 @@ func TestRoomTypeProbability(t *testing.T) {
 		t.Errorf("Combat room probability: got %.1f%%, want ~45%%", combatPct)
 	}
 }
+
+func TestFloorHasTileMap(t *testing.T) {
+	floor := GenerateFloor(1)
+	if floor.Tiles == nil {
+		t.Fatal("Floor should have tile map")
+	}
+	if floor.Width != 60 || floor.Height != 20 {
+		t.Errorf("Map size: got %dx%d, want 60x20", floor.Width, floor.Height)
+	}
+	// Current room should have floor tiles
+	room := floor.Rooms[0]
+	centerTile := floor.Tiles[room.Y+room.H/2][room.X+room.W/2]
+	if centerTile != TileFloor {
+		t.Errorf("Room center should be floor tile, got %d", centerTile)
+	}
+}

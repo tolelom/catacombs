@@ -27,43 +27,9 @@ func renderMap(floor *dungeon.Floor) string {
 	if floor == nil {
 		return ""
 	}
-
-	var sb strings.Builder
 	headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
-	sb.WriteString(headerStyle.Render(fmt.Sprintf("── Catacombs B%d ──", floor.Number)))
-	sb.WriteString("\n\n")
-
-	roomStyle := lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
-	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	hiddenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("236"))
-
-	for i, room := range floor.Rooms {
-		vis := dungeon.GetRoomVisibility(floor, i)
-		symbol := roomTypeSymbol(room.Type)
-		label := fmt.Sprintf("[%d] %s %s", i, symbol, room.Type.String())
-
-		if i == floor.CurrentRoom {
-			label = ">> " + label + " <<"
-		}
-
-		switch vis {
-		case dungeon.Visible:
-			sb.WriteString(roomStyle.Render(label))
-		case dungeon.Visited:
-			sb.WriteString(dimStyle.Render(label))
-		case dungeon.Hidden:
-			sb.WriteString(hiddenStyle.Render("[?] ???"))
-		}
-
-		for _, n := range room.Neighbors {
-			if n > i {
-				sb.WriteString(" --- ")
-			}
-		}
-		sb.WriteString("\n")
-	}
-
-	return sb.String()
+	header := headerStyle.Render(fmt.Sprintf("── Catacombs B%d ──", floor.Number))
+	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
 func renderHUD(state game.GameState, targetCursor int) string {

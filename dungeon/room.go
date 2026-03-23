@@ -17,13 +17,31 @@ func (r RoomType) String() string {
 	return [...]string{"Combat", "Treasure", "Shop", "Event", "Empty", "Boss"}[r]
 }
 
+type Tile int
+
+const (
+	TileWall Tile = iota
+	TileFloor
+	TileCorridor
+	TileDoor
+)
+
 type Room struct {
 	Type      RoomType
-	X, Y      int
-	Width, Height int
+	X, Y      int // top-left in tile space
+	W, H      int // dimensions in tiles
 	Visited   bool
 	Cleared   bool
 	Neighbors []int
+}
+
+type Floor struct {
+	Number      int
+	Rooms       []*Room
+	CurrentRoom int
+	Tiles       [][]Tile
+	Width       int
+	Height      int
 }
 
 func RandomRoomType() RoomType {
