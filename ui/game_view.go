@@ -11,9 +11,9 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-func renderGame(state game.GameState, width, height int, targetCursor int) string {
+func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int) string {
 	mapView := renderMap(state.Floor)
-	hudView := renderHUD(state, targetCursor)
+	hudView := renderHUD(state, targetCursor, moveCursor)
 	logView := renderCombatLog(state.CombatLog)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
@@ -32,7 +32,7 @@ func renderMap(floor *dungeon.Floor) string {
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
-func renderHUD(state game.GameState, targetCursor int) string {
+func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
 	var sb strings.Builder
 	border := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
@@ -112,7 +112,32 @@ func renderHUD(state game.GameState, targetCursor int) string {
 			}
 		}
 	} else if state.Phase == game.PhaseExploring {
-		sb.WriteString("\nChoose a room to enter (number) or [Q] quit")
+		if state.Floor != nil && state.Floor.CurrentRoom >= 0 && state.Floor.CurrentRoom < len(state.Floor.Rooms) {
+			current := state.Floor.Rooms[state.Floor.CurrentRoom]
+			if len(current.Neighbors) > 0 {
+				sb.WriteString("\n")
+				selectedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
+				normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
+				for i, n := range current.Neighbors {
+					if n >= 0 && n < len(state.Floor.Rooms) {
+						r := state.Floor.Rooms[n]
+						status := r.Type.String()
+						if r.Cleared {
+							status = "Cleared"
+						}
+						marker := "  "
+						style := normalStyle
+						if i == moveCursor {
+							marker = "> "
+							style = selectedStyle
+						}
+						sb.WriteString(style.Render(fmt.Sprintf("%sRoom %d: %s", marker, n, status)))
+						sb.WriteString("\n")
+					}
+				}
+			}
+		}
+		sb.WriteString("[Up/Down] Select  [Enter] Move  [Q] Quit")
 	}
 
 	return border.Render(sb.String())

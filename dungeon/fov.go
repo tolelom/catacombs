@@ -23,5 +23,13 @@ func GetRoomVisibility(floor *Floor, roomIdx int) Visibility {
 	if floor.Rooms[roomIdx].Visited {
 		return Visited
 	}
+	// Neighbors of current room are dimly visible (so player can see where to go)
+	if floor.CurrentRoom >= 0 && floor.CurrentRoom < len(floor.Rooms) {
+		for _, n := range floor.Rooms[floor.CurrentRoom].Neighbors {
+			if n == roomIdx {
+				return Visited
+			}
+		}
+	}
 	return Hidden
 }

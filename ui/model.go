@@ -46,6 +46,7 @@ type Model struct {
 	classState   classSelectState
 	inputBuffer  string
 	targetCursor int
+	moveCursor   int // selected neighbor index during exploration
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
@@ -115,7 +116,7 @@ func (m Model) View() string {
 	case screenClassSelect:
 		return renderClassSelect(m.classState, m.width, m.height)
 	case screenGame:
-		return renderGame(m.gameState, m.width, m.height, m.targetCursor)
+		return renderGame(m.gameState, m.width, m.height, m.targetCursor, m.moveCursor)
 	case screenShop:
 		return renderShop(m.gameState, m.width, m.height)
 	case screenResult:
@@ -312,16 +313,27 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch m.gameState.Phase {
 		case game.PhaseExploring:
-			if key.String() >= "0" && key.String() <= "9" {
-				idx := int(key.String()[0] - '0')
-				if m.session != nil {
-					m.session.EnterRoom(idx)
+			neighbors := m.getNeighbors()
+			if isUp(key) {
+				if m.moveCursor > 0 {
+					m.moveCursor--
+				}
+			} else if isDown(key) {
+				if m.moveCursor < len(neighbors)-1 {
+					m.moveCursor++
+				}
+			} else if isEnter(key) {
+				if m.session != nil && len(neighbors) > 0 {
+					roomIdx := neighbors[m.moveCursor]
+					m.session.EnterRoom(roomIdx)
 					m.gameState = m.session.GetState()
-					// If combat started, begin polling
+					m.moveCursor = 0
 					if m.gameState.Phase == game.PhaseCombat {
 						return m, m.pollState()
 					}
 				}
+			} else if isQuit(key) {
+				return m, tea.Quit
 			}
 		case game.PhaseCombat:
 			isPlayerDead := false
@@ -359,6 +371,17 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+func (m Model) getNeighbors() []int {
+	if m.gameState.Floor == nil {
+		return nil
+	}
+	cur := m.gameState.Floor.CurrentRoom
+	if cur < 0 || cur >= len(m.gameState.Floor.Rooms) {
+		return nil
+	}
+	return m.gameState.Floor.Rooms[cur].Neighbors
 }
 
 func (m Model) updateShop(msg tea.Msg) (tea.Model, tea.Cmd) {

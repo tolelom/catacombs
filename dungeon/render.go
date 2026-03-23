@@ -112,8 +112,18 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 		cx := room.X + room.W/2
 		cy := room.Y + room.H/2
 		vis := GetRoomVisibility(floor, i)
-		if !showFog || vis != Hidden {
-			sym, col := roomMarker(room, i == currentRoom)
+		// Show current room and its neighbors (so player knows where to go)
+		showRoom := !showFog || vis != Hidden
+		if !showRoom && currentRoom >= 0 && currentRoom < len(floor.Rooms) {
+			for _, n := range floor.Rooms[currentRoom].Neighbors {
+				if n == i {
+					showRoom = true
+					break
+				}
+			}
+		}
+		if showRoom {
+			sym, col := roomMarker(room, i, i == currentRoom)
 			markers[[2]int{cy, cx}] = marker{sym, col}
 		}
 	}
@@ -202,24 +212,26 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 	return string(buf)
 }
 
-func roomMarker(room *Room, isCurrent bool) (string, string) {
+func roomMarker(room *Room, roomIdx int, isCurrent bool) (string, string) {
+	// Show room index number so player knows which key to press
+	num := fmt.Sprintf("%d", roomIdx)
 	if room.Cleared {
-		return ".", ansiFgGray
+		return num, ansiFgGray
 	}
 	switch room.Type {
 	case RoomCombat:
-		return "D", ansiFgRed
+		return num, ansiFgRed
 	case RoomTreasure:
-		return "$", ansiFgYellow
+		return num, ansiFgYellow
 	case RoomShop:
-		return "S", ansiFgCyan
+		return num, ansiFgCyan
 	case RoomEvent:
-		return "?", ansiFgMagenta
+		return num, ansiFgMagenta
 	case RoomBoss:
-		return "B", ansiFgBrRed
+		return num, ansiFgBrRed
 	case RoomEmpty:
-		return ".", ansiFgGray
+		return num, ansiFgGray
 	default:
-		return " ", ansiReset
+		return num, ansiReset
 	}
 }

@@ -21,6 +21,9 @@ func Start(host string, port int, lobby *game.Lobby, db *store.DB) error {
 		wish.WithPublicKeyAuth(func(_ ssh.Context, _ ssh.PublicKey) bool {
 			return true // accept all keys
 		}),
+		wish.WithPasswordAuth(func(_ ssh.Context, _ string) bool {
+			return true // accept any password (game server, not secure shell)
+		}),
 		wish.WithMiddleware(
 			bubbletea.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 				pty, _, _ := s.Pty()
