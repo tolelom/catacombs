@@ -82,6 +82,11 @@ func (p *Player) EffectiveATK() int {
 			atk += item.Bonus
 		}
 	}
+	for _, r := range p.Relics {
+		if r.Effect == RelicATKBoost {
+			atk += r.Value
+		}
+	}
 	return atk
 }
 
@@ -90,6 +95,11 @@ func (p *Player) EffectiveDEF() int {
 	for _, item := range p.Inventory {
 		if item.Type == ItemArmor {
 			def += item.Bonus
+		}
+	}
+	for _, r := range p.Relics {
+		if r.Effect == RelicDEFBoost {
+			def += r.Value
 		}
 	}
 	return def

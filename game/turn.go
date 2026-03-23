@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -15,6 +16,7 @@ func (s *GameSession) RunTurn() {
 	s.mu.Lock()
 	s.state.TurnNum++
 	s.state.CombatTurn++
+	s.clearLog()
 	s.actions = make(map[string]PlayerAction)
 	aliveCount := 0
 	for _, p := range s.state.Players {
@@ -59,6 +61,7 @@ resolve:
 
 func (s *GameSession) resolvePlayerActions() {
 	var intents []combat.AttackIntent
+	var intentOwners []string // track who owns each intent
 
 	// Track which monsters were alive before this turn (for gold awards)
 	aliveBeforeTurn := make(map[int]bool)
@@ -68,7 +71,7 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 	}
 
-	// Check if ALL alive players chose flee — only then the party flees
+	// Check if ALL alive players chose flee
 	fleeCount := 0
 	aliveCount := 0
 	for _, p := range s.state.Players {
@@ -82,10 +85,11 @@ func (s *GameSession) resolvePlayerActions() {
 	}
 	if fleeCount == aliveCount && aliveCount > 0 {
 		if combat.AttemptFlee() {
+			s.addLog("Fled from battle!")
 			s.state.Phase = PhaseExploring
 			return
 		}
-		// Flee failed — all fleeing players waste their turn, continue to monster phase
+		s.addLog("Failed to flee!")
 		return
 	}
 
@@ -106,16 +110,17 @@ func (s *GameSession) resolvePlayerActions() {
 				Multiplier: 1.0,
 				IsAoE:      false,
 			})
+			intentOwners = append(intentOwners, p.Name)
 		case ActionSkill:
 			switch p.Class {
 			case entity.ClassWarrior:
-				// Taunt: mark all monsters to target this warrior
 				for _, m := range s.state.Monsters {
 					if !m.IsDead() {
 						m.TauntTarget = true
 						m.TauntTurns = 2
 					}
 				}
+				s.addLog(fmt.Sprintf("%s used Taunt! Enemies focus on %s for 2 turns", p.Name, p.Name))
 			case entity.ClassMage:
 				intents = append(intents, combat.AttackIntent{
 					PlayerATK:  p.EffectiveATK(),
@@ -123,35 +128,64 @@ func (s *GameSession) resolvePlayerActions() {
 					Multiplier: 0.8,
 					IsAoE:      true,
 				})
+				intentOwners = append(intentOwners, p.Name)
 			case entity.ClassHealer:
-				if action.TargetIdx >= 0 && action.TargetIdx < len(s.state.Players) {
-					s.state.Players[action.TargetIdx].Heal(30)
+				targetIdx := action.TargetIdx
+				if targetIdx < 0 || targetIdx >= len(s.state.Players) {
+					targetIdx = 0 // heal self by default
 				}
+				target := s.state.Players[targetIdx]
+				before := target.HP
+				target.Heal(30)
+				s.addLog(fmt.Sprintf("%s healed %s for %d HP", p.Name, target.Name, target.HP-before))
 			case entity.ClassRogue:
-				// Scout: reveal neighboring rooms
 				currentRoom := s.state.Floor.Rooms[s.state.Floor.CurrentRoom]
 				for _, neighborIdx := range currentRoom.Neighbors {
 					s.state.Floor.Rooms[neighborIdx].Visited = true
 				}
+				s.addLog(fmt.Sprintf("%s scouted nearby rooms!", p.Name))
 			}
 		case ActionItem:
-			// Use first consumable from inventory
+			found := false
 			for i, item := range p.Inventory {
 				if item.Type == entity.ItemConsumable {
+					before := p.HP
 					p.Heal(item.Bonus)
 					p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
+					s.addLog(fmt.Sprintf("%s used %s, restored %d HP", p.Name, item.Name, p.HP-before))
+					found = true
 					break
 				}
 			}
+			if !found {
+				s.addLog(fmt.Sprintf("%s has no items to use!", p.Name))
+			}
 		case ActionFlee:
-			// Individual flee does nothing if not unanimous (already handled above)
+			s.addLog(fmt.Sprintf("%s tried to flee but party didn't agree", p.Name))
 		case ActionWait:
-			// Defensive stance — no action
+			s.addLog(fmt.Sprintf("%s is defending", p.Name))
 		}
 	}
 
 	if len(intents) > 0 && len(s.state.Monsters) > 0 {
-		combat.ResolveAttacks(intents, s.state.Monsters)
+		results := combat.ResolveAttacks(intents, s.state.Monsters)
+		for i, r := range results {
+			owner := intentOwners[i]
+			if r.IsAoE {
+				coopStr := ""
+				if r.CoopApplied {
+					coopStr = " (co-op!)"
+				}
+				s.addLog(fmt.Sprintf("%s hit all enemies for %d total dmg%s", owner, r.Damage, coopStr))
+			} else if r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
+				target := s.state.Monsters[r.TargetIdx]
+				coopStr := ""
+				if r.CoopApplied {
+					coopStr = " (co-op!)"
+				}
+				s.addLog(fmt.Sprintf("%s hit %s for %d dmg%s", owner, target.Name, r.Damage, coopStr))
+			}
+		}
 	}
 
 	// Award gold only for monsters that JUST died this turn
@@ -163,10 +197,20 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 			for _, p := range s.state.Players {
 				if !p.IsDead() {
-					p.Gold += goldReward
+					bonus := 0
+					for _, r := range p.Relics {
+						if r.Effect == entity.RelicGoldBoost {
+							bonus += r.Value
+						}
+						if r.Effect == entity.RelicHealOnKill {
+							p.Heal(r.Value)
+							s.addLog(fmt.Sprintf("%s's relic heals %d HP", p.Name, r.Value))
+						}
+					}
+					p.Gold += goldReward + bonus
 				}
 			}
-			// Boss kill: drop relic
+			s.addLog(fmt.Sprintf("%s defeated! +%d gold", m.Name, goldReward))
 			if m.IsBoss {
 				s.grantBossRelic()
 			}
@@ -185,7 +229,7 @@ func (s *GameSession) resolvePlayerActions() {
 	// Check if combat is over
 	if len(s.state.Monsters) == 0 {
 		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
-		// Check if this was the boss room -> advance floor
+		s.addLog("Room cleared!")
 		if s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Type == dungeon.RoomBoss {
 			s.advanceFloor()
 		} else {
@@ -199,13 +243,14 @@ func (s *GameSession) advanceFloor() {
 		s.state.Phase = PhaseResult
 		s.state.Victory = true
 		s.state.GameOver = true
+		s.addLog("You conquered the Catacombs!")
 		return
 	}
 	s.state.FloorNum++
 	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum)
 	s.state.Phase = PhaseExploring
 	s.state.CombatTurn = 0
-	// Revive dead players at 30% HP
+	s.addLog(fmt.Sprintf("Descending to B%d...", s.state.FloorNum))
 	for _, p := range s.state.Players {
 		if p.IsDead() {
 			p.Revive(0.30)
@@ -224,6 +269,7 @@ func (s *GameSession) grantBossRelic() {
 		if !p.IsDead() {
 			r := relics[rand.Intn(len(relics))]
 			p.Relics = append(p.Relics, r)
+			s.addLog(fmt.Sprintf("%s obtained relic: %s", p.Name, r.Name))
 		}
 	}
 }
@@ -238,11 +284,11 @@ func (s *GameSession) resolveMonsterActions() {
 		}
 		targetIdx, isAoE := combat.MonsterAI(m, s.state.Players, s.state.CombatTurn)
 		if isAoE {
-			// Boss AoE: 0.5x damage to all
 			for _, p := range s.state.Players {
 				if !p.IsDead() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 0.5)
 					p.TakeDamage(dmg)
+					s.addLog(fmt.Sprintf("%s AoE hits %s for %d dmg", m.Name, p.Name, dmg))
 				}
 			}
 		} else {
@@ -251,13 +297,13 @@ func (s *GameSession) resolveMonsterActions() {
 				if !p.IsDead() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 1.0)
 					p.TakeDamage(dmg)
+					s.addLog(fmt.Sprintf("%s attacks %s for %d dmg", m.Name, p.Name, dmg))
 				}
 			}
 		}
 		m.TickTaunt()
 	}
 
-	// Check party wipe
 	allPlayersDead := true
 	for _, p := range s.state.Players {
 		if !p.IsDead() {
@@ -267,5 +313,7 @@ func (s *GameSession) resolveMonsterActions() {
 	}
 	if allPlayersDead {
 		s.state.Phase = PhaseResult
+		s.state.GameOver = true
+		s.addLog("Party wiped!")
 	}
 }

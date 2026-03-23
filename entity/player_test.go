@@ -37,6 +37,18 @@ func TestAllClasses(t *testing.T) {
 	}
 }
 
+func TestRelicEffects(t *testing.T) {
+	p := NewPlayer("test", ClassWarrior)
+	p.Relics = append(p.Relics, Relic{Name: "Power Amulet", Effect: RelicATKBoost, Value: 3})
+	if p.EffectiveATK() != 15 {
+		t.Errorf("ATK with relic: got %d, want 15", p.EffectiveATK())
+	}
+	p.Relics = append(p.Relics, Relic{Name: "Iron Ward", Effect: RelicDEFBoost, Value: 2})
+	if p.EffectiveDEF() != 10 {
+		t.Errorf("DEF with relic: got %d, want 10", p.EffectiveDEF())
+	}
+}
+
 func TestPlayerTakeDamage(t *testing.T) {
 	p := NewPlayer("test", ClassWarrior)
 	p.TakeDamage(30)
