@@ -2,6 +2,7 @@ package game
 
 import (
 	"sync"
+	"time"
 
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
@@ -43,7 +44,8 @@ type GameState struct {
 	GameOver   bool
 	Victory    bool
 	ShopItems  []entity.Item
-	CombatLog  []string // recent combat messages
+	CombatLog    []string // recent combat messages
+	TurnDeadline time.Time
 }
 
 func (s *GameSession) addLog(msg string) {

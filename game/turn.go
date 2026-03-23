@@ -28,6 +28,9 @@ func (s *GameSession) RunTurn() {
 
 	// Collect actions with timeout
 	timer := time.NewTimer(TurnTimeout)
+	s.mu.Lock()
+	s.state.TurnDeadline = time.Now().Add(TurnTimeout)
+	s.mu.Unlock()
 	collected := 0
 	for collected < aliveCount {
 		select {
@@ -45,6 +48,7 @@ func (s *GameSession) RunTurn() {
 resolve:
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.state.TurnDeadline = time.Time{}
 
 	// Default action for players who didn't submit: Wait
 	for _, p := range s.state.Players {
@@ -69,28 +73,6 @@ func (s *GameSession) resolvePlayerActions() {
 		if !m.IsDead() {
 			aliveBeforeTurn[i] = true
 		}
-	}
-
-	// Check if ALL alive players chose flee
-	fleeCount := 0
-	aliveCount := 0
-	for _, p := range s.state.Players {
-		if p.IsDead() {
-			continue
-		}
-		aliveCount++
-		if action, ok := s.actions[p.Name]; ok && action.Type == ActionFlee {
-			fleeCount++
-		}
-	}
-	if fleeCount == aliveCount && aliveCount > 0 {
-		if combat.AttemptFlee() {
-			s.addLog("Fled from battle!")
-			s.state.Phase = PhaseExploring
-			return
-		}
-		s.addLog("Failed to flee!")
-		return
 	}
 
 	for _, p := range s.state.Players {
@@ -161,7 +143,15 @@ func (s *GameSession) resolvePlayerActions() {
 				s.addLog(fmt.Sprintf("%s has no items to use!", p.Name))
 			}
 		case ActionFlee:
-			s.addLog(fmt.Sprintf("%s tried to flee but party didn't agree", p.Name))
+			if combat.AttemptFlee() {
+				s.addLog(fmt.Sprintf("%s fled from battle!", p.Name))
+				if s.state.SoloMode {
+					s.state.Phase = PhaseExploring
+					return
+				}
+			} else {
+				s.addLog(fmt.Sprintf("%s failed to flee!", p.Name))
+			}
 		case ActionWait:
 			s.addLog(fmt.Sprintf("%s is defending", p.Name))
 		}
