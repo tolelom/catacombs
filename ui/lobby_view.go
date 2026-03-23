@@ -2,16 +2,19 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
 type lobbyState struct {
-	rooms    []roomInfo
-	input    string
-	cursor   int
-	creating bool
-	roomName string
+	rooms     []roomInfo
+	input     string
+	cursor    int
+	creating  bool
+	roomName  string
+	joining   bool
+	codeInput string
 }
 
 type roomInfo struct {
@@ -31,7 +34,7 @@ func renderLobby(state lobbyState, width, height int) string {
 		Padding(0, 1)
 
 	header := headerStyle.Render("── Lobby ──")
-	menu := "[C] Create Room  [J] Join by Code  [Q] Back"
+	menu := "[C] Create Room  [J] Join by Code  [Up/Down] Select  [Enter] Join  [Q] Back"
 
 	roomList := ""
 	for i, r := range state.rooms {
@@ -44,6 +47,10 @@ func renderLobby(state lobbyState, width, height int) string {
 	}
 	if roomList == "" {
 		roomList = "  No rooms available. Create one!"
+	}
+	if state.joining {
+		inputStr := state.codeInput + strings.Repeat("_", 4-len(state.codeInput))
+		roomList += fmt.Sprintf("\n  Enter room code: [%s]  (Esc to cancel)\n", inputStr)
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left,

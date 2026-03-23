@@ -38,12 +38,13 @@ type Model struct {
 	store *store.DB
 
 	// Per-session state
-	session     *game.GameSession
-	roomCode    string
-	gameState   game.GameState
-	lobbyState  lobbyState
-	classState  classSelectState
-	inputBuffer string
+	session      *game.GameSession
+	roomCode     string
+	gameState    game.GameState
+	lobbyState   lobbyState
+	classState   classSelectState
+	inputBuffer  string
+	targetCursor int
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
@@ -113,7 +114,7 @@ func (m Model) View() string {
 	case screenClassSelect:
 		return renderClassSelect(m.classState, m.width, m.height)
 	case screenGame:
-		return renderGame(m.gameState, m.width, m.height)
+		return renderGame(m.gameState, m.width, m.height, m.targetCursor)
 	case screenShop:
 		return renderShop(m.gameState, m.width, m.height)
 	case screenResult:
@@ -179,6 +180,29 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
+		// Join-by-code input mode
+		if m.lobbyState.joining {
+			if isEnter(key) && len(m.lobbyState.codeInput) == 4 {
+				if m.lobby != nil {
+					if err := m.lobby.JoinRoom(m.lobbyState.codeInput, m.playerName); err == nil {
+						m.roomCode = m.lobbyState.codeInput
+						m.screen = screenClassSelect
+					}
+				}
+				m.lobbyState.joining = false
+				m.lobbyState.codeInput = ""
+			} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
+				m.lobbyState.joining = false
+				m.lobbyState.codeInput = ""
+			} else if key.Type == tea.KeyBackspace && len(m.lobbyState.codeInput) > 0 {
+				m.lobbyState.codeInput = m.lobbyState.codeInput[:len(m.lobbyState.codeInput)-1]
+			} else if len(key.Runes) == 1 && len(m.lobbyState.codeInput) < 4 {
+				ch := strings.ToUpper(string(key.Runes))
+				m.lobbyState.codeInput += ch
+			}
+			return m, nil
+		}
+		// Normal lobby key handling
 		if isKey(key, "c") {
 			if m.lobby != nil {
 				code := m.lobby.CreateRoom(m.playerName + "'s Room")
@@ -186,6 +210,9 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.roomCode = code
 				m.screen = screenClassSelect
 			}
+		} else if isKey(key, "j") {
+			m.lobbyState.joining = true
+			m.lobbyState.codeInput = ""
 		} else if isUp(key) {
 			if m.lobbyState.cursor > 0 {
 				m.lobbyState.cursor--
@@ -306,12 +333,18 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if isPlayerDead {
 				return m, m.pollState()
 			}
+			if isKey(key, "tab") || key.Type == tea.KeyTab {
+				if len(m.gameState.Monsters) > 0 {
+					m.targetCursor = (m.targetCursor + 1) % len(m.gameState.Monsters)
+				}
+				return m, m.pollState()
+			}
 			if m.session != nil {
 				switch key.String() {
 				case "1":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionAttack, TargetIdx: 0})
+					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionAttack, TargetIdx: m.targetCursor})
 				case "2":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionSkill, TargetIdx: 0})
+					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionSkill, TargetIdx: m.targetCursor})
 				case "3":
 					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionItem})
 				case "4":
