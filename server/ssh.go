@@ -9,10 +9,12 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 	tea "github.com/charmbracelet/bubbletea"
 	gossh "golang.org/x/crypto/ssh"
+	"github.com/tolelom/catacombs/game"
+	"github.com/tolelom/catacombs/store"
 	"github.com/tolelom/catacombs/ui"
 )
 
-func Start(host string, port int) error {
+func Start(host string, port int, lobby *game.Lobby, db *store.DB) error {
 	s, err := wish.NewServer(
 		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
 		wish.WithHostKeyPath(".ssh/catacombs_host_key"),
@@ -26,7 +28,7 @@ func Start(host string, port int) error {
 				if s.PublicKey() != nil {
 					fingerprint = gossh.FingerprintSHA256(s.PublicKey())
 				}
-				m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint)
+				m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db)
 				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
 		),
