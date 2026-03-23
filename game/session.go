@@ -43,13 +43,28 @@ type GameState struct {
 	GameOver   bool
 	Victory    bool
 	ShopItems  []entity.Item
+	CombatLog  []string // recent combat messages
+}
+
+func (s *GameSession) addLog(msg string) {
+	s.state.CombatLog = append(s.state.CombatLog, msg)
+	// Keep last 5 messages
+	if len(s.state.CombatLog) > 5 {
+		s.state.CombatLog = s.state.CombatLog[len(s.state.CombatLog)-5:]
+	}
+}
+
+func (s *GameSession) clearLog() {
+	s.state.CombatLog = nil
 }
 
 type GameSession struct {
-	mu       sync.Mutex
-	state    GameState
-	actions  map[string]PlayerAction // playerName -> action
-	actionCh chan playerActionMsg
+	mu           sync.Mutex
+	state        GameState
+	started      bool
+	actions      map[string]PlayerAction // playerName -> action
+	actionCh     chan playerActionMsg
+	combatSignal chan struct{}
 }
 
 type playerActionMsg struct {
@@ -62,17 +77,56 @@ func NewGameSession() *GameSession {
 		state: GameState{
 			FloorNum: 1,
 		},
-		actions:  make(map[string]PlayerAction),
-		actionCh: make(chan playerActionMsg, 4),
+		actions:      make(map[string]PlayerAction),
+		actionCh:     make(chan playerActionMsg, 4),
+		combatSignal: make(chan struct{}, 1),
 	}
 }
 
 // StartGame determines solo mode from actual player count at game start
 func (s *GameSession) StartGame() {
 	s.mu.Lock()
+	if s.started {
+		s.mu.Unlock()
+		return
+	}
+	s.started = true
 	s.state.SoloMode = len(s.state.Players) == 1
 	s.mu.Unlock()
 	s.StartFloor()
+	go s.combatLoop()
+}
+
+// combatLoop continuously runs turns while in combat phase
+func (s *GameSession) combatLoop() {
+	for {
+		s.mu.Lock()
+		phase := s.state.Phase
+		gameOver := s.state.GameOver
+		s.mu.Unlock()
+
+		if gameOver {
+			return
+		}
+
+		if phase == PhaseCombat {
+			s.RunTurn() // blocks until all actions collected or timeout
+		} else {
+			// Not in combat, wait for an action signal to avoid busy-spinning
+			// We'll just sleep briefly and re-check
+			select {
+			case <-s.combatSignal:
+				// Room entered, combat may have started
+			}
+		}
+	}
+}
+
+func (s *GameSession) signalCombat() {
+	select {
+	case s.combatSignal <- struct{}{}:
+	default:
+	}
 }
 
 func (s *GameSession) AddPlayer(p *entity.Player) {

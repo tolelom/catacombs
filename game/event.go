@@ -24,10 +24,12 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 		s.spawnMonsters()
 		s.state.Phase = PhaseCombat
 		s.state.CombatTurn = 0
+		s.signalCombat()
 	case dungeon.RoomBoss:
 		s.spawnBoss()
 		s.state.Phase = PhaseCombat
 		s.state.CombatTurn = 0
+		s.signalCombat()
 	case dungeon.RoomShop:
 		s.generateShopItems()
 		s.state.Phase = PhaseShop
@@ -43,25 +45,33 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 }
 
 func (s *GameSession) spawnMonsters() {
-	count := 1 + rand.Intn(5) // 1~5 monsters
+	count := 1 + rand.Intn(5)
 	floor := s.state.FloorNum
 	s.state.Monsters = make([]*entity.Monster, count)
 
-	// Pick appropriate monster type for floor
-	var mt entity.MonsterType
-	switch {
-	case floor <= 5:
-		mt = entity.MonsterSlime
-	case floor <= 10:
-		mt = entity.MonsterSkeleton
-	case floor <= 14:
-		mt = entity.MonsterOrc
-	default:
-		mt = entity.MonsterDarkKnight
+	type floorRange struct {
+		mt       entity.MonsterType
+		minFloor int
+		maxFloor int
+	}
+	ranges := []floorRange{
+		{entity.MonsterSlime, 1, 5},
+		{entity.MonsterSkeleton, 3, 10},
+		{entity.MonsterOrc, 6, 14},
+		{entity.MonsterDarkKnight, 12, 20},
+	}
+	var valid []entity.MonsterType
+	for _, r := range ranges {
+		if floor >= r.minFloor && floor <= r.maxFloor {
+			valid = append(valid, r.mt)
+		}
+	}
+	if len(valid) == 0 {
+		valid = []entity.MonsterType{entity.MonsterSlime}
 	}
 
-	// Solo mode: 50% HP
 	for i := 0; i < count; i++ {
+		mt := valid[rand.Intn(len(valid))]
 		m := entity.NewMonster(mt, floor)
 		if s.state.SoloMode {
 			m.HP = m.HP / 2
