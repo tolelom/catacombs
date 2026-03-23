@@ -1,0 +1,11 @@
+services:
+  catacombs:
+    build: .
+    ports:
+      - "2222:2222"
+    volumes:
+      - catacombs-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  catacombs-data:
