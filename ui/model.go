@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tolelom/catacombs/entity"
@@ -46,6 +47,12 @@ type Model struct {
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
+	if width == 0 {
+		width = 80
+	}
+	if height == 0 {
+		height = 24
+	}
 	return Model{
 		width:       width,
 		height:      height,
@@ -65,6 +72,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		if m.width == 0 {
+			m.width = 80
+		}
+		if m.height == 0 {
+			m.height = 24
+		}
 		return m, nil
 	case StateUpdateMsg:
 		m.gameState = msg.State
@@ -113,14 +126,42 @@ func (m Model) View() string {
 	return ""
 }
 
+func isKey(key tea.KeyMsg, names ...string) bool {
+	s := key.String()
+	for _, n := range names {
+		if s == n {
+			return true
+		}
+	}
+	return false
+}
+
+func isEnter(key tea.KeyMsg) bool {
+	return isKey(key, "enter") || key.Type == tea.KeyEnter
+}
+
+func isQuit(key tea.KeyMsg) bool {
+	return isKey(key, "q", "ctrl+c") || key.Type == tea.KeyCtrlC
+}
+
+func isUp(key tea.KeyMsg) bool {
+	return isKey(key, "up") || key.Type == tea.KeyUp
+}
+
+func isDown(key tea.KeyMsg) bool {
+	return isKey(key, "down") || key.Type == tea.KeyDown
+}
+
 func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
-		switch key.String() {
-		case "enter":
+		if isEnter(key) {
 			if m.store != nil {
 				name, err := m.store.GetProfile(m.fingerprint)
 				if err != nil {
 					m.playerName = "Adventurer"
+					if m.store != nil && m.fingerprint != "" {
+						m.store.SaveProfile(m.fingerprint, m.playerName)
+					}
 				} else {
 					m.playerName = name
 				}
@@ -128,8 +169,8 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.playerName = "Adventurer"
 			}
 			m.screen = screenLobby
-			m.refreshLobbyState()
-		case "q", "ctrl+c":
+			m = m.withRefreshedLobby()
+		} else if isQuit(key) {
 			return m, tea.Quit
 		}
 	}
@@ -138,23 +179,22 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
-		switch key.String() {
-		case "c":
+		if isKey(key, "c") {
 			if m.lobby != nil {
 				code := m.lobby.CreateRoom(m.playerName + "'s Room")
 				m.lobby.JoinRoom(code, m.playerName)
 				m.roomCode = code
 				m.screen = screenClassSelect
 			}
-		case "up":
+		} else if isUp(key) {
 			if m.lobbyState.cursor > 0 {
 				m.lobbyState.cursor--
 			}
-		case "down":
+		} else if isDown(key) {
 			if m.lobbyState.cursor < len(m.lobbyState.rooms)-1 {
 				m.lobbyState.cursor++
 			}
-		case "enter":
+		} else if isEnter(key) {
 			if m.lobby != nil && len(m.lobbyState.rooms) > 0 {
 				r := m.lobbyState.rooms[m.lobbyState.cursor]
 				if err := m.lobby.JoinRoom(r.Code, m.playerName); err == nil {
@@ -162,7 +202,7 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.screen = screenClassSelect
 				}
 			}
-		case "q":
+		} else if isKey(key, "q") {
 			m.screen = screenTitle
 		}
 	}
@@ -171,16 +211,15 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateClassSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
-		switch key.String() {
-		case "up":
+		if isUp(key) {
 			if m.classState.cursor > 0 {
 				m.classState.cursor--
 			}
-		case "down":
+		} else if isDown(key) {
 			if m.classState.cursor < len(classOptions)-1 {
 				m.classState.cursor++
 			}
-		case "enter":
+		} else if isEnter(key) {
 			if m.lobby != nil {
 				selectedClass := classOptions[m.classState.cursor].class
 				room := m.lobby.GetRoom(m.roomCode)
@@ -202,13 +241,43 @@ func (m Model) updateClassSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// pollState returns a Cmd that waits briefly then refreshes game state
+func (m Model) pollState() tea.Cmd {
+	return tea.Tick(time.Millisecond*200, func(t time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
+
+type tickMsg struct{}
+
 func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// Refresh state on every update
+	if m.session != nil {
+		m.gameState = m.session.GetState()
+	}
+
 	if m.gameState.GameOver {
+		if m.store != nil {
+			score := 0
+			for _, p := range m.gameState.Players {
+				score += p.Gold
+			}
+			m.store.SaveRun(m.playerName, m.gameState.FloorNum, score)
+		}
 		m.screen = screenResult
 		return m, nil
 	}
 	if m.gameState.Phase == game.PhaseShop {
 		m.screen = screenShop
+		return m, nil
+	}
+
+	switch msg.(type) {
+	case tickMsg:
+		// State already refreshed above, just keep polling during combat
+		if m.gameState.Phase == game.PhaseCombat {
+			return m, m.pollState()
+		}
 		return m, nil
 	}
 
@@ -220,9 +289,23 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.session != nil {
 					m.session.EnterRoom(idx)
 					m.gameState = m.session.GetState()
+					// If combat started, begin polling
+					if m.gameState.Phase == game.PhaseCombat {
+						return m, m.pollState()
+					}
 				}
 			}
 		case game.PhaseCombat:
+			isPlayerDead := false
+			for _, p := range m.gameState.Players {
+				if p.Name == m.playerName && p.IsDead() {
+					isPlayerDead = true
+					break
+				}
+			}
+			if isPlayerDead {
+				return m, m.pollState()
+			}
 			if m.session != nil {
 				switch key.String() {
 				case "1":
@@ -236,6 +319,8 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "5":
 					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionWait})
 				}
+				// After submitting, poll for turn resolution
+				return m, m.pollState()
 			}
 		}
 	}
@@ -264,20 +349,19 @@ func (m Model) updateShop(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateResult(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
-		switch key.String() {
-		case "enter":
+		if isEnter(key) {
 			m.screen = screenLobby
-			m.refreshLobbyState()
-		case "q", "ctrl+c":
+			m = m.withRefreshedLobby()
+		} else if isQuit(key) {
 			return m, tea.Quit
 		}
 	}
 	return m, nil
 }
 
-func (m *Model) refreshLobbyState() {
+func (m Model) withRefreshedLobby() Model {
 	if m.lobby == nil {
-		return
+		return m
 	}
 	rooms := m.lobby.ListRooms()
 	m.lobbyState.rooms = make([]roomInfo, len(rooms))
@@ -294,4 +378,5 @@ func (m *Model) refreshLobbyState() {
 		}
 	}
 	m.lobbyState.cursor = 0
+	return m
 }
