@@ -1,0 +1,138 @@
+package game
+
+import (
+	"math/rand"
+
+	"github.com/tolelom/catacombs/dungeon"
+	"github.com/tolelom/catacombs/entity"
+)
+
+func (s *GameSession) EnterRoom(roomIdx int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.state.Floor.CurrentRoom = roomIdx
+	dungeon.UpdateVisibility(s.state.Floor)
+	room := s.state.Floor.Rooms[roomIdx]
+
+	if room.Cleared {
+		return
+	}
+
+	switch room.Type {
+	case dungeon.RoomCombat:
+		s.spawnMonsters()
+		s.state.Phase = PhaseCombat
+		s.state.CombatTurn = 0
+	case dungeon.RoomBoss:
+		s.spawnBoss()
+		s.state.Phase = PhaseCombat
+		s.state.CombatTurn = 0
+	case dungeon.RoomShop:
+		s.generateShopItems()
+		s.state.Phase = PhaseShop
+	case dungeon.RoomTreasure:
+		s.grantTreasure()
+		room.Cleared = true
+	case dungeon.RoomEvent:
+		s.triggerEvent()
+		room.Cleared = true
+	case dungeon.RoomEmpty:
+		room.Cleared = true
+	}
+}
+
+func (s *GameSession) spawnMonsters() {
+	count := 1 + rand.Intn(5) // 1~5 monsters
+	floor := s.state.FloorNum
+	s.state.Monsters = make([]*entity.Monster, count)
+
+	// Pick appropriate monster type for floor
+	var mt entity.MonsterType
+	switch {
+	case floor <= 5:
+		mt = entity.MonsterSlime
+	case floor <= 10:
+		mt = entity.MonsterSkeleton
+	case floor <= 14:
+		mt = entity.MonsterOrc
+	default:
+		mt = entity.MonsterDarkKnight
+	}
+
+	// Solo mode: 50% HP
+	for i := 0; i < count; i++ {
+		m := entity.NewMonster(mt, floor)
+		if s.state.SoloMode {
+			m.HP = m.HP / 2
+			if m.HP < 1 {
+				m.HP = 1
+			}
+			m.MaxHP = m.HP
+		}
+		s.state.Monsters[i] = m
+	}
+}
+
+func (s *GameSession) spawnBoss() {
+	var mt entity.MonsterType
+	switch s.state.FloorNum {
+	case 5:
+		mt = entity.MonsterBoss5
+	case 10:
+		mt = entity.MonsterBoss10
+	case 15:
+		mt = entity.MonsterBoss15
+	case 20:
+		mt = entity.MonsterBoss20
+	default:
+		mt = entity.MonsterBoss5
+	}
+	boss := entity.NewMonster(mt, s.state.FloorNum)
+	if s.state.SoloMode {
+		boss.HP = boss.HP / 2
+		boss.MaxHP = boss.HP
+	}
+	s.state.Monsters = []*entity.Monster{boss}
+}
+
+func (s *GameSession) grantTreasure() {
+	// Random item for each player
+	for _, p := range s.state.Players {
+		if rand.Float64() < 0.5 {
+			p.Inventory = append(p.Inventory, entity.Item{
+				Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 3 + rand.Intn(6),
+			})
+		} else {
+			p.Inventory = append(p.Inventory, entity.Item{
+				Name: "Iron Shield", Type: entity.ItemArmor, Bonus: 2 + rand.Intn(4),
+			})
+		}
+	}
+}
+
+func (s *GameSession) generateShopItems() {
+	s.state.ShopItems = []entity.Item{
+		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: 30, Price: 20},
+		{Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 3 + rand.Intn(6), Price: 40 + rand.Intn(41)},
+		{Name: "Iron Shield", Type: entity.ItemArmor, Bonus: 2 + rand.Intn(4), Price: 30 + rand.Intn(31)},
+	}
+}
+
+func (s *GameSession) triggerEvent() {
+	// Random event: 50% trap, 50% blessing
+	for _, p := range s.state.Players {
+		if p.IsDead() {
+			continue
+		}
+		if rand.Float64() < 0.5 {
+			// Trap: 10~20 damage
+			dmg := 10 + rand.Intn(11)
+			p.TakeDamage(dmg)
+		} else {
+			// Blessing: heal 15~25
+			heal := 15 + rand.Intn(11)
+			p.Heal(heal)
+		}
+	}
+}
