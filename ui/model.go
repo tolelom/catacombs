@@ -421,8 +421,16 @@ func (m Model) updateShop(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) updateResult(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
-			m.screen = screenLobby
+			if m.session != nil {
+				m.session.Stop()
+				m.session = nil
+			}
+			if m.lobby != nil && m.roomCode != "" {
+				m.lobby.RemoveRoom(m.roomCode)
+			}
+			m.roomCode = ""
 			m.rankingSaved = false
+			m.screen = screenLobby
 			m = m.withRefreshedLobby()
 		} else if isQuit(key) {
 			return m, tea.Quit

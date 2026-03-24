@@ -41,6 +41,9 @@ func (s *GameSession) RunTurn() {
 			collected++
 		case <-timer.C:
 			goto resolve
+		case <-s.done:
+			timer.Stop()
+			return
 		}
 	}
 	timer.Stop()

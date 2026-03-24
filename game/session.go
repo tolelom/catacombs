@@ -67,6 +67,7 @@ type GameSession struct {
 	actions      map[string]PlayerAction // playerName -> action
 	actionCh     chan playerActionMsg
 	combatSignal chan struct{}
+	done         chan struct{}
 }
 
 type playerActionMsg struct {
@@ -82,6 +83,16 @@ func NewGameSession() *GameSession {
 		actions:      make(map[string]PlayerAction),
 		actionCh:     make(chan playerActionMsg, 4),
 		combatSignal: make(chan struct{}, 1),
+		done:         make(chan struct{}),
+	}
+}
+
+func (s *GameSession) Stop() {
+	select {
+	case <-s.done:
+		// already stopped
+	default:
+		close(s.done)
 	}
 }
 
@@ -102,6 +113,12 @@ func (s *GameSession) StartGame() {
 // combatLoop continuously runs turns while in combat phase
 func (s *GameSession) combatLoop() {
 	for {
+		select {
+		case <-s.done:
+			return
+		default:
+		}
+
 		s.mu.Lock()
 		phase := s.state.Phase
 		gameOver := s.state.GameOver
@@ -112,13 +129,12 @@ func (s *GameSession) combatLoop() {
 		}
 
 		if phase == PhaseCombat {
-			s.RunTurn() // blocks until all actions collected or timeout
+			s.RunTurn()
 		} else {
-			// Not in combat, wait for an action signal to avoid busy-spinning
-			// We'll just sleep briefly and re-check
 			select {
 			case <-s.combatSignal:
-				// Room entered, combat may have started
+			case <-s.done:
+				return
 			}
 		}
 	}
