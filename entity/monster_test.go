@@ -36,3 +36,23 @@ func TestMonsterDEFScaling(t *testing.T) {
 		t.Errorf("Boss5 DEF should be base 8, got %d", boss.DEF)
 	}
 }
+
+func TestTickTaunt(t *testing.T) {
+	m := &Monster{Name: "Orc", HP: 50, TauntTarget: true, TauntTurns: 2}
+	m.TickTaunt()
+	if m.TauntTurns != 1 || !m.TauntTarget {
+		t.Error("should still be taunted with 1 turn left")
+	}
+	m.TickTaunt()
+	if m.TauntTurns != 0 || m.TauntTarget {
+		t.Error("taunt should be cleared at 0")
+	}
+}
+
+func TestMonsterAtMinFloor(t *testing.T) {
+	// Slime at floor 1 (minFloor=1) should have base stats
+	m := NewMonster(MonsterSlime, 1)
+	if m.HP != 20 || m.ATK != 5 || m.DEF != 1 {
+		t.Errorf("Slime at min floor should be base stats, got HP=%d ATK=%d DEF=%d", m.HP, m.ATK, m.DEF)
+	}
+}
