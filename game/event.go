@@ -92,6 +92,11 @@ func (s *GameSession) spawnMonsters() {
 		}
 		s.state.Monsters[i] = m
 	}
+
+	// Reset skill uses for all players at combat start
+	for _, p := range s.state.Players {
+		p.SkillUses = 3
+	}
 }
 
 func (s *GameSession) spawnBoss() {
@@ -115,11 +120,20 @@ func (s *GameSession) spawnBoss() {
 		boss.DEF = boss.DEF / 2
 	}
 	s.state.Monsters = []*entity.Monster{boss}
+
+	// Reset skill uses for all players at combat start
+	for _, p := range s.state.Players {
+		p.SkillUses = 3
+	}
 }
 
 func (s *GameSession) grantTreasure() {
 	floor := s.state.FloorNum
 	for _, p := range s.state.Players {
+		if len(p.Inventory) >= 10 {
+			s.addLog(fmt.Sprintf("%s's inventory is full!", p.Name))
+			continue
+		}
 		if rand.Float64() < 0.5 {
 			bonus := 3 + rand.Intn(6) + floor/3
 			item := entity.Item{
@@ -190,11 +204,13 @@ func (s *GameSession) triggerEvent() {
 			continue
 		}
 		if rand.Float64() < 0.5 {
-			dmg := 10 + rand.Intn(11)
+			baseDmg := 10 + s.state.FloorNum
+			dmg := baseDmg + rand.Intn(baseDmg/2+1)
 			p.TakeDamage(dmg)
 			s.addLog(fmt.Sprintf("Trap! %s takes %d damage", p.Name, dmg))
 		} else {
-			heal := 15 + rand.Intn(11)
+			baseHeal := 15 + s.state.FloorNum
+			heal := baseHeal + rand.Intn(baseHeal/2+1)
 			before := p.HP
 			p.Heal(heal)
 			s.addLog(fmt.Sprintf("Blessing! %s heals %d HP", p.Name, p.HP-before))

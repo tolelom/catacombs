@@ -282,6 +282,9 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) bool {
 	item := s.state.ShopItems[itemIdx]
 	for _, p := range s.state.Players {
 		if p.Fingerprint == playerID && p.Gold >= item.Price {
+			if len(p.Inventory) >= 10 {
+				return false
+			}
 			p.Gold -= item.Price
 			p.Inventory = append(p.Inventory, item)
 			return true

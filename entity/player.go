@@ -35,6 +35,7 @@ type Player struct {
 	Relics      []Relic
 	Dead        bool
 	Fled        bool
+	SkillUses   int // remaining skill uses this combat
 }
 
 func NewPlayer(name string, class Class) *Player {

@@ -124,6 +124,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
 				case entity.ClassRogue:
 					skillDesc = "Skill: Scout — reveal neighboring rooms"
 				}
+				skillDesc += fmt.Sprintf(" (%d uses left)", p.SkillUses)
 				sb.WriteString(styleSystem.Render(skillDesc))
 				sb.WriteString("\n")
 				break

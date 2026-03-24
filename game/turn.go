@@ -97,6 +97,11 @@ func (s *GameSession) resolvePlayerActions() {
 			})
 			intentOwners = append(intentOwners, p.Name)
 		case ActionSkill:
+			if p.SkillUses <= 0 {
+				s.addLog(fmt.Sprintf("%s has no skill uses left!", p.Name))
+				break
+			}
+			p.SkillUses--
 			switch p.Class {
 			case entity.ClassWarrior:
 				for _, m := range s.state.Monsters {
