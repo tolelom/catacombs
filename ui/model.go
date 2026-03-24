@@ -262,6 +262,7 @@ func (m Model) updateClassSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 					player.Fingerprint = m.fingerprint
 					m.session.AddPlayer(player)
 					m.session.StartGame()
+					m.lobby.StartRoom(m.roomCode)
 					m.gameState = m.session.GetState()
 					m.screen = screenGame
 				}

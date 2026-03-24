@@ -78,6 +78,14 @@ func (l *Lobby) ListRooms() []*LobbyRoom {
 	return result
 }
 
+func (l *Lobby) StartRoom(code string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if room, ok := l.rooms[code]; ok {
+		room.Status = RoomPlaying
+	}
+}
+
 func (l *Lobby) RemoveRoom(code string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

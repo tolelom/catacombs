@@ -27,6 +27,25 @@ func TestJoinRoom(t *testing.T) {
 	}
 }
 
+func TestRoomStatusTransition(t *testing.T) {
+	l := NewLobby()
+	code := l.CreateRoom("Test")
+	l.JoinRoom(code, "Alice")
+	r := l.GetRoom(code)
+	if r.Status != RoomWaiting {
+		t.Errorf("new room should be Waiting, got %d", r.Status)
+	}
+	l.StartRoom(code)
+	r = l.GetRoom(code)
+	if r.Status != RoomPlaying {
+		t.Errorf("started room should be Playing, got %d", r.Status)
+	}
+	err := l.JoinRoom(code, "Bob")
+	if err == nil {
+		t.Error("should not be able to join a Playing room")
+	}
+}
+
 func TestJoinRoomFull(t *testing.T) {
 	lobby := NewLobby()
 	code := lobby.CreateRoom("Test Room")
