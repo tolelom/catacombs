@@ -57,3 +57,43 @@ func TestJoinRoomFull(t *testing.T) {
 		t.Error("Should reject 5th player")
 	}
 }
+
+func TestSetPlayerClass(t *testing.T) {
+	l := NewLobby()
+	code := l.CreateRoom("Test")
+	l.JoinRoom(code, "Alice", "fp-alice")
+	l.SetPlayerClass(code, "fp-alice", "Warrior")
+	room := l.GetRoom(code)
+	if room.Players[0].Class != "Warrior" {
+		t.Errorf("expected class Warrior, got %s", room.Players[0].Class)
+	}
+}
+
+func TestAllReady(t *testing.T) {
+	l := NewLobby()
+	code := l.CreateRoom("Test")
+	l.JoinRoom(code, "Alice", "fp-alice")
+	l.JoinRoom(code, "Bob", "fp-bob")
+
+	if l.AllReady(code) {
+		t.Error("no one ready yet, should return false")
+	}
+
+	l.SetPlayerReady(code, "fp-alice", true)
+	if l.AllReady(code) {
+		t.Error("only Alice ready, should return false")
+	}
+
+	l.SetPlayerReady(code, "fp-bob", true)
+	if !l.AllReady(code) {
+		t.Error("both ready, should return true")
+	}
+}
+
+func TestAllReadyEmptyRoom(t *testing.T) {
+	l := NewLobby()
+	code := l.CreateRoom("Test")
+	if l.AllReady(code) {
+		t.Error("empty room should not be all ready")
+	}
+}
