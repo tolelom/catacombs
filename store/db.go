@@ -76,6 +76,39 @@ func (d *DB) SaveRun(player string, floor, score int) error {
 	})
 }
 
+type PlayerStats struct {
+	TotalRuns  int
+	BestFloor  int
+	TotalGold  int
+	TotalKills int
+	Victories  int
+}
+
+func (d *DB) GetStats(player string) (PlayerStats, error) {
+	var stats PlayerStats
+	err := d.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketRankings)
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(k, v []byte) error {
+			var r RunRecord
+			if json.Unmarshal(v, &r) == nil && r.Player == player {
+				stats.TotalRuns++
+				if r.Floor > stats.BestFloor {
+					stats.BestFloor = r.Floor
+				}
+				stats.TotalGold += r.Score
+				if r.Floor >= 20 {
+					stats.Victories++
+				}
+			}
+			return nil
+		})
+	})
+	return stats, err
+}
+
 func (d *DB) TopRuns(limit int) ([]RunRecord, error) {
 	var runs []RunRecord
 	err := d.db.View(func(tx *bolt.Tx) error {
