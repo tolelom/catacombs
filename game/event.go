@@ -88,6 +88,7 @@ func (s *GameSession) spawnMonsters() {
 				m.HP = 1
 			}
 			m.MaxHP = m.HP
+			m.DEF = m.DEF / 2
 		}
 		s.state.Monsters[i] = m
 	}
@@ -111,21 +112,25 @@ func (s *GameSession) spawnBoss() {
 	if s.state.SoloMode {
 		boss.HP = boss.HP / 2
 		boss.MaxHP = boss.HP
+		boss.DEF = boss.DEF / 2
 	}
 	s.state.Monsters = []*entity.Monster{boss}
 }
 
 func (s *GameSession) grantTreasure() {
+	floor := s.state.FloorNum
 	for _, p := range s.state.Players {
 		if rand.Float64() < 0.5 {
+			bonus := 3 + rand.Intn(6) + floor/3
 			item := entity.Item{
-				Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 3 + rand.Intn(6),
+				Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus,
 			}
 			p.Inventory = append(p.Inventory, item)
 			s.addLog(fmt.Sprintf("%s found %s (ATK+%d)", p.Name, item.Name, item.Bonus))
 		} else {
+			bonus := 2 + rand.Intn(4) + floor/4
 			item := entity.Item{
-				Name: "Iron Shield", Type: entity.ItemArmor, Bonus: 2 + rand.Intn(4),
+				Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus,
 			}
 			p.Inventory = append(p.Inventory, item)
 			s.addLog(fmt.Sprintf("%s found %s (DEF+%d)", p.Name, item.Name, item.Bonus))
@@ -134,10 +139,48 @@ func (s *GameSession) grantTreasure() {
 }
 
 func (s *GameSession) generateShopItems() {
+	floor := s.state.FloorNum
+	// Weapon bonus scales: base 3-8 + floor/3
+	weaponBonus := 3 + rand.Intn(6) + floor/3
+	// Armor bonus scales: base 2-5 + floor/4
+	armorBonus := 2 + rand.Intn(4) + floor/4
+	// Prices scale with power
+	weaponPrice := 40 + weaponBonus*5
+	armorPrice := 30 + armorBonus*5
+	// Potion heals more on higher floors
+	potionHeal := 30 + floor
+	potionPrice := 20 + floor/2
+
 	s.state.ShopItems = []entity.Item{
-		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: 30, Price: 20},
-		{Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 3 + rand.Intn(6), Price: 40 + rand.Intn(41)},
-		{Name: "Iron Shield", Type: entity.ItemArmor, Bonus: 2 + rand.Intn(4), Price: 30 + rand.Intn(31)},
+		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: potionHeal, Price: potionPrice},
+		{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
+		{Name: armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
+	}
+}
+
+func weaponName(floor int) string {
+	switch {
+	case floor >= 15:
+		return "Mythril Blade"
+	case floor >= 10:
+		return "Steel Sword"
+	case floor >= 5:
+		return "Bronze Sword"
+	default:
+		return "Iron Sword"
+	}
+}
+
+func armorName(floor int) string {
+	switch {
+	case floor >= 15:
+		return "Mythril Shield"
+	case floor >= 10:
+		return "Steel Shield"
+	case floor >= 5:
+		return "Bronze Shield"
+	default:
+		return "Iron Shield"
 	}
 }
 

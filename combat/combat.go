@@ -97,14 +97,17 @@ func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (tar
 	}
 	if rand.Float64() < 0.3 {
 		minHP := int(^uint(0) >> 1)
-		minIdx := 0
+		minIdx := -1
 		for i, p := range players {
 			if !p.IsDead() && p.HP < minHP {
 				minHP = p.HP
 				minIdx = i
 			}
 		}
-		return minIdx, false
+		if minIdx >= 0 {
+			return minIdx, false
+		}
+		// Fall through to default targeting if no alive player found
 	}
 	for i, p := range players {
 		if !p.IsDead() {

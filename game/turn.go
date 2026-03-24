@@ -117,9 +117,19 @@ func (s *GameSession) resolvePlayerActions() {
 			case entity.ClassHealer:
 				targetIdx := action.TargetIdx
 				if targetIdx < 0 || targetIdx >= len(s.state.Players) {
-					targetIdx = 0 // heal self by default
+					targetIdx = 0
 				}
 				target := s.state.Players[targetIdx]
+				if target.IsDead() {
+					// Find first alive player to heal instead
+					for j, candidate := range s.state.Players {
+						if !candidate.IsOut() {
+							target = candidate
+							targetIdx = j
+							break
+						}
+					}
+				}
 				before := target.HP
 				target.Heal(30)
 				s.addLog(fmt.Sprintf("%s healed %s for %d HP", p.Name, target.Name, target.HP-before))
@@ -203,10 +213,7 @@ func (s *GameSession) resolvePlayerActions() {
 	// Award gold only for monsters that JUST died this turn
 	for i, m := range s.state.Monsters {
 		if m.IsDead() && aliveBeforeTurn[i] {
-			goldReward := 5 + s.state.FloorNum
-			if goldReward > 15 {
-				goldReward = 15
-			}
+			goldReward := 5 + s.state.FloorNum*2
 			for _, p := range s.state.Players {
 				if !p.IsOut() {
 					bonus := 0
