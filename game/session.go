@@ -45,15 +45,21 @@ type GameState struct {
 	GameOver   bool
 	Victory    bool
 	ShopItems  []entity.Item
-	CombatLog    []string // recent combat messages
-	TurnDeadline time.Time
+	CombatLog        []string // recent combat messages
+	TurnDeadline     time.Time
+	SubmittedActions map[string]string // fingerprint -> action description
+	PendingLogs      []string          // logs waiting to be revealed one by one
+	TurnResolving    bool              // true while logs are being replayed
 }
 
 func (s *GameSession) addLog(msg string) {
-	s.state.CombatLog = append(s.state.CombatLog, msg)
-	// Keep last 5 messages
-	if len(s.state.CombatLog) > 5 {
-		s.state.CombatLog = s.state.CombatLog[len(s.state.CombatLog)-5:]
+	if s.state.TurnResolving {
+		s.state.PendingLogs = append(s.state.PendingLogs, msg)
+	} else {
+		s.state.CombatLog = append(s.state.CombatLog, msg)
+		if len(s.state.CombatLog) > 8 {
+			s.state.CombatLog = s.state.CombatLog[len(s.state.CombatLog)-8:]
+		}
 	}
 }
 
@@ -242,28 +248,74 @@ func (s *GameSession) GetState() GameState {
 	logCopy := make([]string, len(s.state.CombatLog))
 	copy(logCopy, s.state.CombatLog)
 
+	// Copy submitted actions
+	submittedCopy := make(map[string]string, len(s.state.SubmittedActions))
+	for k, v := range s.state.SubmittedActions {
+		submittedCopy[k] = v
+	}
+
+	// Copy pending logs
+	pendingCopy := make([]string, len(s.state.PendingLogs))
+	copy(pendingCopy, s.state.PendingLogs)
+
 	return GameState{
-		Floor:        floorCopy,
-		Players:      players,
-		Monsters:     monsters,
-		Phase:        s.state.Phase,
-		FloorNum:     s.state.FloorNum,
-		TurnNum:      s.state.TurnNum,
-		CombatTurn:   s.state.CombatTurn,
-		SoloMode:     s.state.SoloMode,
-		GameOver:     s.state.GameOver,
-		Victory:      s.state.Victory,
-		ShopItems:    append([]entity.Item{}, s.state.ShopItems...),
-		CombatLog:    logCopy,
-		TurnDeadline: s.state.TurnDeadline,
+		Floor:            floorCopy,
+		Players:          players,
+		Monsters:         monsters,
+		Phase:            s.state.Phase,
+		FloorNum:         s.state.FloorNum,
+		TurnNum:          s.state.TurnNum,
+		CombatTurn:       s.state.CombatTurn,
+		SoloMode:         s.state.SoloMode,
+		GameOver:         s.state.GameOver,
+		Victory:          s.state.Victory,
+		ShopItems:        append([]entity.Item{}, s.state.ShopItems...),
+		CombatLog:        logCopy,
+		TurnDeadline:     s.state.TurnDeadline,
+		SubmittedActions: submittedCopy,
+		PendingLogs:      pendingCopy,
+		TurnResolving:    s.state.TurnResolving,
 	}
 }
 
 func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
 	s.mu.Lock()
 	s.lastActivity[playerID] = time.Now()
+	desc := ""
+	switch action.Type {
+	case ActionAttack:
+		desc = "Attacking"
+	case ActionSkill:
+		desc = "Using Skill"
+	case ActionItem:
+		desc = "Using Item"
+	case ActionFlee:
+		desc = "Fleeing"
+	case ActionWait:
+		desc = "Defending"
+	}
+	if s.state.SubmittedActions == nil {
+		s.state.SubmittedActions = make(map[string]string)
+	}
+	s.state.SubmittedActions[playerID] = desc
 	s.mu.Unlock()
 	s.actionCh <- playerActionMsg{PlayerID: playerID, Action: action}
+}
+
+// RevealNextLog moves one log from PendingLogs to CombatLog. Returns true if there was one to reveal.
+func (s *GameSession) RevealNextLog() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.state.PendingLogs) == 0 {
+		return false
+	}
+	msg := s.state.PendingLogs[0]
+	s.state.PendingLogs = s.state.PendingLogs[1:]
+	s.state.CombatLog = append(s.state.CombatLog, msg)
+	if len(s.state.CombatLog) > 8 {
+		s.state.CombatLog = s.state.CombatLog[len(s.state.CombatLog)-8:]
+	}
+	return true
 }
 
 func (s *GameSession) TouchActivity(fingerprint string) {

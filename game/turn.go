@@ -18,6 +18,7 @@ func (s *GameSession) RunTurn() {
 	s.state.CombatTurn++
 	s.clearLog()
 	s.actions = make(map[string]PlayerAction)
+	s.state.SubmittedActions = make(map[string]string)
 	aliveCount := 0
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -63,8 +64,12 @@ collecting:
 		}
 	}
 
+	s.state.TurnResolving = true
+	s.state.PendingLogs = nil
 	s.resolvePlayerActions()
 	s.resolveMonsterActions()
+	s.state.TurnResolving = false
+	// PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
 }
 
 func (s *GameSession) resolvePlayerActions() {

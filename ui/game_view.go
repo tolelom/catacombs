@@ -75,7 +75,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
 
 	if state.Phase == game.PhaseCombat {
 		// Two-panel layout: PARTY | ENEMIES
-		partyContent := renderPartyPanel(state.Players)
+		partyContent := renderPartyPanel(state.Players, state.SubmittedActions)
 		enemyContent := renderEnemyPanel(state.Monsters, targetCursor)
 
 		partyPanel := lipgloss.NewStyle().
@@ -232,7 +232,7 @@ func renderHPBar(current, max, width int) string {
 		emptyStyle.Render(strings.Repeat("░", empty))
 }
 
-func renderPartyPanel(players []*entity.Player) string {
+func renderPartyPanel(players []*entity.Player, submittedActions map[string]string) string {
 	var sb strings.Builder
 	sb.WriteString(styleHeader.Render("  PARTY") + "\n\n")
 
@@ -250,7 +250,16 @@ func renderPartyPanel(players []*entity.Player) string {
 
 		sb.WriteString(fmt.Sprintf("    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF()))
 		sb.WriteString(styleGold.Render(fmt.Sprintf("G:%d", p.Gold)))
-		sb.WriteString("\n\n")
+		sb.WriteString("\n")
+
+		if action, ok := submittedActions[p.Fingerprint]; ok {
+			sb.WriteString(styleHeal.Render(fmt.Sprintf("    ✓ %s", action)))
+			sb.WriteString("\n")
+		} else if !p.IsOut() {
+			sb.WriteString(styleSystem.Render("    ... Waiting"))
+			sb.WriteString("\n")
+		}
+		sb.WriteString("\n")
 	}
 	return sb.String()
 }

@@ -323,8 +323,14 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg.(type) {
 	case tickMsg:
-		// State already refreshed above, just keep polling during combat
+		if m.session != nil {
+			m.session.RevealNextLog()
+		}
+		// Keep polling during combat or while there are pending logs to reveal
 		if m.gameState.Phase == game.PhaseCombat {
+			return m, m.pollState()
+		}
+		if len(m.gameState.PendingLogs) > 0 {
 			return m, m.pollState()
 		}
 		return m, nil
