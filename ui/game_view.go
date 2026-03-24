@@ -64,57 +64,59 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
 	}
 
 	if state.Phase == game.PhaseCombat {
-		sb.WriteString("\n")
-		// Enemies
-		enemyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
-		for i, m := range state.Monsters {
-			if !m.IsDead() {
-				mhpBar := renderHPBar(m.HP, m.MaxHP, 15)
-				taunt := ""
-				if m.TauntTarget {
-					taunt = " [TAUNTED]"
-				}
-				marker := "  "
-			if i == targetCursor {
-				marker = "> "
-			}
-			sb.WriteString(enemyStyle.Render(fmt.Sprintf("%s[%d] %s %s %d/%d%s", marker, i, m.Name, mhpBar, m.HP, m.MaxHP, taunt)))
-				sb.WriteString("\n")
-			}
-		}
+		// Two-panel layout: PARTY | ENEMIES
+		partyContent := renderPartyPanel(state.Players)
+		enemyContent := renderEnemyPanel(state.Monsters, targetCursor)
 
+		partyPanel := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorGray).
+			Width(35).
+			Padding(0, 1).
+			Render(partyContent)
+
+		enemyPanel := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(colorGray).
+			Width(38).
+			Padding(0, 1).
+			Render(enemyContent)
+
+		panels := lipgloss.JoinHorizontal(lipgloss.Top, partyPanel, enemyPanel)
+		sb.WriteString(panels)
 		sb.WriteString("\n")
-		// Actions with skill description
-		actionStyle := lipgloss.NewStyle().Bold(true)
-		sb.WriteString(actionStyle.Render("[1]Attack  [2]Skill  [3]Item  [4]Flee  [5]Wait  [Tab]Target"))
+
+		// Action bar
+		sb.WriteString(styleAction.Render("[1]Attack [2]Skill [3]Item [4]Flee [5]Wait [Tab]Target [/]Chat"))
 		sb.WriteString("\n")
+
+		// Timer
 		if !state.TurnDeadline.IsZero() {
 			remaining := time.Until(state.TurnDeadline)
 			if remaining < 0 {
 				remaining = 0
 			}
-			timerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("226")).Bold(true)
-			sb.WriteString(timerStyle.Render(fmt.Sprintf("  Timer: %.1fs", remaining.Seconds())))
+			sb.WriteString(styleTimer.Render(fmt.Sprintf("  Timer: %.1fs", remaining.Seconds())))
 			sb.WriteString("\n")
 		}
 
-		// Skill description per class
-		skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true)
+		// Skill description for first alive player only
 		for _, p := range state.Players {
 			if !p.IsDead() {
 				var skillDesc string
 				switch p.Class {
 				case entity.ClassWarrior:
-					skillDesc = "Skill: Taunt - enemies attack you for 2 turns"
+					skillDesc = "Skill: Taunt — enemies attack you for 2 turns"
 				case entity.ClassMage:
-					skillDesc = "Skill: Fireball - AoE 0.8x dmg to all enemies"
+					skillDesc = "Skill: Fireball — AoE 0.8x dmg to all enemies"
 				case entity.ClassHealer:
-					skillDesc = "Skill: Heal - restore 30 HP to an ally"
+					skillDesc = "Skill: Heal — restore 30 HP to an ally"
 				case entity.ClassRogue:
-					skillDesc = "Skill: Scout - reveal neighboring rooms"
+					skillDesc = "Skill: Scout — reveal neighboring rooms"
 				}
-				sb.WriteString(skillStyle.Render(skillDesc))
+				sb.WriteString(styleSystem.Render(skillDesc))
 				sb.WriteString("\n")
+				break
 			}
 		}
 	} else if state.Phase == game.PhaseExploring {
@@ -146,6 +148,9 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
 		sb.WriteString("[Up/Down] Select  [Enter] Move  [Q] Quit")
 	}
 
+	if state.Phase == game.PhaseCombat {
+		return sb.String()
+	}
 	return border.Render(sb.String())
 }
 
@@ -153,15 +158,38 @@ func renderCombatLog(log []string) string {
 	if len(log) == 0 {
 		return ""
 	}
-	logStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("228")).
-		PaddingLeft(1)
+	border := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(colorGray).
+		Padding(0, 1)
 
 	var sb strings.Builder
 	for _, msg := range log {
-		sb.WriteString("  > " + msg + "\n")
+		colored := colorizeLog(msg)
+		sb.WriteString("  > " + colored + "\n")
 	}
-	return logStyle.Render(sb.String())
+	return border.Render(sb.String())
+}
+
+func colorizeLog(msg string) string {
+	switch {
+	case strings.Contains(msg, "fled"):
+		return styleFlee.Render(msg)
+	case strings.Contains(msg, "co-op"):
+		return styleCoop.Render(msg)
+	case strings.Contains(msg, "healed") || strings.Contains(msg, "Heal") || strings.Contains(msg, "Blessing"):
+		return styleHeal.Render(msg)
+	case strings.Contains(msg, "dmg") || strings.Contains(msg, "hit") || strings.Contains(msg, "attacks") || strings.Contains(msg, "Trap"):
+		return styleDamage.Render(msg)
+	case strings.Contains(msg, "Taunt") || strings.Contains(msg, "scouted"):
+		return styleStatus.Render(msg)
+	case strings.Contains(msg, "gold") || strings.Contains(msg, "Gold") || strings.Contains(msg, "found"):
+		return styleGold.Render(msg)
+	case strings.Contains(msg, "defeated") || strings.Contains(msg, "cleared") || strings.Contains(msg, "Descending"):
+		return styleSystem.Render(msg)
+	default:
+		return msg
+	}
 }
 
 func renderHPBar(current, max, width int) string {
@@ -172,31 +200,76 @@ func renderHPBar(current, max, width int) string {
 	if filled < 0 {
 		filled = 0
 	}
+	if filled > width {
+		filled = width
+	}
 	empty := width - filled
 
-	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46"))
-	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	pct := float64(current) / float64(max)
+	var barStyle lipgloss.Style
+	switch {
+	case pct > 0.5:
+		barStyle = lipgloss.NewStyle().Foreground(colorGreen)
+	case pct > 0.25:
+		barStyle = lipgloss.NewStyle().Foreground(colorYellow)
+	default:
+		barStyle = lipgloss.NewStyle().Foreground(colorRed)
+	}
+	emptyStyle := lipgloss.NewStyle().Foreground(colorGray)
 
-	bar := greenStyle.Render(strings.Repeat("█", filled)) +
-		redStyle.Render(strings.Repeat("░", empty))
-	return bar
+	return barStyle.Render(strings.Repeat("█", filled)) +
+		emptyStyle.Render(strings.Repeat("░", empty))
 }
 
-func roomTypeSymbol(rt dungeon.RoomType) string {
-	switch rt {
-	case dungeon.RoomCombat:
-		return "D"
-	case dungeon.RoomTreasure:
-		return "$"
-	case dungeon.RoomShop:
-		return "S"
-	case dungeon.RoomEvent:
-		return "?"
-	case dungeon.RoomEmpty:
-		return "."
-	case dungeon.RoomBoss:
-		return "B"
-	default:
-		return " "
+func renderPartyPanel(players []*entity.Player) string {
+	var sb strings.Builder
+	sb.WriteString(styleHeader.Render("  PARTY") + "\n\n")
+
+	for _, p := range players {
+		nameStr := stylePlayer.Render(fmt.Sprintf("  ♦ %s", p.Name))
+		classStr := styleSystem.Render(fmt.Sprintf(" (%s)", p.Class))
+		status := ""
+		if p.IsDead() {
+			status = styleDamage.Render(" [DEAD]")
+		}
+		sb.WriteString(nameStr + classStr + status + "\n")
+
+		hpBar := renderHPBar(p.HP, p.MaxHP, 16)
+		sb.WriteString(fmt.Sprintf("    %s %d/%d\n", hpBar, p.HP, p.MaxHP))
+
+		sb.WriteString(fmt.Sprintf("    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF()))
+		sb.WriteString(styleGold.Render(fmt.Sprintf("G:%d", p.Gold)))
+		sb.WriteString("\n\n")
 	}
+	return sb.String()
+}
+
+func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
+	var sb strings.Builder
+	sb.WriteString(styleHeader.Render("  ENEMIES") + "\n\n")
+
+	for i, m := range monsters {
+		if m.IsDead() {
+			continue
+		}
+		// ASCII art
+		art := MonsterArt(m.Type)
+		for _, line := range art {
+			sb.WriteString(styleEnemy.Render("  "+line) + "\n")
+		}
+
+		// Name + HP
+		marker := "  "
+		if i == targetCursor {
+			marker = "> "
+		}
+		hpBar := renderHPBar(m.HP, m.MaxHP, 12)
+		taunt := ""
+		if m.TauntTarget {
+			taunt = styleStatus.Render(" [TAUNTED]")
+		}
+		sb.WriteString(fmt.Sprintf("  %s[%d] %s %s %d/%d%s\n\n",
+			marker, i, styleEnemy.Render(m.Name), hpBar, m.HP, m.MaxHP, taunt))
+	}
+	return sb.String()
 }
