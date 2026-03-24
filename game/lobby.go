@@ -35,16 +35,50 @@ type OnlinePlayer struct {
 }
 
 type Lobby struct {
-	mu     sync.RWMutex
-	rooms  map[string]*LobbyRoom
-	online map[string]*OnlinePlayer // fingerprint -> player
+	mu             sync.RWMutex
+	rooms          map[string]*LobbyRoom
+	online         map[string]*OnlinePlayer // fingerprint -> player
+	activeSessions map[string]string        // fingerprint -> room code (for reconnect)
 }
 
 func NewLobby() *Lobby {
 	return &Lobby{
-		rooms:  make(map[string]*LobbyRoom),
-		online: make(map[string]*OnlinePlayer),
+		rooms:          make(map[string]*LobbyRoom),
+		online:         make(map[string]*OnlinePlayer),
+		activeSessions: make(map[string]string),
 	}
+}
+
+func (l *Lobby) RegisterSession(fingerprint, roomCode string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.activeSessions[fingerprint] = roomCode
+}
+
+func (l *Lobby) UnregisterSession(fingerprint string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.activeSessions, fingerprint)
+}
+
+func (l *Lobby) GetActiveSession(fingerprint string) (string, *GameSession) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	code, ok := l.activeSessions[fingerprint]
+	if !ok {
+		return "", nil
+	}
+	room, ok := l.rooms[code]
+	if !ok || room.Session == nil {
+		return "", nil
+	}
+	// Check if this player is still in the session
+	for _, p := range room.Session.GetState().Players {
+		if p.Fingerprint == fingerprint {
+			return code, room.Session
+		}
+	}
+	return "", nil
 }
 
 func (l *Lobby) PlayerOnline(fingerprint, name string) {
