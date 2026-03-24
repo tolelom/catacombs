@@ -209,7 +209,7 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.lobbyState.joining {
 			if isEnter(key) && len(m.lobbyState.codeInput) == 4 {
 				if m.lobby != nil {
-					if err := m.lobby.JoinRoom(m.lobbyState.codeInput, m.playerName); err == nil {
+					if err := m.lobby.JoinRoom(m.lobbyState.codeInput, m.playerName, m.fingerprint); err == nil {
 						m.roomCode = m.lobbyState.codeInput
 						m.screen = screenClassSelect
 					}
@@ -231,7 +231,7 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if isKey(key, "c") {
 			if m.lobby != nil {
 				code := m.lobby.CreateRoom(m.playerName + "'s Room")
-				m.lobby.JoinRoom(code, m.playerName)
+				m.lobby.JoinRoom(code, m.playerName, m.fingerprint)
 				m.roomCode = code
 				m.screen = screenClassSelect
 			}
@@ -249,7 +249,7 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if isEnter(key) {
 			if m.lobby != nil && len(m.lobbyState.rooms) > 0 {
 				r := m.lobbyState.rooms[m.lobbyState.cursor]
-				if err := m.lobby.JoinRoom(r.Code, m.playerName); err == nil {
+				if err := m.lobby.JoinRoom(r.Code, m.playerName, m.fingerprint); err == nil {
 					m.roomCode = r.Code
 					m.screen = screenClassSelect
 				}
@@ -274,6 +274,7 @@ func (m Model) updateClassSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if isEnter(key) {
 			if m.lobby != nil {
 				selectedClass := classOptions[m.classState.cursor].class
+				m.lobby.SetPlayerClass(m.roomCode, m.fingerprint, selectedClass.String())
 				room := m.lobby.GetRoom(m.roomCode)
 				if room != nil {
 					if room.Session == nil {
@@ -523,10 +524,14 @@ func (m Model) withRefreshedLobby() Model {
 		if r.Status == game.RoomPlaying {
 			status = "Playing"
 		}
+		players := make([]playerInfo, len(r.Players))
+		for j, p := range r.Players {
+			players[j] = playerInfo{Name: p.Name, Class: p.Class, Ready: p.Ready}
+		}
 		m.lobbyState.rooms[i] = roomInfo{
 			Code:    r.Code,
 			Name:    r.Name,
-			Players: len(r.Players),
+			Players: players,
 			Status:  status,
 		}
 	}

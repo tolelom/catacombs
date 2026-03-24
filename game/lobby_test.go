@@ -17,7 +17,7 @@ func TestCreateRoom(t *testing.T) {
 func TestJoinRoom(t *testing.T) {
 	lobby := NewLobby()
 	code := lobby.CreateRoom("Test Room")
-	err := lobby.JoinRoom(code, "player1")
+	err := lobby.JoinRoom(code, "player1", "fp-player1")
 	if err != nil {
 		t.Errorf("Join failed: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestJoinRoom(t *testing.T) {
 func TestRoomStatusTransition(t *testing.T) {
 	l := NewLobby()
 	code := l.CreateRoom("Test")
-	l.JoinRoom(code, "Alice")
+	l.JoinRoom(code, "Alice", "fp-alice")
 	r := l.GetRoom(code)
 	if r.Status != RoomWaiting {
 		t.Errorf("new room should be Waiting, got %d", r.Status)
@@ -40,7 +40,7 @@ func TestRoomStatusTransition(t *testing.T) {
 	if r.Status != RoomPlaying {
 		t.Errorf("started room should be Playing, got %d", r.Status)
 	}
-	err := l.JoinRoom(code, "Bob")
+	err := l.JoinRoom(code, "Bob", "fp-bob")
 	if err == nil {
 		t.Error("should not be able to join a Playing room")
 	}
@@ -50,9 +50,9 @@ func TestJoinRoomFull(t *testing.T) {
 	lobby := NewLobby()
 	code := lobby.CreateRoom("Test Room")
 	for i := 0; i < 4; i++ {
-		lobby.JoinRoom(code, "player")
+		lobby.JoinRoom(code, "player", "fp-player")
 	}
-	err := lobby.JoinRoom(code, "player5")
+	err := lobby.JoinRoom(code, "player5", "fp-player5")
 	if err == nil {
 		t.Error("Should reject 5th player")
 	}

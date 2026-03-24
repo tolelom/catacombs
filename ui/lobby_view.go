@@ -20,8 +20,14 @@ type lobbyState struct {
 type roomInfo struct {
 	Code    string
 	Name    string
-	Players int
+	Players []playerInfo
 	Status  string
+}
+
+type playerInfo struct {
+	Name  string
+	Class string
+	Ready bool
 }
 
 func renderLobby(state lobbyState, width, height int) string {
@@ -43,7 +49,21 @@ func renderLobby(state lobbyState, width, height int) string {
 			marker = "> "
 		}
 		roomList += fmt.Sprintf("%s%s [%s] (%d/4) %s\n",
-			marker, r.Name, r.Code, r.Players, r.Status)
+			marker, r.Name, r.Code, len(r.Players), r.Status)
+		// Show players in selected room
+		if i == state.cursor {
+			for _, p := range r.Players {
+				cls := p.Class
+				if cls == "" {
+					cls = "..."
+				}
+				readyMark := "  "
+				if p.Ready {
+					readyMark = "✓ "
+				}
+				roomList += fmt.Sprintf("    %s%s (%s)\n", readyMark, p.Name, cls)
+			}
+		}
 	}
 	if roomList == "" {
 		roomList = "  No rooms available. Create one!"
