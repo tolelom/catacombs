@@ -7,9 +7,12 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-func renderShop(state game.GameState, width, height int) string {
+func renderShop(state game.GameState, width, height int, shopMsg string) string {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("226")).
+		Bold(true)
+	msgStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("196")).
 		Bold(true)
 
 	header := headerStyle.Render("── Shop ──")
@@ -20,11 +23,10 @@ func renderShop(state game.GameState, width, height int) string {
 
 	menu := "[1-3] Buy  [Q] Leave Shop"
 
-	return lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		"",
-		items,
-		"",
-		menu,
-	)
+	parts := []string{header, "", items, "", menu}
+	if shopMsg != "" {
+		parts = append(parts, "", msgStyle.Render(shopMsg))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }

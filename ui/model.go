@@ -50,6 +50,7 @@ type Model struct {
 	chatting     bool
 	chatInput    string
 	rankingSaved bool
+	shopMsg      string
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
@@ -121,7 +122,7 @@ func (m Model) View() string {
 	case screenGame:
 		return renderGame(m.gameState, m.width, m.height, m.targetCursor, m.moveCursor, m.chatting, m.chatInput)
 	case screenShop:
-		return renderShop(m.gameState, m.width, m.height)
+		return renderShop(m.gameState, m.width, m.height, m.shopMsg)
 	case screenResult:
 		var rankings []store.RunRecord
 		if m.store != nil {
@@ -364,6 +365,15 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch m.gameState.Phase {
 		case game.PhaseExploring:
+			// Dead players can only observe, not move
+			for _, p := range m.gameState.Players {
+				if p.Fingerprint == m.fingerprint && p.IsDead() {
+					if isQuit(key) {
+						return m, tea.Quit
+					}
+					return m, nil
+				}
+			}
 			neighbors := m.getNeighbors()
 			if isUp(key) {
 				if m.moveCursor > 0 {
@@ -441,7 +451,11 @@ func (m Model) updateShop(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "1", "2", "3":
 			if m.session != nil {
 				idx := int(key.String()[0] - '1')
-				m.session.BuyItem(m.fingerprint, idx)
+				if m.session.BuyItem(m.fingerprint, idx) {
+					m.shopMsg = "Purchased!"
+				} else {
+					m.shopMsg = "Not enough gold!"
+				}
 				m.gameState = m.session.GetState()
 			}
 		case "q":

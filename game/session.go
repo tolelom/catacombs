@@ -154,9 +154,6 @@ func (s *GameSession) combatLoop() {
 		}
 		if changed {
 			s.state.Players = remaining
-			if len(s.state.Players) <= 1 {
-				s.state.SoloMode = true
-			}
 			if len(s.state.Players) == 0 {
 				s.state.GameOver = true
 				s.mu.Unlock()
