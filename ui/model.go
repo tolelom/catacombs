@@ -22,6 +22,8 @@ const (
 	screenResult
 	screenHelp
 	screenStats
+	screenAchievements
+	screenLeaderboard
 )
 
 // StateUpdateMsg is sent by GameSession to update the view
@@ -110,6 +112,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateHelp(msg)
 	case screenStats:
 		return m.updateStats(msg)
+	case screenAchievements:
+		return m.updateAchievements(msg)
+	case screenLeaderboard:
+		return m.updateLeaderboard(msg)
 	}
 	return m, nil
 }
@@ -143,6 +149,19 @@ func (m Model) View() string {
 			stats, _ = m.store.GetStats(m.playerName)
 		}
 		return renderStats(m.playerName, stats, m.width, m.height)
+	case screenAchievements:
+		var achievements []store.Achievement
+		if m.store != nil {
+			achievements, _ = m.store.GetAchievements(m.playerName)
+		}
+		return renderAchievements(m.playerName, achievements, m.width, m.height)
+	case screenLeaderboard:
+		var byFloor, byGold []store.RunRecord
+		if m.store != nil {
+			byFloor, _ = m.store.TopRuns(10)
+			byGold, _ = m.store.TopRunsByGold(10)
+		}
+		return renderLeaderboard(byFloor, byGold, m.width, m.height)
 	}
 	return ""
 }
@@ -192,12 +211,19 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.fingerprint == "" {
 				m.fingerprint = fmt.Sprintf("anon-%d", time.Now().UnixNano())
 			}
+			if m.lobby != nil {
+				m.lobby.PlayerOnline(m.fingerprint, m.playerName)
+			}
 			m.screen = screenLobby
 			m = m.withRefreshedLobby()
 		} else if isKey(key, "h") {
 			m.screen = screenHelp
 		} else if isKey(key, "s") {
 			m.screen = screenStats
+		} else if isKey(key, "a") {
+			m.screen = screenAchievements
+		} else if isKey(key, "l") {
+			m.screen = screenLeaderboard
 		} else if isQuit(key) {
 			return m, tea.Quit
 		}
@@ -208,6 +234,24 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) updateStats(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isKey(key, "s") || isEnter(key) || isQuit(key) {
+			m.screen = screenTitle
+		}
+	}
+	return m, nil
+}
+
+func (m Model) updateAchievements(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "a") || isEnter(key) || isQuit(key) {
+			m.screen = screenTitle
+		}
+	}
+	return m, nil
+}
+
+func (m Model) updateLeaderboard(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "l") || isEnter(key) || isQuit(key) {
 			m.screen = screenTitle
 		}
 	}
@@ -275,6 +319,9 @@ func (m Model) updateLobby(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		} else if isKey(key, "q") {
+			if m.lobby != nil {
+				m.lobby.PlayerOffline(m.fingerprint)
+			}
 			m.screen = screenTitle
 		}
 	}
@@ -347,7 +394,45 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 			for _, p := range m.gameState.Players {
 				score += p.Gold
 			}
-			m.store.SaveRun(m.playerName, m.gameState.FloorNum, score)
+			// Find the current player's class
+			playerClass := ""
+			for _, p := range m.gameState.Players {
+				if p.Fingerprint == m.fingerprint {
+					playerClass = p.Class.String()
+					break
+				}
+			}
+			m.store.SaveRun(m.playerName, m.gameState.FloorNum, score, playerClass)
+			// Check achievements
+			if m.gameState.FloorNum >= 5 {
+				m.store.UnlockAchievement(m.playerName, "first_clear")
+			}
+			if m.gameState.FloorNum >= 10 {
+				m.store.UnlockAchievement(m.playerName, "floor10")
+			}
+			if m.gameState.Victory {
+				m.store.UnlockAchievement(m.playerName, "floor20")
+			}
+			if m.gameState.SoloMode && m.gameState.FloorNum >= 5 {
+				m.store.UnlockAchievement(m.playerName, "solo_clear")
+			}
+			if m.gameState.BossKilled {
+				m.store.UnlockAchievement(m.playerName, "boss_slayer")
+			}
+			if m.gameState.FleeSucceeded {
+				m.store.UnlockAchievement(m.playerName, "flee_master")
+			}
+			for _, p := range m.gameState.Players {
+				if p.Gold >= 200 {
+					m.store.UnlockAchievement(p.Name, "gold_hoarder")
+				}
+				if len(p.Relics) >= 3 {
+					m.store.UnlockAchievement(p.Name, "relic_collector")
+				}
+			}
+			if len(m.gameState.Players) >= 4 {
+				m.store.UnlockAchievement(m.playerName, "full_party")
+			}
 			m.rankingSaved = true
 		}
 		m.screen = screenResult
@@ -555,6 +640,7 @@ func (m Model) withRefreshedLobby() Model {
 			Status:  status,
 		}
 	}
+	m.lobbyState.online = len(m.lobby.ListOnline())
 	m.lobbyState.cursor = 0
 	return m
 }

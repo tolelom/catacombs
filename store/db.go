@@ -21,6 +21,7 @@ type RunRecord struct {
 	Player string `json:"player"`
 	Floor  int    `json:"floor"`
 	Score  int    `json:"score"`
+	Class  string `json:"class,omitempty"`
 }
 
 func Open(path string) (*DB, error) {
@@ -33,6 +34,9 @@ func Open(path string) (*DB, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketRankings); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketAchievements); err != nil {
 			return err
 		}
 		return nil
@@ -63,17 +67,41 @@ func (d *DB) GetProfile(fingerprint string) (string, error) {
 	return name, err
 }
 
-func (d *DB) SaveRun(player string, floor, score int) error {
+func (d *DB) SaveRun(player string, floor, score int, class string) error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketRankings)
 		id, _ := b.NextSequence()
-		record := RunRecord{Player: player, Floor: floor, Score: score}
+		record := RunRecord{Player: player, Floor: floor, Score: score, Class: class}
 		data, err := json.Marshal(record)
 		if err != nil {
 			return err
 		}
 		return b.Put([]byte(fmt.Sprintf("%010d", id)), data)
 	})
+}
+
+func (d *DB) TopRunsByGold(limit int) ([]RunRecord, error) {
+	var runs []RunRecord
+	err := d.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketRankings)
+		return b.ForEach(func(k, v []byte) error {
+			var r RunRecord
+			if json.Unmarshal(v, &r) == nil {
+				runs = append(runs, r)
+			}
+			return nil
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(runs, func(i, j int) bool {
+		return runs[i].Score > runs[j].Score
+	})
+	if len(runs) > limit {
+		runs = runs[:limit]
+	}
+	return runs, nil
 }
 
 type PlayerStats struct {

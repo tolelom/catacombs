@@ -50,6 +50,8 @@ type GameState struct {
 	SubmittedActions map[string]string // fingerprint -> action description
 	PendingLogs      []string          // logs waiting to be revealed one by one
 	TurnResolving    bool              // true while logs are being replayed
+	BossKilled       bool
+	FleeSucceeded    bool
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -277,6 +279,8 @@ func (s *GameSession) GetState() GameState {
 		SubmittedActions: submittedCopy,
 		PendingLogs:      pendingCopy,
 		TurnResolving:    s.state.TurnResolving,
+		BossKilled:       s.state.BossKilled,
+		FleeSucceeded:    s.state.FleeSucceeded,
 	}
 }
 

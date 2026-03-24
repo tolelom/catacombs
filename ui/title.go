@@ -44,7 +44,7 @@ func renderTitle(width, height int) string {
 	menu := lipgloss.NewStyle().
 		Foreground(colorWhite).
 		Bold(true).
-		Render("[Enter] Start    [H] Help    [S] Stats    [Q] Quit")
+		Render("[Enter] Start  [H] Help  [S] Stats  [A] Achievements  [L] Leaderboard  [Q] Quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		logo,

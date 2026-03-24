@@ -182,6 +182,7 @@ func (s *GameSession) resolvePlayerActions() {
 		case ActionFlee:
 			if combat.AttemptFlee() {
 				s.addLog(fmt.Sprintf("%s fled from battle!", p.Name))
+				s.state.FleeSucceeded = true
 				if s.state.SoloMode {
 					s.state.Phase = PhaseExploring
 					return
@@ -255,6 +256,7 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 			s.addLog(fmt.Sprintf("%s defeated! +%d gold", m.Name, goldReward))
 			if m.IsBoss {
+				s.state.BossKilled = true
 				s.grantBossRelic()
 			}
 		}
