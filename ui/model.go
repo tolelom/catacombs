@@ -20,6 +20,7 @@ const (
 	screenGame
 	screenShop
 	screenResult
+	screenHelp
 )
 
 // StateUpdateMsg is sent by GameSession to update the view
@@ -104,6 +105,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateShop(msg)
 	case screenResult:
 		return m.updateResult(msg)
+	case screenHelp:
+		return m.updateHelp(msg)
 	}
 	return m, nil
 }
@@ -128,7 +131,9 @@ func (m Model) View() string {
 		if m.store != nil {
 			rankings, _ = m.store.TopRuns(10)
 		}
-		return renderResult(m.gameState.Victory, m.gameState.FloorNum, rankings)
+		return renderResult(m.gameState, rankings)
+	case screenHelp:
+		return renderHelp(m.width, m.height)
 	}
 	return ""
 }
@@ -180,8 +185,19 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.screen = screenLobby
 			m = m.withRefreshedLobby()
+		} else if isKey(key, "h") {
+			m.screen = screenHelp
 		} else if isQuit(key) {
 			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m Model) updateHelp(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "h") || isEnter(key) || isQuit(key) {
+			m.screen = screenTitle
 		}
 	}
 	return m, nil

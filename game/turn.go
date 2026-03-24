@@ -287,6 +287,7 @@ func (s *GameSession) advanceFloor() {
 	for _, p := range s.state.Players {
 		if p.IsDead() {
 			p.Revive(0.30)
+			s.addLog(fmt.Sprintf("✦ %s revived at %d HP!", p.Name, p.HP))
 		}
 		p.Fled = false
 	}
@@ -323,6 +324,9 @@ func (s *GameSession) resolveMonsterActions() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 0.5)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s AoE hits %s for %d dmg", m.Name, p.Name, dmg))
+					if p.IsDead() {
+						s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
+					}
 				}
 			}
 		} else {
@@ -332,6 +336,9 @@ func (s *GameSession) resolveMonsterActions() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 1.0)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s attacks %s for %d dmg", m.Name, p.Name, dmg))
+					if p.IsDead() {
+						s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
+					}
 				}
 			}
 		}
