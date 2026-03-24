@@ -20,7 +20,7 @@ func (s *GameSession) RunTurn() {
 	s.actions = make(map[string]PlayerAction)
 	aliveCount := 0
 	for _, p := range s.state.Players {
-		if !p.IsDead() {
+		if !p.IsOut() {
 			aliveCount++
 		}
 	}
@@ -52,7 +52,7 @@ resolve:
 
 	// Default action for players who didn't submit: Wait
 	for _, p := range s.state.Players {
-		if !p.IsDead() {
+		if !p.IsOut() {
 			if _, ok := s.actions[p.Name]; !ok {
 				s.actions[p.Name] = PlayerAction{Type: ActionWait}
 			}
@@ -76,7 +76,7 @@ func (s *GameSession) resolvePlayerActions() {
 	}
 
 	for _, p := range s.state.Players {
-		if p.IsDead() {
+		if p.IsOut() {
 			continue
 		}
 		action, ok := s.actions[p.Name]
@@ -149,12 +149,31 @@ func (s *GameSession) resolvePlayerActions() {
 					s.state.Phase = PhaseExploring
 					return
 				}
+				p.Fled = true
 			} else {
 				s.addLog(fmt.Sprintf("%s failed to flee!", p.Name))
 			}
 		case ActionWait:
 			s.addLog(fmt.Sprintf("%s is defending", p.Name))
 		}
+	}
+
+	// Check if all alive players have fled
+	allFled := true
+	for _, p := range s.state.Players {
+		if !p.IsDead() && !p.Fled {
+			allFled = false
+			break
+		}
+	}
+	if allFled && !s.state.SoloMode {
+		s.state.Phase = PhaseExploring
+		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+		s.addLog("All players fled!")
+		for _, p := range s.state.Players {
+			p.Fled = false
+		}
+		return
 	}
 
 	if len(intents) > 0 && len(s.state.Monsters) > 0 {
@@ -186,7 +205,7 @@ func (s *GameSession) resolvePlayerActions() {
 				goldReward = 15
 			}
 			for _, p := range s.state.Players {
-				if !p.IsDead() {
+				if !p.IsOut() {
 					bonus := 0
 					for _, r := range p.Relics {
 						if r.Effect == entity.RelicGoldBoost {
@@ -220,6 +239,9 @@ func (s *GameSession) resolvePlayerActions() {
 	if len(s.state.Monsters) == 0 {
 		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
 		s.addLog("Room cleared!")
+		for _, p := range s.state.Players {
+			p.Fled = false
+		}
 		if s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Type == dungeon.RoomBoss {
 			s.advanceFloor()
 		} else {
@@ -245,6 +267,7 @@ func (s *GameSession) advanceFloor() {
 		if p.IsDead() {
 			p.Revive(0.30)
 		}
+		p.Fled = false
 	}
 }
 
@@ -256,7 +279,7 @@ func (s *GameSession) grantBossRelic() {
 		{Name: "Gold Charm", Effect: entity.RelicGoldBoost, Value: 5, Price: 150},
 	}
 	for _, p := range s.state.Players {
-		if !p.IsDead() {
+		if !p.IsOut() {
 			r := relics[rand.Intn(len(relics))]
 			p.Relics = append(p.Relics, r)
 			s.addLog(fmt.Sprintf("%s obtained relic: %s", p.Name, r.Name))
@@ -275,7 +298,7 @@ func (s *GameSession) resolveMonsterActions() {
 		targetIdx, isAoE := combat.MonsterAI(m, s.state.Players, s.state.CombatTurn)
 		if isAoE {
 			for _, p := range s.state.Players {
-				if !p.IsDead() {
+				if !p.IsOut() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 0.5)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s AoE hits %s for %d dmg", m.Name, p.Name, dmg))
@@ -284,7 +307,7 @@ func (s *GameSession) resolveMonsterActions() {
 		} else {
 			if targetIdx >= 0 && targetIdx < len(s.state.Players) {
 				p := s.state.Players[targetIdx]
-				if !p.IsDead() {
+				if !p.IsOut() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 1.0)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s attacks %s for %d dmg", m.Name, p.Name, dmg))
@@ -296,7 +319,7 @@ func (s *GameSession) resolveMonsterActions() {
 
 	allPlayersDead := true
 	for _, p := range s.state.Players {
-		if !p.IsDead() {
+		if !p.IsOut() {
 			allPlayersDead = false
 			break
 		}

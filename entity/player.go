@@ -34,6 +34,7 @@ type Player struct {
 	Inventory   []Item
 	Relics      []Relic
 	Dead        bool
+	Fled        bool
 }
 
 func NewPlayer(name string, class Class) *Player {
@@ -65,6 +66,10 @@ func (p *Player) Heal(amount int) {
 
 func (p *Player) IsDead() bool {
 	return p.Dead
+}
+
+func (p *Player) IsOut() bool {
+	return p.Dead || p.Fled
 }
 
 func (p *Player) Revive(hpPercent float64) {
