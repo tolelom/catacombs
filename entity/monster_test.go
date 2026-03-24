@@ -23,3 +23,16 @@ func TestBossStats(t *testing.T) {
 		t.Errorf("Boss5: got HP=%d ATK=%d DEF=%d, want 150/15/8", boss.HP, boss.ATK, boss.DEF)
 	}
 }
+
+func TestMonsterDEFScaling(t *testing.T) {
+	// Slime base DEF=1, minFloor=1. At floor 5, scale = 1.15^4 ≈ 1.749
+	m := NewMonster(MonsterSlime, 5)
+	if m.DEF <= 1 {
+		t.Errorf("Slime DEF at floor 5 should be scaled above base 1, got %d", m.DEF)
+	}
+	// Boss DEF should NOT scale
+	boss := NewMonster(MonsterBoss5, 5)
+	if boss.DEF != 8 {
+		t.Errorf("Boss5 DEF should be base 8, got %d", boss.DEF)
+	}
+}

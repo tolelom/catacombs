@@ -51,13 +51,14 @@ func NewMonster(mt MonsterType, floor int) *Monster {
 	}
 	hp := int(math.Round(float64(base.HP) * scale))
 	atk := int(math.Round(float64(base.ATK) * scale))
+	def := int(math.Round(float64(base.DEF) * scale))
 	return &Monster{
 		Name:   base.Name,
 		Type:   mt,
 		HP:     hp,
 		MaxHP:  hp,
 		ATK:    atk,
-		DEF:    base.DEF,
+		DEF:    def,
 		IsBoss: base.IsBoss,
 	}
 }
