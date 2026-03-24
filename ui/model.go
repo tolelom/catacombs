@@ -285,6 +285,9 @@ func (m Model) pollState() tea.Cmd {
 type tickMsg struct{}
 
 func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.session != nil && m.fingerprint != "" {
+		m.session.TouchActivity(m.fingerprint)
+	}
 	// Refresh state on every update
 	if m.session != nil {
 		m.gameState = m.session.GetState()

@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
@@ -11,6 +12,13 @@ import (
 func (s *GameSession) EnterRoom(roomIdx int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	now := time.Now()
+	for _, p := range s.state.Players {
+		if p.Fingerprint != "" {
+			s.lastActivity[p.Fingerprint] = now
+		}
+	}
 
 	s.state.Floor.CurrentRoom = roomIdx
 	dungeon.UpdateVisibility(s.state.Floor)

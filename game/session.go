@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -68,6 +69,7 @@ type GameSession struct {
 	actionCh     chan playerActionMsg
 	combatSignal chan struct{}
 	done         chan struct{}
+	lastActivity map[string]time.Time // fingerprint -> last activity time
 }
 
 type playerActionMsg struct {
@@ -84,6 +86,7 @@ func NewGameSession() *GameSession {
 		actionCh:     make(chan playerActionMsg, 4),
 		combatSignal: make(chan struct{}, 1),
 		done:         make(chan struct{}),
+		lastActivity: make(map[string]time.Time),
 	}
 }
 
@@ -105,6 +108,10 @@ func (s *GameSession) StartGame() {
 	}
 	s.started = true
 	s.state.SoloMode = len(s.state.Players) == 1
+	now := time.Now()
+	for _, p := range s.state.Players {
+		s.lastActivity[p.Fingerprint] = now
+	}
 	s.mu.Unlock()
 	s.StartFloor()
 	go s.combatLoop()
@@ -127,6 +134,36 @@ func (s *GameSession) combatLoop() {
 		if gameOver {
 			return
 		}
+
+		// Remove players inactive for >60 seconds
+		s.mu.Lock()
+		now := time.Now()
+		changed := false
+		remaining := make([]*entity.Player, 0, len(s.state.Players))
+		for _, p := range s.state.Players {
+			if p.Fingerprint != "" && !p.IsOut() {
+				if last, ok := s.lastActivity[p.Fingerprint]; ok {
+					if now.Sub(last) > 60*time.Second {
+						s.addLog(fmt.Sprintf("%s removed (disconnected)", p.Name))
+						changed = true
+						continue
+					}
+				}
+			}
+			remaining = append(remaining, p)
+		}
+		if changed {
+			s.state.Players = remaining
+			if len(s.state.Players) <= 1 {
+				s.state.SoloMode = true
+			}
+			if len(s.state.Players) == 0 {
+				s.state.GameOver = true
+				s.mu.Unlock()
+				return
+			}
+		}
+		s.mu.Unlock()
 
 		if phase == PhaseCombat {
 			s.RunTurn()
@@ -226,7 +263,16 @@ func (s *GameSession) GetState() GameState {
 }
 
 func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
+	s.mu.Lock()
+	s.lastActivity[playerID] = time.Now()
+	s.mu.Unlock()
 	s.actionCh <- playerActionMsg{PlayerID: playerID, Action: action}
+}
+
+func (s *GameSession) TouchActivity(fingerprint string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.lastActivity[fingerprint] = time.Now()
 }
 
 // BuyItem handles shop purchases
