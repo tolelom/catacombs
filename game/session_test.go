@@ -7,6 +7,37 @@ import (
 	"github.com/tolelom/catacombs/entity"
 )
 
+func TestGetStateNoRace(t *testing.T) {
+	s := NewGameSession()
+	p := entity.NewPlayer("Racer", entity.ClassWarrior)
+	s.AddPlayer(p)
+	s.StartGame()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 100; i++ {
+			st := s.GetState()
+			for _, p := range st.Players {
+				_ = p.HP
+				_ = p.Gold
+			}
+			for _, m := range st.Monsters {
+				_ = m.HP
+			}
+		}
+	}()
+
+	for i := 0; i < 10; i++ {
+		select {
+		case s.actionCh <- playerActionMsg{PlayerName: "Racer", Action: PlayerAction{Type: ActionWait}}:
+		default:
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	<-done
+}
+
 func TestSessionTurnTimeout(t *testing.T) {
 	s := NewGameSession()
 	p := entity.NewPlayer("test", entity.ClassWarrior)

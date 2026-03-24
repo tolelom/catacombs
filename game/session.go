@@ -155,7 +155,58 @@ func (s *GameSession) StartFloor() {
 func (s *GameSession) GetState() GameState {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.state
+
+	// Deep copy players
+	players := make([]*entity.Player, len(s.state.Players))
+	for i, p := range s.state.Players {
+		cp := *p
+		cp.Inventory = make([]entity.Item, len(p.Inventory))
+		copy(cp.Inventory, p.Inventory)
+		cp.Relics = make([]entity.Relic, len(p.Relics))
+		copy(cp.Relics, p.Relics)
+		players[i] = &cp
+	}
+
+	// Deep copy monsters
+	monsters := make([]*entity.Monster, len(s.state.Monsters))
+	for i, m := range s.state.Monsters {
+		cm := *m
+		monsters[i] = &cm
+	}
+
+	// Deep copy floor
+	var floorCopy *dungeon.Floor
+	if s.state.Floor != nil {
+		fc := *s.state.Floor
+		fc.Rooms = make([]*dungeon.Room, len(s.state.Floor.Rooms))
+		for i, r := range s.state.Floor.Rooms {
+			rc := *r
+			rc.Neighbors = make([]int, len(r.Neighbors))
+			copy(rc.Neighbors, r.Neighbors)
+			fc.Rooms[i] = &rc
+		}
+		floorCopy = &fc
+	}
+
+	// Copy combat log
+	logCopy := make([]string, len(s.state.CombatLog))
+	copy(logCopy, s.state.CombatLog)
+
+	return GameState{
+		Floor:        floorCopy,
+		Players:      players,
+		Monsters:     monsters,
+		Phase:        s.state.Phase,
+		FloorNum:     s.state.FloorNum,
+		TurnNum:      s.state.TurnNum,
+		CombatTurn:   s.state.CombatTurn,
+		SoloMode:     s.state.SoloMode,
+		GameOver:     s.state.GameOver,
+		Victory:      s.state.Victory,
+		ShopItems:    append([]entity.Item{}, s.state.ShopItems...),
+		CombatLog:    logCopy,
+		TurnDeadline: s.state.TurnDeadline,
+	}
 }
 
 func (s *GameSession) SubmitAction(playerName string, action PlayerAction) {
