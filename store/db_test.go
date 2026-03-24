@@ -38,9 +38,9 @@ func TestRanking(t *testing.T) {
 		os.Remove("test_rank.db")
 	}()
 
-	db.SaveRun("Alice", 20, 1500)
-	db.SaveRun("Bob", 15, 1000)
-	db.SaveRun("Charlie", 20, 2000)
+	db.SaveRun("Alice", 20, 1500, "Warrior")
+	db.SaveRun("Bob", 15, 1000, "Mage")
+	db.SaveRun("Charlie", 20, 2000, "Rogue")
 
 	rankings, err := db.TopRuns(10)
 	if err != nil {
@@ -63,10 +63,10 @@ func TestGetStats(t *testing.T) {
 	defer db.Close()
 
 	// Save some runs
-	db.SaveRun("Alice", 5, 100)
-	db.SaveRun("Alice", 10, 250)
-	db.SaveRun("Alice", 20, 500) // victory (floor >= 20)
-	db.SaveRun("Bob", 3, 50)
+	db.SaveRun("Alice", 5, 100, "Warrior")
+	db.SaveRun("Alice", 10, 250, "Warrior")
+	db.SaveRun("Alice", 20, 500, "Warrior") // victory (floor >= 20)
+	db.SaveRun("Bob", 3, 50, "")
 
 	stats, err := db.GetStats("Alice")
 	if err != nil {
