@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "2222:2222"
+      - "8080:8080"
     volumes:
       - catacombs-data:/app/data
     restart: unless-stopped

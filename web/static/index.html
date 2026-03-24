@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catacombs</title>
+  <link rel="stylesheet" href="https://unpkg.com/@xterm/xterm@5.5.0/css/xterm.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #1a1a2e; }
+    #terminal { height: 100%; width: 100%; }
+    #overlay {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(26, 26, 46, 0.9);
+      justify-content: center; align-items: center;
+      z-index: 10;
+    }
+    #overlay.visible { display: flex; }
+    #overlay-text {
+      color: #e0e0e0; font-family: monospace; font-size: 18px;
+      text-align: center; line-height: 2;
+    }
+    #overlay-text span { color: #51d0ff; }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <div id="overlay">
+    <div id="overlay-text">
+      Connection lost.<br>
+      <span>Press any key to reconnect.</span>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+  <script src="https://unpkg.com/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+  <script>
+    const termEl = document.getElementById('terminal');
+    const overlay = document.getElementById('overlay');
+
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 16,
+      fontFamily: "'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace",
+      theme: {
+        background: '#1a1a2e',
+        foreground: '#e0e0e0',
+        cursor: '#51d0ff',
+        selectionBackground: '#44475a',
+      },
+      allowProposedApi: true,
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(termEl);
+    fitAddon.fit();
+
+    let ws = null;
+    let connected = false;
+
+    function connect() {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${proto}//${location.host}/ws`);
+
+      ws.onopen = () => {
+        connected = true;
+        overlay.classList.remove('visible');
+        term.clear();
+        term.focus();
+        sendResize();
+      };
+
+      ws.onmessage = (e) => {
+        term.write(e.data);
+      };
+
+      ws.onclose = () => {
+        connected = false;
+        overlay.classList.add('visible');
+      };
+
+      ws.onerror = () => {
+        connected = false;
+        overlay.classList.add('visible');
+      };
+    }
+
+    function sendResize() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const msg = JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows });
+        ws.send(new Blob([msg]));
+      }
+    }
+
+    term.onData((data) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      fitAddon.fit();
+      sendResize();
+    });
+
+    // Reconnect on any key when disconnected
+    document.addEventListener('keydown', (e) => {
+      if (!connected) {
+        e.preventDefault();
+        connect();
+      }
+    });
+
+    // Initial connection
+    connect();
+  </script>
+</body>
+</html>
