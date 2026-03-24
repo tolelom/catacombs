@@ -285,6 +285,14 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Refresh state on every update
 	if m.session != nil {
 		m.gameState = m.session.GetState()
+		// Clamp target cursor to valid range after monsters die
+		if len(m.gameState.Monsters) > 0 {
+			if m.targetCursor >= len(m.gameState.Monsters) {
+				m.targetCursor = len(m.gameState.Monsters) - 1
+			}
+		} else {
+			m.targetCursor = 0
+		}
 	}
 
 	if m.gameState.GameOver {
