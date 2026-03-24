@@ -28,13 +28,60 @@ type LobbyRoom struct {
 	Session *GameSession
 }
 
+type OnlinePlayer struct {
+	Name        string
+	Fingerprint string
+	InRoom      string // room code, empty if in lobby
+}
+
 type Lobby struct {
-	mu    sync.RWMutex
-	rooms map[string]*LobbyRoom
+	mu     sync.RWMutex
+	rooms  map[string]*LobbyRoom
+	online map[string]*OnlinePlayer // fingerprint -> player
 }
 
 func NewLobby() *Lobby {
-	return &Lobby{rooms: make(map[string]*LobbyRoom)}
+	return &Lobby{
+		rooms:  make(map[string]*LobbyRoom),
+		online: make(map[string]*OnlinePlayer),
+	}
+}
+
+func (l *Lobby) PlayerOnline(fingerprint, name string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.online[fingerprint] = &OnlinePlayer{Name: name, Fingerprint: fingerprint}
+}
+
+func (l *Lobby) PlayerOffline(fingerprint string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.online, fingerprint)
+}
+
+func (l *Lobby) ListOnline() []*OnlinePlayer {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	result := make([]*OnlinePlayer, 0, len(l.online))
+	for _, p := range l.online {
+		result = append(result, p)
+	}
+	return result
+}
+
+func (l *Lobby) InvitePlayer(roomCode, fingerprint string) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	p, ok := l.online[fingerprint]
+	if !ok {
+		return fmt.Errorf("player not online")
+	}
+	if p.InRoom != "" {
+		return fmt.Errorf("player already in a room")
+	}
+	// Store the invite as a pending field
+	p.InRoom = "invited:" + roomCode
+	return nil
 }
 
 func (l *Lobby) CreateRoom(name string) string {

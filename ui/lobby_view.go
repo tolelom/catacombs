@@ -15,6 +15,7 @@ type lobbyState struct {
 	roomName  string
 	joining   bool
 	codeInput string
+	online    int
 }
 
 type roomInfo struct {
@@ -39,7 +40,7 @@ func renderLobby(state lobbyState, width, height int) string {
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1)
 
-	header := headerStyle.Render("── Lobby ──")
+	header := headerStyle.Render(fmt.Sprintf("── Lobby ── %d online ──", state.online))
 	menu := "[C] Create Room  [J] Join by Code  [Up/Down] Select  [Enter] Join  [Q] Back"
 
 	roomList := ""
