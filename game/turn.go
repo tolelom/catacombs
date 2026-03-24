@@ -32,6 +32,8 @@ func (s *GameSession) RunTurn() {
 	s.state.TurnDeadline = time.Now().Add(TurnTimeout)
 	s.mu.Unlock()
 	collected := 0
+
+collecting:
 	for collected < aliveCount {
 		select {
 		case msg := <-s.actionCh:
@@ -40,7 +42,7 @@ func (s *GameSession) RunTurn() {
 			s.mu.Unlock()
 			collected++
 		case <-timer.C:
-			goto resolve
+			break collecting
 		case <-s.done:
 			timer.Stop()
 			return
@@ -48,7 +50,6 @@ func (s *GameSession) RunTurn() {
 	}
 	timer.Stop()
 
-resolve:
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.state.TurnDeadline = time.Time{}
