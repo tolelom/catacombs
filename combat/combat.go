@@ -91,6 +91,9 @@ func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (tar
 				return i, false
 			}
 		}
+		// No living warrior found — clear taunt
+		m.TauntTarget = false
+		m.TauntTurns = 0
 	}
 	if rand.Float64() < 0.3 {
 		minHP := int(^uint(0) >> 1)

@@ -46,6 +46,25 @@ func TestAoENoCoopBonus(t *testing.T) {
 	}
 }
 
+func TestMonsterAITauntDeadWarrior(t *testing.T) {
+	warrior := entity.NewPlayer("Tank", entity.ClassWarrior)
+	warrior.TakeDamage(warrior.HP) // kill warrior
+	mage := entity.NewPlayer("Mage", entity.ClassMage)
+
+	m := &entity.Monster{Name: "Orc", HP: 50, ATK: 10, DEF: 5, TauntTarget: true, TauntTurns: 2}
+	idx, isAoE := MonsterAI(m, []*entity.Player{warrior, mage}, 1)
+
+	if isAoE {
+		t.Error("should not AoE")
+	}
+	if idx != 1 {
+		t.Errorf("expected target mage at index 1, got %d", idx)
+	}
+	if m.TauntTarget {
+		t.Error("TauntTarget should be cleared when warrior is dead")
+	}
+}
+
 func TestFleeChance(t *testing.T) {
 	successes := 0
 	for i := 0; i < 100; i++ {
