@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"math/rand"
 
 	"github.com/tolelom/catacombs/dungeon"
@@ -107,16 +108,19 @@ func (s *GameSession) spawnBoss() {
 }
 
 func (s *GameSession) grantTreasure() {
-	// Random item for each player
 	for _, p := range s.state.Players {
 		if rand.Float64() < 0.5 {
-			p.Inventory = append(p.Inventory, entity.Item{
+			item := entity.Item{
 				Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 3 + rand.Intn(6),
-			})
+			}
+			p.Inventory = append(p.Inventory, item)
+			s.addLog(fmt.Sprintf("%s found %s (ATK+%d)", p.Name, item.Name, item.Bonus))
 		} else {
-			p.Inventory = append(p.Inventory, entity.Item{
+			item := entity.Item{
 				Name: "Iron Shield", Type: entity.ItemArmor, Bonus: 2 + rand.Intn(4),
-			})
+			}
+			p.Inventory = append(p.Inventory, item)
+			s.addLog(fmt.Sprintf("%s found %s (DEF+%d)", p.Name, item.Name, item.Bonus))
 		}
 	}
 }
@@ -130,19 +134,19 @@ func (s *GameSession) generateShopItems() {
 }
 
 func (s *GameSession) triggerEvent() {
-	// Random event: 50% trap, 50% blessing
 	for _, p := range s.state.Players {
 		if p.IsDead() {
 			continue
 		}
 		if rand.Float64() < 0.5 {
-			// Trap: 10~20 damage
 			dmg := 10 + rand.Intn(11)
 			p.TakeDamage(dmg)
+			s.addLog(fmt.Sprintf("Trap! %s takes %d damage", p.Name, dmg))
 		} else {
-			// Blessing: heal 15~25
 			heal := 15 + rand.Intn(11)
+			before := p.HP
 			p.Heal(heal)
+			s.addLog(fmt.Sprintf("Blessing! %s heals %d HP", p.Name, p.HP-before))
 		}
 	}
 }
