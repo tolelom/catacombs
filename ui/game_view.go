@@ -34,7 +34,17 @@ func renderMap(floor *dungeon.Floor) string {
 		return ""
 	}
 	headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
-	header := headerStyle.Render(fmt.Sprintf("── Catacombs B%d ──", floor.Number))
+
+	// Count explored rooms
+	explored := 0
+	for _, r := range floor.Rooms {
+		if r.Visited || r.Cleared {
+			explored++
+		}
+	}
+	total := len(floor.Rooms)
+
+	header := headerStyle.Render(fmt.Sprintf("── Catacombs B%d ── %d/%d Rooms ──", floor.Number, explored, total))
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
@@ -266,7 +276,7 @@ func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
 		hpBar := renderHPBar(m.HP, m.MaxHP, 12)
 		taunt := ""
 		if m.TauntTarget {
-			taunt = styleStatus.Render(" [TAUNTED]")
+			taunt = styleStatus.Render(fmt.Sprintf(" [TAUNTED %dt]", m.TauntTurns))
 		}
 		sb.WriteString(fmt.Sprintf("  %s[%d] %s %s %d/%d%s\n\n",
 			marker, i, styleEnemy.Render(m.Name), hpBar, m.HP, m.MaxHP, taunt))
