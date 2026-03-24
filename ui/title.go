@@ -1,37 +1,60 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
-var titleArt = `
- ██████╗ █████╗ ████████╗ █████╗  ██████╗ ██████╗ ███╗   ███╗██████╗ ███████╗
-██╔════╝██╔══██╗╚══██╔══╝██╔══██╗██╔════╝██╔═══██╗████╗ ████║██╔══██╗██╔════╝
-██║     ███████║   ██║   ███████║██║     ██║   ██║██╔████╔██║██████╔╝███████╗
-██║     ██╔══██║   ██║   ██╔══██║██║     ██║   ██║██║╚██╔╝██║██╔══██╗╚════██║
-╚██████╗██║  ██║   ██║   ██║  ██║╚██████╗╚██████╔╝██║ ╚═╝ ██║██████╔╝███████║
- ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝
-`
+var titleLines = []string{
+	` ██████╗ █████╗ ████████╗ █████╗  ██████╗ ██████╗ ███╗   ███╗██████╗ ███████╗`,
+	`██╔════╝██╔══██╗╚══██╔══╝██╔══██╗██╔════╝██╔═══██╗████╗ ████║██╔══██╗██╔════╝`,
+	`██║     ███████║   ██║   ███████║██║     ██║   ██║██╔████╔██║██████╔╝███████╗`,
+	`██║     ██╔══██║   ██║   ██╔══██║██║     ██║   ██║██║╚██╔╝██║██╔══██╗╚════██║`,
+	`╚██████╗██║  ██║   ██║   ██║  ██║╚██████╗╚██████╔╝██║ ╚═╝ ██║██████╔╝███████║`,
+	` ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝`,
+}
+
+var titleColors = []lipgloss.Color{
+	lipgloss.Color("196"),
+	lipgloss.Color("202"),
+	lipgloss.Color("208"),
+	lipgloss.Color("214"),
+	lipgloss.Color("220"),
+	lipgloss.Color("226"),
+}
 
 func renderTitle(width, height int) string {
-	titleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("205")).
+	var logoLines []string
+	for i, line := range titleLines {
+		color := titleColors[i%len(titleColors)]
+		style := lipgloss.NewStyle().Foreground(color).Bold(true)
+		logoLines = append(logoLines, style.Render(line))
+	}
+	logo := strings.Join(logoLines, "\n")
+
+	subtitle := lipgloss.NewStyle().
+		Foreground(colorGray).
+		Render("⚔  A Cooperative Dungeon Crawler  ⚔")
+
+	server := lipgloss.NewStyle().
+		Foreground(colorCyan).
+		Render("ssh catacombs.tolelom.xyz")
+
+	menu := lipgloss.NewStyle().
+		Foreground(colorWhite).
 		Bold(true).
-		Align(lipgloss.Center)
+		Render("[Enter] Start    [Q] Quit")
 
-	subtitleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("240")).
-		Align(lipgloss.Center)
-
-	menuStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("255")).
-		Align(lipgloss.Center)
-
-	return lipgloss.JoinVertical(lipgloss.Center,
-		titleStyle.Render(titleArt),
+	content := lipgloss.JoinVertical(lipgloss.Center,
+		logo,
 		"",
-		subtitleStyle.Render("A Co-op Roguelike Adventure"),
+		subtitle,
+		server,
 		"",
-		menuStyle.Render("[Enter] Start  [Q] Quit"),
+		"",
+		menu,
 	)
+
+	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, content)
 }
