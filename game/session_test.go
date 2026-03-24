@@ -10,6 +10,7 @@ import (
 func TestGetStateNoRace(t *testing.T) {
 	s := NewGameSession()
 	p := entity.NewPlayer("Racer", entity.ClassWarrior)
+	p.Fingerprint = "test-fp"
 	s.AddPlayer(p)
 	s.StartGame()
 
@@ -30,7 +31,7 @@ func TestGetStateNoRace(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		select {
-		case s.actionCh <- playerActionMsg{PlayerName: "Racer", Action: PlayerAction{Type: ActionWait}}:
+		case s.actionCh <- playerActionMsg{PlayerID: "test-fp", Action: PlayerAction{Type: ActionWait}}:
 		default:
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -41,6 +42,7 @@ func TestGetStateNoRace(t *testing.T) {
 func TestSessionTurnTimeout(t *testing.T) {
 	s := NewGameSession()
 	p := entity.NewPlayer("test", entity.ClassWarrior)
+	p.Fingerprint = "test-fp"
 	s.AddPlayer(p)
 	s.StartFloor()
 

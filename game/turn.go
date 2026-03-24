@@ -36,7 +36,7 @@ func (s *GameSession) RunTurn() {
 		select {
 		case msg := <-s.actionCh:
 			s.mu.Lock()
-			s.actions[msg.PlayerName] = msg.Action
+			s.actions[msg.PlayerID] = msg.Action
 			s.mu.Unlock()
 			collected++
 		case <-timer.C:
@@ -53,8 +53,8 @@ resolve:
 	// Default action for players who didn't submit: Wait
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
-			if _, ok := s.actions[p.Name]; !ok {
-				s.actions[p.Name] = PlayerAction{Type: ActionWait}
+			if _, ok := s.actions[p.Fingerprint]; !ok {
+				s.actions[p.Fingerprint] = PlayerAction{Type: ActionWait}
 			}
 		}
 	}
@@ -79,7 +79,7 @@ func (s *GameSession) resolvePlayerActions() {
 		if p.IsOut() {
 			continue
 		}
-		action, ok := s.actions[p.Name]
+		action, ok := s.actions[p.Fingerprint]
 		if !ok {
 			continue
 		}

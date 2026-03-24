@@ -172,6 +172,9 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.playerName = "Adventurer"
 			}
+			if m.fingerprint == "" {
+				m.fingerprint = fmt.Sprintf("anon-%d", time.Now().UnixNano())
+			}
 			m.screen = screenLobby
 			m = m.withRefreshedLobby()
 		} else if isQuit(key) {
@@ -349,7 +352,7 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case game.PhaseCombat:
 			isPlayerDead := false
 			for _, p := range m.gameState.Players {
-				if p.Name == m.playerName && p.IsDead() {
+				if p.Fingerprint == m.fingerprint && p.IsDead() {
 					isPlayerDead = true
 					break
 				}
@@ -366,15 +369,15 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.session != nil {
 				switch key.String() {
 				case "1":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionAttack, TargetIdx: m.targetCursor})
+					m.session.SubmitAction(m.fingerprint, game.PlayerAction{Type: game.ActionAttack, TargetIdx: m.targetCursor})
 				case "2":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionSkill, TargetIdx: m.targetCursor})
+					m.session.SubmitAction(m.fingerprint, game.PlayerAction{Type: game.ActionSkill, TargetIdx: m.targetCursor})
 				case "3":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionItem})
+					m.session.SubmitAction(m.fingerprint, game.PlayerAction{Type: game.ActionItem})
 				case "4":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionFlee})
+					m.session.SubmitAction(m.fingerprint, game.PlayerAction{Type: game.ActionFlee})
 				case "5":
-					m.session.SubmitAction(m.playerName, game.PlayerAction{Type: game.ActionWait})
+					m.session.SubmitAction(m.fingerprint, game.PlayerAction{Type: game.ActionWait})
 				}
 				// After submitting, poll for turn resolution
 				return m, m.pollState()
@@ -401,7 +404,7 @@ func (m Model) updateShop(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "1", "2", "3":
 			if m.session != nil {
 				idx := int(key.String()[0] - '1')
-				m.session.BuyItem(m.playerName, idx)
+				m.session.BuyItem(m.fingerprint, idx)
 				m.gameState = m.session.GetState()
 			}
 		case "q":

@@ -70,8 +70,8 @@ type GameSession struct {
 }
 
 type playerActionMsg struct {
-	PlayerName string
-	Action     PlayerAction
+	PlayerID string
+	Action   PlayerAction
 }
 
 func NewGameSession() *GameSession {
@@ -209,12 +209,12 @@ func (s *GameSession) GetState() GameState {
 	}
 }
 
-func (s *GameSession) SubmitAction(playerName string, action PlayerAction) {
-	s.actionCh <- playerActionMsg{PlayerName: playerName, Action: action}
+func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
+	s.actionCh <- playerActionMsg{PlayerID: playerID, Action: action}
 }
 
 // BuyItem handles shop purchases
-func (s *GameSession) BuyItem(playerName string, itemIdx int) bool {
+func (s *GameSession) BuyItem(playerID string, itemIdx int) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.state.Phase != PhaseShop || itemIdx < 0 || itemIdx >= len(s.state.ShopItems) {
@@ -222,7 +222,7 @@ func (s *GameSession) BuyItem(playerName string, itemIdx int) bool {
 	}
 	item := s.state.ShopItems[itemIdx]
 	for _, p := range s.state.Players {
-		if p.Name == playerName && p.Gold >= item.Price {
+		if p.Fingerprint == playerID && p.Gold >= item.Price {
 			p.Gold -= item.Price
 			p.Inventory = append(p.Inventory, item)
 			return true
