@@ -24,6 +24,7 @@ const (
 	screenStats
 	screenAchievements
 	screenLeaderboard
+	screenNickname
 )
 
 // StateUpdateMsg is sent by GameSession to update the view
@@ -53,8 +54,9 @@ type Model struct {
 	moveCursor   int // selected neighbor index during exploration
 	chatting     bool
 	chatInput    string
-	rankingSaved bool
-	shopMsg      string
+	rankingSaved  bool
+	shopMsg       string
+	nicknameInput string
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
@@ -116,6 +118,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateAchievements(msg)
 	case screenLeaderboard:
 		return m.updateLeaderboard(msg)
+	case screenNickname:
+		return m.updateNickname(msg)
 	}
 	return m, nil
 }
@@ -162,6 +166,8 @@ func (m Model) View() string {
 			byGold, _ = m.store.TopRunsByGold(10)
 		}
 		return renderLeaderboard(byFloor, byGold, m.width, m.height)
+	case screenNickname:
+		return renderNickname(m.nicknameInput, m.width, m.height)
 	}
 	return ""
 }
@@ -195,24 +201,36 @@ func isDown(key tea.KeyMsg) bool {
 func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
-			if m.store != nil {
-				name, err := m.store.GetProfile(m.fingerprint)
-				if err != nil {
-					m.playerName = "Adventurer"
-					if m.store != nil && m.fingerprint != "" {
-						m.store.SaveProfile(m.fingerprint, m.playerName)
-					}
-				} else {
-					m.playerName = name
-				}
-			} else {
-				m.playerName = "Adventurer"
-			}
 			if m.fingerprint == "" {
 				m.fingerprint = fmt.Sprintf("anon-%d", time.Now().UnixNano())
 			}
+			if m.store != nil {
+				name, err := m.store.GetProfile(m.fingerprint)
+				if err != nil {
+					// First time player — show nickname input
+					m.screen = screenNickname
+					m.nicknameInput = ""
+					return m, nil
+				}
+				m.playerName = name
+			} else {
+				m.playerName = "Adventurer"
+			}
 			if m.lobby != nil {
 				m.lobby.PlayerOnline(m.fingerprint, m.playerName)
+			}
+			// Check for active session to reconnect
+			if m.lobby != nil {
+				code, session := m.lobby.GetActiveSession(m.fingerprint)
+				if session != nil {
+					m.roomCode = code
+					m.session = session
+					m.gameState = m.session.GetState()
+					m.screen = screenGame
+					m.session.TouchActivity(m.fingerprint)
+					m.session.SendChat("System", m.playerName+" reconnected!")
+					return m, m.pollState()
+				}
 			}
 			m.screen = screenLobby
 			m = m.withRefreshedLobby()
@@ -226,6 +244,48 @@ func (m Model) updateTitle(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = screenLeaderboard
 		} else if isQuit(key) {
 			return m, tea.Quit
+		}
+	}
+	return m, nil
+}
+
+func (m Model) updateNickname(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isEnter(key) && len(m.nicknameInput) > 0 {
+			m.playerName = m.nicknameInput
+			if m.store != nil && m.fingerprint != "" {
+				m.store.SaveProfile(m.fingerprint, m.playerName)
+			}
+			m.nicknameInput = ""
+			if m.lobby != nil {
+				m.lobby.PlayerOnline(m.fingerprint, m.playerName)
+			}
+			// Check for active session to reconnect
+			if m.lobby != nil {
+				code, session := m.lobby.GetActiveSession(m.fingerprint)
+				if session != nil {
+					m.roomCode = code
+					m.session = session
+					m.gameState = m.session.GetState()
+					m.screen = screenGame
+					m.session.TouchActivity(m.fingerprint)
+					m.session.SendChat("System", m.playerName+" reconnected!")
+					return m, m.pollState()
+				}
+			}
+			m.screen = screenLobby
+			m = m.withRefreshedLobby()
+		} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
+			m.nicknameInput = ""
+			m.screen = screenTitle
+		} else if key.Type == tea.KeyBackspace && len(m.nicknameInput) > 0 {
+			m.nicknameInput = m.nicknameInput[:len(m.nicknameInput)-1]
+		} else if len(key.Runes) == 1 && len(m.nicknameInput) < 12 {
+			ch := string(key.Runes)
+			// Only allow alphanumeric and some special chars
+			if len(ch) == 1 && ch[0] >= 32 && ch[0] < 127 {
+				m.nicknameInput += ch
+			}
 		}
 	}
 	return m, nil
@@ -351,6 +411,9 @@ func (m Model) updateClassSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 					player := entity.NewPlayer(m.playerName, selectedClass)
 					player.Fingerprint = m.fingerprint
 					m.session.AddPlayer(player)
+					if m.lobby != nil {
+						m.lobby.RegisterSession(m.fingerprint, m.roomCode)
+					}
 					m.session.StartGame()
 					m.lobby.StartRoom(m.roomCode)
 					m.gameState = m.session.GetState()
@@ -600,6 +663,9 @@ func (m Model) updateShop(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) updateResult(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
+			if m.lobby != nil && m.fingerprint != "" {
+				m.lobby.UnregisterSession(m.fingerprint)
+			}
 			if m.session != nil {
 				m.session.Stop()
 				m.session = nil

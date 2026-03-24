@@ -28,14 +28,28 @@ func TestTitleToLobby(t *testing.T) {
 		t.Fatalf("initial screen: got %d, want screenTitle(0)", m.screen)
 	}
 
-	// Press Enter
+	// First-time player: Enter goes to nickname screen
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := result.(Model)
 
-	if m2.screen != screenLobby {
-		t.Errorf("after Enter: screen=%d, want screenLobby(1)", m2.screen)
+	if m2.screen != screenNickname {
+		t.Errorf("after Enter (first time): screen=%d, want screenNickname(%d)", m2.screen, screenNickname)
 	}
-	if m2.playerName == "" {
+
+	// Type a name
+	for _, ch := range []rune("Hero") {
+		result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
+		m2 = result.(Model)
+	}
+
+	// Confirm nickname
+	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m3 := result.(Model)
+
+	if m3.screen != screenLobby {
+		t.Errorf("after nickname Enter: screen=%d, want screenLobby(1)", m3.screen)
+	}
+	if m3.playerName == "" {
 		t.Error("playerName should be set")
 	}
 }
@@ -45,11 +59,19 @@ func TestLobbyCreateRoom(t *testing.T) {
 	db := testDB(t)
 	defer func() { db.Close(); os.Remove("test_ui.db") }()
 
-	m := NewModel(80, 24, "testfp", lobby, db)
+	m := NewModel(80, 24, "testfp2", lobby, db)
 
-	// Go to lobby
+	// Go to nickname screen (first-time player)
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := result.(Model)
+
+	// Type name and confirm
+	for _, ch := range []rune("Hero") {
+		result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
+		m2 = result.(Model)
+	}
+	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m2 = result.(Model)
 
 	// Press 'c' to create room
 	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
@@ -68,11 +90,19 @@ func TestClassSelectToGame(t *testing.T) {
 	db := testDB(t)
 	defer func() { db.Close(); os.Remove("test_ui.db") }()
 
-	m := NewModel(80, 24, "testfp", lobby, db)
+	m := NewModel(80, 24, "testfp3", lobby, db)
 
-	// Title -> Lobby -> Class Select -> Game
+	// Title -> Nickname -> Lobby
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := result.(Model)
+	for _, ch := range []rune("Hero") {
+		result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
+		m2 = result.(Model)
+	}
+	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m2 = result.(Model)
+
+	// Lobby -> Class Select
 	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
 	m3 := result.(Model)
 
