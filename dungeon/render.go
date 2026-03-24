@@ -2,6 +2,25 @@ package dungeon
 
 import "fmt"
 
+type FloorTheme struct {
+	WallColor  string
+	FloorColor string
+	Name       string
+}
+
+func GetFloorTheme(floorNum int) FloorTheme {
+	switch {
+	case floorNum <= 5:
+		return FloorTheme{"90", "245", "Stone Halls"}
+	case floorNum <= 10:
+		return FloorTheme{"22", "28", "Mossy Caverns"}
+	case floorNum <= 15:
+		return FloorTheme{"88", "202", "Lava Depths"}
+	default:
+		return FloorTheme{"53", "129", "Shadow Realm"}
+	}
+}
+
 // ANSI color codes
 const (
 	ansiReset     = "\033[0m"
@@ -95,6 +114,7 @@ func wallVisible(floor *Floor, owner [][]int, x, y int) Visibility {
 
 // RenderFloor renders the tile map as a colored ASCII string.
 func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
+	theme := GetFloorTheme(floor.Number)
 	if floor == nil || floor.Tiles == nil {
 		return ""
 	}
@@ -200,7 +220,14 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 			}
 
 			if vis == Visible {
-				buf = append(buf, []byte(fmt.Sprintf("%s%s%c%s", ansiBright, ansiFgWhite, ch, ansiReset))...)
+				switch tile {
+				case TileWall:
+					buf = append(buf, []byte(fmt.Sprintf("\033[38;5;%sm%c\033[0m", theme.WallColor, ch))...)
+				case TileFloor:
+					buf = append(buf, []byte(fmt.Sprintf("\033[38;5;%sm%c\033[0m", theme.FloorColor, ch))...)
+				default:
+					buf = append(buf, []byte(fmt.Sprintf("%s%s%c%s", ansiBright, ansiFgWhite, ch, ansiReset))...)
+				}
 			} else {
 				// Visited but not current — dim
 				buf = append(buf, []byte(fmt.Sprintf("%s%c%s", ansiFgGray, ch, ansiReset))...)

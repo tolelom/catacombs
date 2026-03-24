@@ -33,6 +33,7 @@ func renderMap(floor *dungeon.Floor) string {
 	if floor == nil {
 		return ""
 	}
+	theme := dungeon.GetFloorTheme(floor.Number)
 	headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
 
 	// Count explored rooms
@@ -44,7 +45,7 @@ func renderMap(floor *dungeon.Floor) string {
 	}
 	total := len(floor.Rooms)
 
-	header := headerStyle.Render(fmt.Sprintf("── Catacombs B%d ── %d/%d Rooms ──", floor.Number, explored, total))
+	header := headerStyle.Render(fmt.Sprintf("── Catacombs B%d: %s ── %d/%d Rooms ──", floor.Number, theme.Name, explored, total))
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
