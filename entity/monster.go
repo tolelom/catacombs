@@ -33,6 +33,16 @@ var monsterDefs = map[MonsterType]monsterBase{
 	MonsterBoss20:     {"Archlich", 600, 40, 20, 20, true},
 }
 
+type BossPattern int
+
+const (
+	PatternNone    BossPattern = iota
+	PatternAoE                 // every 3 turns AoE
+	PatternPoison              // applies poison
+	PatternBurn                // applies burn to random player
+	PatternHeal                // heals self
+)
+
 type Monster struct {
 	Name        string
 	Type        MonsterType
@@ -41,6 +51,7 @@ type Monster struct {
 	IsBoss      bool
 	TauntTarget bool
 	TauntTurns  int
+	Pattern     BossPattern
 }
 
 func NewMonster(mt MonsterType, floor int) *Monster {

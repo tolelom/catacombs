@@ -220,6 +220,8 @@ func (s *GameSession) GetState() GameState {
 		copy(cp.Inventory, p.Inventory)
 		cp.Relics = make([]entity.Relic, len(p.Relics))
 		copy(cp.Relics, p.Relics)
+		cp.Effects = make([]entity.ActiveEffect, len(p.Effects))
+		copy(cp.Effects, p.Effects)
 		players[i] = &cp
 	}
 

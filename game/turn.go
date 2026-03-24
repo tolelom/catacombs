@@ -73,6 +73,19 @@ collecting:
 }
 
 func (s *GameSession) resolvePlayerActions() {
+	// Tick status effects
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			msgs := p.TickEffects()
+			for _, msg := range msgs {
+				s.addLog(msg)
+			}
+			if p.IsDead() {
+				s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
+			}
+		}
+	}
+
 	var intents []combat.AttackIntent
 	var intentOwners []string // track who owns each intent
 
@@ -299,6 +312,9 @@ func (s *GameSession) grantBossRelic() {
 		{Name: "Power Amulet", Effect: entity.RelicATKBoost, Value: 3, Price: 120},
 		{Name: "Iron Ward", Effect: entity.RelicDEFBoost, Value: 2, Price: 100},
 		{Name: "Gold Charm", Effect: entity.RelicGoldBoost, Value: 5, Price: 150},
+		{Name: "Antidote Charm", Effect: entity.RelicPoisonImmunity, Value: 0, Price: 100},
+		{Name: "Flame Guard", Effect: entity.RelicBurnResist, Value: 0, Price: 120},
+		{Name: "Life Siphon", Effect: entity.RelicLifeSteal, Value: 10, Price: 150},
 	}
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -327,6 +343,32 @@ func (s *GameSession) resolveMonsterActions() {
 					if p.IsDead() {
 						s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
 					}
+				}
+			}
+			if m.IsBoss {
+				// Boss special pattern
+				switch m.Pattern {
+				case entity.PatternPoison:
+					for _, p := range s.state.Players {
+						if !p.IsOut() {
+							p.AddEffect(entity.ActiveEffect{Type: entity.StatusPoison, Duration: 3, Value: 5})
+							s.addLog(fmt.Sprintf("%s poisons %s!", m.Name, p.Name))
+						}
+					}
+				case entity.PatternBurn:
+					for _, p := range s.state.Players {
+						if !p.IsOut() {
+							p.AddEffect(entity.ActiveEffect{Type: entity.StatusBurn, Duration: 2, Value: 8})
+							s.addLog(fmt.Sprintf("%s burns %s!", m.Name, p.Name))
+						}
+					}
+				case entity.PatternHeal:
+					healAmt := m.MaxHP / 10
+					m.HP += healAmt
+					if m.HP > m.MaxHP {
+						m.HP = m.MaxHP
+					}
+					s.addLog(fmt.Sprintf("%s regenerates %d HP!", m.Name, healAmt))
 				}
 			}
 		} else {

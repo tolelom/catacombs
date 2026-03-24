@@ -248,6 +248,21 @@ func renderPartyPanel(players []*entity.Player, submittedActions map[string]stri
 		hpBar := renderHPBar(p.HP, p.MaxHP, 16)
 		sb.WriteString(fmt.Sprintf("    %s %d/%d\n", hpBar, p.HP, p.MaxHP))
 
+		if len(p.Effects) > 0 {
+			var effects []string
+			for _, e := range p.Effects {
+				switch e.Type {
+				case entity.StatusPoison:
+					effects = append(effects, styleHeal.Render(fmt.Sprintf("☠Poison(%dt)", e.Duration)))
+				case entity.StatusBurn:
+					effects = append(effects, styleDamage.Render(fmt.Sprintf("🔥Burn(%dt)", e.Duration)))
+				case entity.StatusFreeze:
+					effects = append(effects, styleFlee.Render(fmt.Sprintf("❄Freeze(%dt)", e.Duration)))
+				}
+			}
+			sb.WriteString("    " + strings.Join(effects, " ") + "\n")
+		}
+
 		sb.WriteString(fmt.Sprintf("    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF()))
 		sb.WriteString(styleGold.Render(fmt.Sprintf("G:%d", p.Gold)))
 		sb.WriteString("\n")

@@ -22,6 +22,9 @@ const (
 	RelicATKBoost
 	RelicDEFBoost
 	RelicGoldBoost
+	RelicPoisonImmunity // immune to poison
+	RelicBurnResist     // halve burn damage
+	RelicLifeSteal      // heal 10% of damage dealt
 )
 
 type Relic struct {

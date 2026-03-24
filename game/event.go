@@ -114,6 +114,16 @@ func (s *GameSession) spawnBoss() {
 		mt = entity.MonsterBoss5
 	}
 	boss := entity.NewMonster(mt, s.state.FloorNum)
+	switch mt {
+	case entity.MonsterBoss5:
+		boss.Pattern = entity.PatternAoE
+	case entity.MonsterBoss10:
+		boss.Pattern = entity.PatternPoison
+	case entity.MonsterBoss15:
+		boss.Pattern = entity.PatternBurn
+	case entity.MonsterBoss20:
+		boss.Pattern = entity.PatternHeal
+	}
 	if s.state.SoloMode {
 		boss.HP = boss.HP / 2
 		boss.MaxHP = boss.HP

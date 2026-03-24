@@ -1,5 +1,7 @@
 package entity
 
+import "fmt"
+
 type Class int
 
 const (
@@ -24,6 +26,20 @@ var classBaseStats = map[Class]classStats{
 	ClassRogue:   {85, 15, 4},
 }
 
+type StatusEffect int
+
+const (
+	StatusPoison StatusEffect = iota
+	StatusBurn
+	StatusFreeze
+)
+
+type ActiveEffect struct {
+	Type     StatusEffect
+	Duration int // remaining turns
+	Value    int // damage per turn or effect strength
+}
+
 type Player struct {
 	Name        string
 	Fingerprint string
@@ -33,6 +49,7 @@ type Player struct {
 	Gold        int
 	Inventory   []Item
 	Relics      []Relic
+	Effects     []ActiveEffect
 	Dead        bool
 	Fled        bool
 	SkillUses   int // remaining skill uses this combat
@@ -109,4 +126,60 @@ func (p *Player) EffectiveDEF() int {
 		}
 	}
 	return def
+}
+
+func (p *Player) AddEffect(e ActiveEffect) {
+	// Check relic immunities
+	for _, r := range p.Relics {
+		if e.Type == StatusPoison && r.Effect == RelicPoisonImmunity {
+			return // immune
+		}
+		if e.Type == StatusBurn && r.Effect == RelicBurnResist {
+			e.Value = e.Value / 2 // halve burn damage
+		}
+	}
+	// Don't stack same type, refresh duration
+	for i, existing := range p.Effects {
+		if existing.Type == e.Type {
+			p.Effects[i] = e
+			return
+		}
+	}
+	p.Effects = append(p.Effects, e)
+}
+
+func (p *Player) HasEffect(t StatusEffect) bool {
+	for _, e := range p.Effects {
+		if e.Type == t {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Player) TickEffects() (damages []string) {
+	var remaining []ActiveEffect
+	for _, e := range p.Effects {
+		switch e.Type {
+		case StatusPoison:
+			p.HP -= e.Value
+			if p.HP <= 0 {
+				p.HP = 1 // Poison can't kill, leaves at 1 HP
+			}
+			damages = append(damages, fmt.Sprintf("%s takes %d poison damage", p.Name, e.Value))
+		case StatusBurn:
+			p.HP -= e.Value
+			if p.HP <= 0 {
+				p.HP = 0
+				p.Dead = true
+			}
+			damages = append(damages, fmt.Sprintf("%s takes %d burn damage", p.Name, e.Value))
+		}
+		e.Duration--
+		if e.Duration > 0 {
+			remaining = append(remaining, e)
+		}
+	}
+	p.Effects = remaining
+	return
 }

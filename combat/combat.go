@@ -82,8 +82,8 @@ func AttemptFlee() bool {
 }
 
 func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (targetIdx int, isAoE bool) {
-	if m.IsBoss && turnNumber%3 == 0 {
-		return -1, true
+	if m.IsBoss && turnNumber > 0 && turnNumber%3 == 0 {
+		return -1, true // AoE every 3 turns for all bosses
 	}
 	if m.TauntTarget {
 		for i, p := range players {
