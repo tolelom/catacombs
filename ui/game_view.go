@@ -11,10 +11,16 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int) string {
+func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int, chatting bool, chatInput string) string {
 	mapView := renderMap(state.Floor)
 	hudView := renderHUD(state, targetCursor, moveCursor)
 	logView := renderCombatLog(state.CombatLog)
+
+	if chatting {
+		chatStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("117"))
+		chatView := chatStyle.Render(fmt.Sprintf("> %s_", chatInput))
+		return lipgloss.JoinVertical(lipgloss.Left, mapView, hudView, logView, chatView)
+	}
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		mapView,

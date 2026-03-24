@@ -47,6 +47,8 @@ type Model struct {
 	inputBuffer  string
 	targetCursor int
 	moveCursor   int // selected neighbor index during exploration
+	chatting     bool
+	chatInput    string
 	rankingSaved bool
 }
 
@@ -117,7 +119,7 @@ func (m Model) View() string {
 	case screenClassSelect:
 		return renderClassSelect(m.classState, m.width, m.height)
 	case screenGame:
-		return renderGame(m.gameState, m.width, m.height, m.targetCursor, m.moveCursor)
+		return renderGame(m.gameState, m.width, m.height, m.targetCursor, m.moveCursor, m.chatting, m.chatInput)
 	case screenShop:
 		return renderShop(m.gameState, m.width, m.height)
 	case screenResult:
@@ -328,6 +330,38 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if key, ok := msg.(tea.KeyMsg); ok {
+		// Chat mode
+		if m.chatting {
+			if isEnter(key) && len(m.chatInput) > 0 {
+				if m.session != nil {
+					m.session.SendChat(m.playerName, m.chatInput)
+					m.gameState = m.session.GetState()
+				}
+				m.chatting = false
+				m.chatInput = ""
+			} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
+				m.chatting = false
+				m.chatInput = ""
+			} else if key.Type == tea.KeyBackspace && len(m.chatInput) > 0 {
+				m.chatInput = m.chatInput[:len(m.chatInput)-1]
+			} else if len(key.Runes) == 1 && len(m.chatInput) < 40 {
+				m.chatInput += string(key.Runes)
+			}
+			if m.gameState.Phase == game.PhaseCombat {
+				return m, m.pollState()
+			}
+			return m, nil
+		}
+
+		if isKey(key, "/") {
+			m.chatting = true
+			m.chatInput = ""
+			if m.gameState.Phase == game.PhaseCombat {
+				return m, m.pollState()
+			}
+			return m, nil
+		}
+
 		switch m.gameState.Phase {
 		case game.PhaseExploring:
 			neighbors := m.getNeighbors()

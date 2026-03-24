@@ -293,6 +293,13 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) bool {
 	return false
 }
 
+// SendChat appends a chat message to the combat log
+func (s *GameSession) SendChat(playerName, message string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.addLog(fmt.Sprintf("[%s] %s", playerName, message))
+}
+
 // LeaveShop exits the shop phase
 func (s *GameSession) LeaveShop() {
 	s.mu.Lock()
