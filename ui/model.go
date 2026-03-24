@@ -47,6 +47,7 @@ type Model struct {
 	inputBuffer  string
 	targetCursor int
 	moveCursor   int // selected neighbor index during exploration
+	rankingSaved bool
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
@@ -286,12 +287,13 @@ func (m Model) updateGame(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if m.gameState.GameOver {
-		if m.store != nil {
+		if m.store != nil && !m.rankingSaved {
 			score := 0
 			for _, p := range m.gameState.Players {
 				score += p.Gold
 			}
 			m.store.SaveRun(m.playerName, m.gameState.FloorNum, score)
+			m.rankingSaved = true
 		}
 		m.screen = screenResult
 		return m, nil
@@ -408,6 +410,7 @@ func (m Model) updateResult(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
 			m.screen = screenLobby
+			m.rankingSaved = false
 			m = m.withRefreshedLobby()
 		} else if isQuit(key) {
 			return m, tea.Quit
