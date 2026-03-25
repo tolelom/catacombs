@@ -108,6 +108,9 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 		leaf.roomIdx = i
 	}
 
+	// First room is always empty (safe starting area)
+	rooms[0].Type = RoomEmpty
+
 	// Last room is boss
 	rooms[len(rooms)-1].Type = RoomBoss
 

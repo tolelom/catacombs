@@ -110,6 +110,7 @@ const (
 	screenTitle screen = iota
 	screenLobby
 	screenClassSelect
+	screenWaiting
 	screenGame
 	screenShop
 	screenResult
@@ -129,6 +130,8 @@ func (m Model) screenType() screen {
 		return screenLobby
 	case *ClassSelectScreen:
 		return screenClassSelect
+	case *WaitingScreen:
+		return screenWaiting
 	case *GameScreen:
 		return screenGame
 	case *ShopScreen:

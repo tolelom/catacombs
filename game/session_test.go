@@ -142,8 +142,8 @@ func TestBuyItemInventoryFull(t *testing.T) {
 	}
 	s.mu.Unlock()
 
-	if s.BuyItem("fp-buyer", 0) {
-		t.Error("should not buy when inventory is full")
+	if result := s.BuyItem("fp-buyer", 0); result != BuyInventoryFull {
+		t.Errorf("expected BuyInventoryFull, got %d", result)
 	}
 }
 

@@ -41,6 +41,12 @@ func NewLobbyScreen() *LobbyScreen {
 	return &LobbyScreen{}
 }
 
+func (s *LobbyScreen) pollLobby() tea.Cmd {
+	return tea.Tick(time.Second*2, func(t time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
+
 func (s *LobbyScreen) refreshLobby(ctx *Context) {
 	if ctx.Lobby == nil {
 		return
@@ -71,6 +77,11 @@ func (s *LobbyScreen) refreshLobby(ctx *Context) {
 }
 
 func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	switch msg.(type) {
+	case tickMsg:
+		s.refreshLobby(ctx)
+		return s, s.pollLobby()
+	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		// Join-by-code input mode
 		if s.joining {
@@ -132,6 +143,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						room.Session = game.NewGameSession(ctx.Lobby.Cfg())
 						room.Session.DailyMode = true
 						room.Session.DailyDate = time.Now().Format("2006-01-02")
+						room.Session.ApplyWeeklyMutation()
 						ctx.Session = room.Session
 					}
 					return NewClassSelectScreen(), nil
@@ -139,6 +151,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 		} else if isKey(key, "h") && s.hardUnlocked {
 			s.hardMode = !s.hardMode
+			ctx.HardMode = s.hardMode
 		} else if isKey(key, "q") {
 			if ctx.Lobby != nil {
 				ctx.Lobby.PlayerOffline(ctx.Fingerprint)

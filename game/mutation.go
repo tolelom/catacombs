@@ -24,11 +24,11 @@ var Mutations = []Mutation{
 	{ID: "speed_run", Name: "Speed Run", Description: "Turn timeout halved",
 		Apply: func(cfg *config.GameConfig) { cfg.TurnTimeoutSec = max(cfg.TurnTimeoutSec/2, 2) }},
 	{ID: "no_shop", Name: "Shop Closed", Description: "Shops are unavailable",
-		Apply: func(cfg *config.GameConfig) {}},
+		Apply: func(cfg *config.GameConfig) {}}, // handled at runtime in EnterRoom
 	{ID: "glass_cannon", Name: "Glass Cannon", Description: "Double damage, half HP",
-		Apply: func(cfg *config.GameConfig) {}},
+		Apply: func(cfg *config.GameConfig) {}}, // handled at runtime in AddPlayer/spawnMonsters
 	{ID: "elite_flood", Name: "Elite Flood", Description: "All monsters are elite",
-		Apply: func(cfg *config.GameConfig) {}},
+		Apply: func(cfg *config.GameConfig) {}}, // handled at runtime in spawnMonsters
 }
 
 // GetWeeklyMutation returns the mutation for the current week,

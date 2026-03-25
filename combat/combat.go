@@ -57,6 +57,7 @@ func ResolveAttacks(intents []AttackIntent, monsters []*entity.Monster, coopBonu
 			results[i] = AttackResult{TargetIdx: -1, Damage: totalDmg, IsAoE: true}
 		} else {
 			if intent.TargetIdx < 0 || intent.TargetIdx >= len(monsters) {
+				results[i] = AttackResult{TargetIdx: -1} // mark as invalid
 				continue
 			}
 			m := monsters[intent.TargetIdx]

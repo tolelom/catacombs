@@ -25,10 +25,15 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		case "1", "2", "3":
 			if ctx.Session != nil {
 				idx := int(key.String()[0] - '1')
-				if ctx.Session.BuyItem(ctx.Fingerprint, idx) {
+				switch ctx.Session.BuyItem(ctx.Fingerprint, idx) {
+				case game.BuyOK:
 					s.shopMsg = "Purchased!"
-				} else {
+				case game.BuyNoGold:
 					s.shopMsg = "Not enough gold!"
+				case game.BuyInventoryFull:
+					s.shopMsg = "Inventory full!"
+				default:
+					s.shopMsg = "Cannot buy that!"
 				}
 				s.gameState = ctx.Session.GetState()
 			}

@@ -111,14 +111,22 @@ func TestClassSelectToGame(t *testing.T) {
 		t.Fatalf("should be at class select, got %d", m3.screenType())
 	}
 
-	// Press Enter to select Warrior (default cursor=0)
+	// Press Enter to select Warrior (default cursor=0) → WaitingScreen
 	result, _ = m3.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m4 := result.(Model)
 
-	if m4.screenType() != screenGame {
-		t.Errorf("after class select Enter: screen=%d, want screenGame(3)", m4.screenType())
+	if m4.screenType() != screenWaiting {
+		t.Fatalf("after class select Enter: screen=%d, want screenWaiting(%d)", m4.screenType(), screenWaiting)
 	}
-	if m4.session() == nil {
+
+	// Press Enter to ready up (solo room → immediately starts game)
+	result, _ = m4.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m5 := result.(Model)
+
+	if m5.screenType() != screenGame {
+		t.Errorf("after ready Enter: screen=%d, want screenGame(%d)", m5.screenType(), screenGame)
+	}
+	if m5.session() == nil {
 		t.Error("session should be set")
 	}
 }

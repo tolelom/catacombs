@@ -75,10 +75,12 @@ func DetectCombos(actions map[string]ComboAction) []ComboDef {
 }
 
 func matchesCombo(required []ComboAction, actions map[string]ComboAction) bool {
+	used := make(map[string]bool)
 	for _, req := range required {
 		found := false
-		for _, act := range actions {
-			if act.Class == req.Class && act.ActionType == req.ActionType {
+		for id, act := range actions {
+			if !used[id] && act.Class == req.Class && act.ActionType == req.ActionType {
+				used[id] = true
 				found = true
 				break
 			}

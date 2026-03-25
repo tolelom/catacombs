@@ -45,7 +45,7 @@ func (s *NicknameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
-			return ls, nil
+			return ls, ls.pollLobby()
 		} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
 			s.input = ""
 			return NewTitleScreen(), nil

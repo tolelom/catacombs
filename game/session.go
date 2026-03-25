@@ -55,6 +55,7 @@ type GameState struct {
 	TurnResolving    bool              // true while logs are being replayed
 	BossKilled       bool
 	FleeSucceeded    bool
+	LastEventName    string // name of the most recent random event (for codex)
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -93,6 +94,11 @@ type playerActionMsg struct {
 	Action   PlayerAction
 }
 
+// hasMutation returns true if the session has the given mutation active.
+func (s *GameSession) hasMutation(id string) bool {
+	return s.ActiveMutation != nil && s.ActiveMutation.ID == id
+}
+
 func NewGameSession(cfg *config.Config) *GameSession {
 	return &GameSession{
 		cfg: cfg,
@@ -105,6 +111,13 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		done:         make(chan struct{}),
 		lastActivity: make(map[string]time.Time),
 	}
+}
+
+// ApplyWeeklyMutation sets the current week's mutation on this session.
+func (s *GameSession) ApplyWeeklyMutation() {
+	mut := GetWeeklyMutation()
+	s.ActiveMutation = &mut
+	mut.Apply(&s.cfg.Game)
 }
 
 func (s *GameSession) Stop() {
@@ -206,6 +219,14 @@ func (s *GameSession) AddPlayer(p *entity.Player) {
 	if p.Skills == nil {
 		p.Skills = &entity.PlayerSkills{BranchIndex: -1}
 	}
+	if s.hasMutation("glass_cannon") {
+		p.ATK *= 2
+		p.MaxHP /= 2
+		if p.MaxHP < 1 {
+			p.MaxHP = 1
+		}
+		p.HP = p.MaxHP
+	}
 	s.state.Players = append(s.state.Players, p)
 }
 
@@ -304,6 +325,7 @@ func (s *GameSession) GetState() GameState {
 		TurnResolving:    s.state.TurnResolving,
 		BossKilled:       s.state.BossKilled,
 		FleeSucceeded:    s.state.FleeSucceeded,
+		LastEventName:    s.state.LastEventName,
 	}
 }
 
@@ -368,25 +390,38 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) erro
 	return fmt.Errorf("player not found")
 }
 
+// BuyResult describes the outcome of a shop purchase attempt.
+type BuyResult int
+
+const (
+	BuyOK BuyResult = iota
+	BuyNoGold
+	BuyInventoryFull
+	BuyFailed
+)
+
 // BuyItem handles shop purchases
-func (s *GameSession) BuyItem(playerID string, itemIdx int) bool {
+func (s *GameSession) BuyItem(playerID string, itemIdx int) BuyResult {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.state.Phase != PhaseShop || itemIdx < 0 || itemIdx >= len(s.state.ShopItems) {
-		return false
+		return BuyFailed
 	}
 	item := s.state.ShopItems[itemIdx]
 	for _, p := range s.state.Players {
-		if p.Fingerprint == playerID && p.Gold >= item.Price {
+		if p.Fingerprint == playerID {
+			if p.Gold < item.Price {
+				return BuyNoGold
+			}
 			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
-				return false
+				return BuyInventoryFull
 			}
 			p.Gold -= item.Price
 			p.Inventory = append(p.Inventory, item)
-			return true
+			return BuyOK
 		}
 	}
-	return false
+	return BuyFailed
 }
 
 // SendChat appends a chat message to the combat log

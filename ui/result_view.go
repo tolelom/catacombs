@@ -35,7 +35,7 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ctx.RoomCode = ""
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
-			return ls, nil
+			return ls, ls.pollLobby()
 		} else if isQuit(key) {
 			return s, tea.Quit
 		}

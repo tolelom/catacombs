@@ -161,6 +161,25 @@ func (l *Lobby) JoinRoom(code, playerName, fingerprint string) error {
 	return nil
 }
 
+func (l *Lobby) LeaveRoom(code, fingerprint string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	room, ok := l.rooms[code]
+	if !ok {
+		return
+	}
+	for i, p := range room.Players {
+		if p.Fingerprint == fingerprint {
+			room.Players = append(room.Players[:i], room.Players[i+1:]...)
+			break
+		}
+	}
+	// Remove empty waiting rooms
+	if len(room.Players) == 0 && room.Status == RoomWaiting {
+		delete(l.rooms, code)
+	}
+}
+
 func (l *Lobby) SetPlayerClass(code, fingerprint, class string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

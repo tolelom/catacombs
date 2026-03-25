@@ -72,6 +72,14 @@ collecting:
 }
 
 func (s *GameSession) resolvePlayerActions() {
+	// Record frozen players BEFORE ticking effects (freeze expires on tick)
+	frozenPlayers := make(map[string]bool)
+	for _, p := range s.state.Players {
+		if !p.IsOut() && p.HasEffect(entity.StatusFreeze) {
+			frozenPlayers[p.Fingerprint] = true
+		}
+	}
+
 	// Tick status effects with floor theme damage bonus
 	theme := dungeon.GetTheme(s.state.FloorNum)
 	for _, p := range s.state.Players {
@@ -115,6 +123,11 @@ func (s *GameSession) resolvePlayerActions() {
 
 	for _, p := range s.state.Players {
 		if p.IsOut() {
+			continue
+		}
+		// Frozen players skip their action
+		if frozenPlayers[p.Fingerprint] {
+			s.addLog(fmt.Sprintf("%s is frozen and cannot act!", p.Name))
 			continue
 		}
 		action, ok := s.actions[p.Fingerprint]
@@ -179,6 +192,9 @@ func (s *GameSession) resolvePlayerActions() {
 				if p.Skills != nil {
 					healAmount += p.Skills.GetSkillPower(p.Class) / 2
 				}
+				if s.HardMode {
+					healAmount = int(float64(healAmount) * s.cfg.Difficulty.HardModeHealMult)
+				}
 				before := target.HP
 				target.Heal(healAmount)
 				s.addLog(fmt.Sprintf("%s healed %s for %d HP", p.Name, target.Name, target.HP-before))
@@ -194,7 +210,11 @@ func (s *GameSession) resolvePlayerActions() {
 			for i, item := range p.Inventory {
 				if item.Type == entity.ItemConsumable {
 					before := p.HP
-					p.Heal(item.Bonus)
+					healAmt := item.Bonus
+					if s.HardMode {
+						healAmt = int(float64(healAmt) * s.cfg.Difficulty.HardModeHealMult)
+					}
+					p.Heal(healAmt)
 					p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
 					s.addLog(fmt.Sprintf("%s used %s, restored %d HP", p.Name, item.Name, p.HP-before))
 					found = true
@@ -274,6 +294,12 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 	}
 
+	// Build name→player map for relic effects
+	playerByName := make(map[string]*entity.Player)
+	for _, p := range s.state.Players {
+		playerByName[p.Name] = p
+	}
+
 	if len(intents) > 0 && len(s.state.Monsters) > 0 {
 		results := combat.ResolveAttacks(intents, s.state.Monsters, s.cfg.Game.CoopBonus)
 		for i, r := range results {
@@ -291,6 +317,20 @@ func (s *GameSession) resolvePlayerActions() {
 					coopStr = " (co-op!)"
 				}
 				s.addLog(fmt.Sprintf("%s hit %s for %d dmg%s", owner, target.Name, r.Damage, coopStr))
+			}
+			// Apply Life Siphon relic: heal percentage of damage dealt
+			if r.Damage > 0 {
+				if p := playerByName[owner]; p != nil && !p.IsOut() {
+					for _, rel := range p.Relics {
+						if rel.Effect == entity.RelicLifeSteal {
+							heal := r.Damage * rel.Value / 100
+							if heal > 0 {
+								p.Heal(heal)
+								s.addLog(fmt.Sprintf("  %s's Life Siphon heals %d HP", p.Name, heal))
+							}
+						}
+					}
+				}
 			}
 		}
 	}

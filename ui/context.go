@@ -16,4 +16,5 @@ type Context struct {
 	Store    *store.DB
 	Session  *game.GameSession
 	RoomCode string
+	HardMode bool
 }

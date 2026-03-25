@@ -86,6 +86,15 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 		}
 
+		// Record codex entries for events
+		if ctx.Store != nil && s.gameState.LastEventName != "" {
+			key := "event:" + s.gameState.LastEventName
+			if !s.codexRecorded[key] {
+				ctx.Store.RecordCodexEntry(ctx.Fingerprint, "event", s.gameState.LastEventName)
+				s.codexRecorded[key] = true
+			}
+		}
+
 		s.prevPhase = s.gameState.Phase
 	}
 

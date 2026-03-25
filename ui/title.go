@@ -50,7 +50,7 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
-			return ls, nil
+			return ls, ls.pollLobby()
 		} else if isKey(key, "h") {
 			return NewHelpScreen(), nil
 		} else if isKey(key, "s") {

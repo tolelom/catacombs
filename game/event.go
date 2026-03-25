@@ -40,6 +40,11 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 		s.state.CombatTurn = 0
 		s.signalCombat()
 	case dungeon.RoomShop:
+		if s.hasMutation("no_shop") {
+			s.addLog("The shop is closed! (Weekly mutation)")
+			room.Cleared = true
+			return
+		}
 		s.generateShopItems()
 		s.state.Phase = PhaseShop
 	case dungeon.RoomTreasure:
@@ -98,8 +103,14 @@ func (s *GameSession) spawnMonsters() {
 			m.MaxHP = m.HP
 			m.DEF = int(float64(m.DEF) * s.cfg.Combat.SoloHPReduction)
 		}
-		if rand.Float64() < 0.20 {
+		if s.hasMutation("elite_flood") || rand.Float64() < 0.20 {
 			entity.ApplyPrefix(m, entity.RandomPrefix())
+		}
+		if s.HardMode {
+			mult := s.cfg.Difficulty.HardModeMonsterMult
+			m.HP = int(float64(m.HP) * mult)
+			m.MaxHP = m.HP
+			m.ATK = int(float64(m.ATK) * mult)
 		}
 		s.state.Monsters[i] = m
 	}
@@ -139,6 +150,12 @@ func (s *GameSession) spawnBoss() {
 		boss.HP = int(float64(boss.HP) * s.cfg.Combat.SoloHPReduction)
 		boss.MaxHP = boss.HP
 		boss.DEF = int(float64(boss.DEF) * s.cfg.Combat.SoloHPReduction)
+	}
+	if s.HardMode {
+		mult := s.cfg.Difficulty.HardModeMonsterMult
+		boss.HP = int(float64(boss.HP) * mult)
+		boss.MaxHP = boss.HP
+		boss.ATK = int(float64(boss.ATK) * mult)
 	}
 	s.state.Monsters = []*entity.Monster{boss}
 
@@ -186,6 +203,12 @@ func (s *GameSession) generateShopItems() {
 	potionHeal := 30 + floor
 	potionPrice := 20 + floor/2
 
+	if s.HardMode {
+		mult := s.cfg.Difficulty.HardModeShopMult
+		potionPrice = int(float64(potionPrice) * mult)
+		weaponPrice = int(float64(weaponPrice) * mult)
+		armorPrice = int(float64(armorPrice) * mult)
+	}
 	s.state.ShopItems = []entity.Item{
 		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: potionHeal, Price: potionPrice},
 		{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
@@ -221,6 +244,7 @@ func armorName(floor int) string {
 
 func (s *GameSession) triggerEvent() {
 	event := PickRandomEvent()
+	s.state.LastEventName = event.Name
 	s.addLog(fmt.Sprintf("Event: %s — %s", event.Name, event.Description))
 
 	// Auto-resolve with a random choice
@@ -344,6 +368,12 @@ func (s *GameSession) spawnMiniBoss() {
 		}
 		miniBoss.MaxHP = miniBoss.HP
 		miniBoss.DEF = int(float64(miniBoss.DEF) * s.cfg.Combat.SoloHPReduction)
+	}
+	if s.HardMode {
+		mult := s.cfg.Difficulty.HardModeMonsterMult
+		miniBoss.HP = int(float64(miniBoss.HP) * mult)
+		miniBoss.MaxHP = miniBoss.HP
+		miniBoss.ATK = int(float64(miniBoss.ATK) * mult)
 	}
 	s.state.Monsters = []*entity.Monster{miniBoss}
 	s.addLog(fmt.Sprintf("A mini-boss appears: %s!", miniBoss.Name))
