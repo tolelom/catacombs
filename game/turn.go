@@ -213,6 +213,41 @@ func (s *GameSession) resolvePlayerActions() {
 		return
 	}
 
+	// Combo detection: build action map and apply combo effects before resolving attacks
+	comboActions := make(map[string]combat.ComboAction)
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		action, ok := s.actions[p.Fingerprint]
+		if !ok {
+			continue
+		}
+		var actionType string
+		switch action.Type {
+		case ActionAttack:
+			actionType = "attack"
+		case ActionSkill:
+			actionType = "skill"
+		case ActionItem:
+			actionType = "item"
+		default:
+			continue
+		}
+		comboActions[p.Fingerprint] = combat.ComboAction{Class: p.Class, ActionType: actionType}
+	}
+
+	combos := combat.DetectCombos(comboActions)
+	for _, combo := range combos {
+		s.addLog(combo.Effect.Message)
+		for i := range intents {
+			if combo.Effect.DamageMultiplier > 0 {
+				intents[i].Multiplier *= combo.Effect.DamageMultiplier
+			}
+			intents[i].PlayerATK += combo.Effect.BonusDamage
+		}
+	}
+
 	if len(intents) > 0 && len(s.state.Monsters) > 0 {
 		results := combat.ResolveAttacks(intents, s.state.Monsters, s.cfg.Game.CoopBonus)
 		for i, r := range results {
@@ -230,6 +265,17 @@ func (s *GameSession) resolvePlayerActions() {
 					coopStr = " (co-op!)"
 				}
 				s.addLog(fmt.Sprintf("%s hit %s for %d dmg%s", owner, target.Name, r.Damage, coopStr))
+			}
+		}
+	}
+
+	// Apply combo HealAll effects after attack resolution
+	for _, combo := range combos {
+		if combo.Effect.HealAll > 0 {
+			for _, p := range s.state.Players {
+				if !p.IsOut() {
+					p.Heal(combo.Effect.HealAll)
+				}
 			}
 		}
 	}
