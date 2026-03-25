@@ -55,6 +55,7 @@ type Player struct {
 	Dead        bool
 	Fled        bool
 	SkillUses   int // remaining skill uses this combat
+	Skills      *PlayerSkills
 }
 
 func NewPlayer(name string, class Class) *Player {
@@ -118,6 +119,7 @@ func (p *Player) EffectiveATK() int {
 			atk += r.Value
 		}
 	}
+	atk += p.Skills.GetATKBonus(p.Class)
 	return atk
 }
 
@@ -133,6 +135,7 @@ func (p *Player) EffectiveDEF() int {
 			def += r.Value
 		}
 	}
+	def += p.Skills.GetDEFBonus(p.Class)
 	return def
 }
 
