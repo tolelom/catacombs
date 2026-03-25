@@ -122,13 +122,14 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				score += p.Gold
 			}
 			playerClass := ""
+			var members []string
 			for _, p := range s.gameState.Players {
 				if p.Fingerprint == ctx.Fingerprint {
 					playerClass = p.Class.String()
-					break
 				}
+				members = append(members, p.Name)
 			}
-			ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass)
+			ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members)
 			// Check achievements
 			if s.gameState.FloorNum >= 5 {
 				ctx.Store.UnlockAchievement(ctx.PlayerName, "first_clear")

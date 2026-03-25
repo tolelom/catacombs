@@ -90,7 +90,11 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 			case 2:
 				medal = styleGold.Render("🥉")
 			}
-			sb.WriteString(fmt.Sprintf("  %s %s  B%d층  점수: %d\n", medal, r.Player, r.Floor, r.Score))
+			party := ""
+			if len(r.Members) > 1 {
+				party = fmt.Sprintf(" (%s)", strings.Join(r.Members, ", "))
+			}
+			sb.WriteString(fmt.Sprintf("  %s %s  B%d층  점수: %d%s\n", medal, r.Player, r.Floor, r.Score, party))
 		}
 	}
 

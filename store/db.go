@@ -18,10 +18,11 @@ type DB struct {
 }
 
 type RunRecord struct {
-	Player string `json:"player"`
-	Floor  int    `json:"floor"`
-	Score  int    `json:"score"`
-	Class  string `json:"class,omitempty"`
+	Player  string   `json:"player"`
+	Floor   int      `json:"floor"`
+	Score   int      `json:"score"`
+	Class   string   `json:"class,omitempty"`
+	Members []string `json:"members,omitempty"` // party member names (empty for solo)
 }
 
 func Open(path string) (*DB, error) {
@@ -79,11 +80,11 @@ func (d *DB) GetProfile(fingerprint string) (string, error) {
 	return name, err
 }
 
-func (d *DB) SaveRun(player string, floor, score int, class string) error {
+func (d *DB) SaveRun(player string, floor, score int, class string, members []string) error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketRankings)
 		id, _ := b.NextSequence()
-		record := RunRecord{Player: player, Floor: floor, Score: score, Class: class}
+		record := RunRecord{Player: player, Floor: floor, Score: score, Class: class, Members: members}
 		data, err := json.Marshal(record)
 		if err != nil {
 			return err

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -70,9 +71,13 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 			if r.Class != "" {
 				cls = fmt.Sprintf(" [%s]", r.Class)
 			}
-			content += fmt.Sprintf("  %s %s%s  B%d  %s\n",
+			party := ""
+			if len(r.Members) > 1 {
+				party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
+			}
+			content += fmt.Sprintf("  %s %s%s  B%d  %s%s\n",
 				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
-				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
+				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
 		}
 	case 1: // By Gold
 		content += styleCoop.Render("  골드 순위") + "\n"
@@ -85,9 +90,13 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 			if r.Class != "" {
 				cls = fmt.Sprintf(" [%s]", r.Class)
 			}
-			content += fmt.Sprintf("  %s %s%s  B%d  %s\n",
+			party := ""
+			if len(r.Members) > 1 {
+				party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
+			}
+			content += fmt.Sprintf("  %s %s%s  B%d  %s%s\n",
 				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
-				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
+				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
 		}
 	case 2: // Daily
 		content += styleCoop.Render(fmt.Sprintf("  일일 도전 — %s", time.Now().Format("2006-01-02"))) + "\n"
