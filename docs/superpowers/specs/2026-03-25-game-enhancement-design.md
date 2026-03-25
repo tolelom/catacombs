@@ -13,164 +13,341 @@ Catacombs 멀티플레이 로그라이크 던전 크롤러의 종합 고도화 �
 - 4 클래스(Warrior/Mage/Healer/Rogue), 8 몬스터 + 4 보스, 20층 던전
 - 턴제 전투(5초 타임아웃), 상점, 업적 10개, 리더보드
 - BoltDB 영속화, SSH 핑거프린트 재접속
-- `ui/model.go` ~19K 라인 (모든 화면 로직 집중)
+- 인게임 채팅 구현됨 (`/` 키로 입력, `SendChat()` 브로드캐스트)
+- 상태이상: 독, 화상, 빙결 이미 존재
+- `ui/model.go` ~712라인 (라우팅/업데이트 디스패치), 화면별 `*_view.go`로 분리 완료
+- 기존 협동 보너스: 2인 이상 같은 타겟 공격 시 +10% 대미지
 
-## Phase 1: Foundation + Chat
+## Phase 1: Foundation + Structured Logging
 
-### 1-1. UI Refactoring
+### 1-1. UI Architecture Refinement
 
-**Problem:** `ui/model.go`가 ~19K 라인으로 모든 화면 상태를 단일 파일에서 관리. 새 기능 추가 시 버그 위험 증가, 유지보수 곤란.
+**Problem:** `model.go` (712라인)의 `Update()` 메서드가 모든 화면의 키 입력을 하나의 switch문에서 처리. 새 화면/기능 추가 시 분기가 복잡해짐.
 
 **Design:**
-- 각 화면의 `Update`/`View` 로직을 해당 `*_view.go` 파일로 이동
 - 각 화면을 독립적인 Bubble Tea `Model` 인터페이스로 추출 (`LobbyModel`, `GameModel`, `ShopModel` 등)
-- 메인 `Model`은 화면 간 라우팅만 담당하는 컨테이너 역할
+- 각 `*_view.go`에 해당 화면의 `Update()`/`View()` 로직을 완전히 위임
+- 메인 `Model`은 화면 전환 라우팅만 담당
 - 공유 상태(게임 세션, DB, 뷰포트 크기 등)는 공통 `Context` 구조체로 추출
 
-**Success criteria:** `model.go` 500라인 이하의 라우터로 축소.
+**Success criteria:** `model.go`의 `Update()` 메서드가 화면별 라우팅만 수행 (각 화면 로직 0라인).
 
-### 1-2. In-game Chat
+### 1-2. Chat Emote System
 
-**Problem:** 멀티플레이에서 소통 수단이 없어 협동의 재미가 크게 떨어짐.
+**Note:** 기본 채팅은 이미 구현됨 (`game/session.go:SendChat`, `/` 키 입력).
 
 **Design:**
-- `game/chat.go` — 채팅 메시지 브로드캐스트 (룸 내 플레이어 간)
-- 게임 화면 하단에 채팅 로그 영역 추가
-- `/` 키로 채팅 입력 모드 전환
-- 이모트 프리셋 (`/hi`, `/gg` 등)
+- 이모트 프리셋 시스템 추가 (`/hi`, `/gg`, `/go`, `/wait`, `/help` 등)
+- 이모트는 채팅 로그에 강조 스타일로 표시
+- `game/emote.go` — 이모트 정의 및 파싱
 
-**Affected packages:** `game/`, `ui/`
+### 1-3. Structured Logging
+
+**Rationale:** Phase 2~3 디버깅을 위해 초기에 도입.
+
+**Design:**
+- `log/slog` (Go 표준) 도입, JSON 형식 구조화 로깅
+- 이벤트: 접속, 게임 시작, 전투, 종료, 에러
+- 패닉 리커버리 미들웨어 — 세션 크래시 격리
+
+### 1-4. Configuration Externalization
+
+**Rationale:** Phase 2~3에서 밸런스 상수를 추가하기 전에 설정 구조를 먼저 도입.
+
+**Design:**
+- `config/config.go` — YAML 파싱 및 기본값 관리
+- `config.yaml` — 서버 포트, 턴 타임아웃, 몬스터 스케일링, 상점 가격 배율 등
+
+```go
+type Config struct {
+    Server   ServerConfig   `yaml:"server"`
+    Game     GameConfig     `yaml:"game"`
+    Combat   CombatConfig   `yaml:"combat"`
+    Dungeon  DungeonConfig  `yaml:"dungeon"`
+    Backup   BackupConfig   `yaml:"backup"`
+}
+
+type GameConfig struct {
+    TurnTimeout    time.Duration `yaml:"turn_timeout"`    // default: 5s
+    MaxPlayers     int           `yaml:"max_players"`     // default: 4
+    MaxFloors      int           `yaml:"max_floors"`      // default: 20
+    CoopBonus      float64       `yaml:"coop_bonus"`      // default: 0.10
+    InventoryLimit int           `yaml:"inventory_limit"` // default: 10
+}
+```
+
+**Affected packages:** 전체 (상수 참조 부분), `server/`, `game/`
 
 ## Phase 2: Combat & Dungeon Enhancement
 
 ### 2-1. Combat System Expansion
 
 **Skill Tree:**
-- 클래스별 3갈래 특성 트리 (예: Warrior → 탱커/버서커/전술가)
-- 층 클리어 시 포인트 획득, 런 내에서만 유효 (로그라이크 특성 유지)
-- `entity/skill_tree.go` — 트리 정의 및 포인트 적용 로직
+- 클래스별 2갈래 특성 트리 (MVP, 추후 3갈래 확장 가능)
+  - Warrior: 탱커 / 버서커
+  - Mage: 원소술사 / 시간술사
+  - Healer: 수호자 / 사제
+  - Rogue: 암살자 / 약사
+- 층 클리어 시 1포인트 획득, 브랜치당 3노드, 런 내에서만 유효
+- 스킬 포인트 배분은 층 이동 화면에서 수행 (턴 동기화 불필요)
+
+```go
+// entity/skill_tree.go
+type SkillBranch struct {
+    Name        string
+    Nodes       [3]SkillNode  // 3 sequential unlocks per branch
+    Description string
+}
+
+type SkillNode struct {
+    Name     string
+    Effect   SkillEffect  // enum: ATKBoost, DEFBoost, SkillPower, etc.
+    Value    float64      // modifier amount
+    Required int          // points spent in branch to unlock
+}
+
+type PlayerSkills struct {
+    BranchIndex int       // 0 or 1 (chosen branch)
+    Points      int       // total points earned
+    Allocated   int       // points allocated in chosen branch
+}
+```
 
 **Combo Skills:**
 - 2인 이상이 같은 턴에 특정 조합 사용 시 연계 효과 발동
-- 예: Mage 빙결 + Warrior 강타 = 빙쇄 대미지
-- `combat/combo.go` — 연계 조건 판정 및 효과 적용
+- 기존 협동 보너스(+10%)와 별개로 스택됨
+- 예: Mage 빙결 + Warrior 강타 = 빙쇄 (대미지 1.5배 + 빙결 해제)
+
+```go
+// combat/combo.go
+type ComboDefinition struct {
+    RequiredActions []ComboAction  // class + action type pairs
+    Effect          ComboEffect
+    Name            string
+    Description     string
+}
+
+type ComboAction struct {
+    Class      entity.Class
+    ActionType string  // "skill", "attack"
+    SkillName  string  // optional: specific skill required
+}
+```
 
 **Elite Monsters:**
-- 일반 몬스터의 강화 변종, 특수 접두사 (맹독의/불타는/흡혈의 등)
-- 보스가 아닌 층에서 긴장감 추가
-- `entity/elite.go` — 접두사 시스템 및 스탯 변형
+- 일반 몬스터의 강화 변종, 층당 ~20% 확률로 등장
+- 접두사별 스탯 변형 및 특수 능력
+
+```go
+// entity/elite.go
+type ElitePrefix struct {
+    Name       string        // "맹독의", "불타는", "흡혈의"
+    StatMod    StatModifier  // HP/ATK/DEF multipliers
+    OnHit      StatusEffect  // applied on monster's attack
+    DropBonus  float64       // extra loot chance
+}
+```
 
 **Status Effects Expansion:**
-- 기존: 독, 화상
-- 추가: 빙결(행동 불가), 출혈(턴마다 누적), 저주(회복량 감소)
-- `entity/status.go` 확장
+- 기존: 독, 화상, 빙결
+- 추가: 출혈(턴마다 대미지 누적 +1), 저주(회복량 50% 감소)
+- `entity/player.go`에 `StatusBleed`, `StatusCurse` 추가
 
-**Affected packages:** `entity/`, `combat/`, `game/`
+**Success criteria:** 8개 스킬 브랜치, 5개 이상 콤보 조합, 5개 엘리트 접두사, 5개 상태이상.
 
 ### 2-2. Dungeon Event Diversification
 
 **Random Event Rooms:**
 - 선택지 기반 이벤트 (예: "수상한 제단 발견" → 제물 바치기/무시/파괴)
-- 각 선택지마다 다른 보상/페널티
-- `game/random_event.go` — 이벤트 풀 및 결과 처리
+- 최소 8개 이벤트 풀
+
+```go
+// game/random_event.go
+type RandomEvent struct {
+    ID          string
+    Description string
+    Choices     []EventChoice
+}
+
+type EventChoice struct {
+    Text    string
+    Outcome EventOutcome  // reward/penalty/mixed
+    Weight  float64       // probability weight
+}
+```
 
 **Secret Rooms:**
-- 낮은 확률(~10%)로 생성, 희귀 아이템/렐릭 보상
-- `dungeon/generator.go` 확장
+- 낮은 확률(~10%)로 생성, `dungeon/room.go`에 `RoomSecret` 타입 추가
+- 희귀 아이템/렐릭 보상
 
 **Floor Themes:**
-- 5층 단위로 환경 효과
-  - 1~5층 습지: 독 대미지 증가
-  - 6~10층 화산: 화상 대미지 증가
-  - 11~15층 얼음: 빙결 확률 증가
-  - 16~20층 지옥: 모든 상태이상 강화
-- `dungeon/theme.go` — 테마별 환경 효과 정의
+- 5층 단위로 환경 효과, 보스 패턴과 테마 정렬:
+  - 1~5층 습지 (독 강화) → Guardian 보스 (독 패턴으로 변경)
+  - 6~10층 화산 (화상 강화) → Warden 보스 (화상 패턴으로 변경)
+  - 11~15층 얼음 (빙결 강화) → Overlord 보스 (빙결 패턴)
+  - 16~20층 지옥 (전체 강화) → Archfiend 최종 보스
+
+```go
+// dungeon/theme.go
+type FloorTheme struct {
+    Name           string
+    StatusBoost    entity.StatusEffect  // which status is empowered
+    DamageModifier float64              // multiplier for boosted status
+    AsciiStyle     string               // visual theme for rendering
+}
+```
 
 **Mini-boss Rooms:**
 - 보스 층 직전(4, 9, 14, 19층)에 미니보스 등장
-- 보스 전 준비 테스트 역할
+- 기존 `Monster` 구조체에 `IsMiniBoss bool` 추가, `BossPattern` 사용하되 HP/ATK는 보스의 60%
 
-**Affected packages:** `dungeon/`, `game/`, `entity/`
+**Prerequisite for Phase 3-1:** 던전 생성을 시드 기반으로 리팩토링.
+- `GenerateFloor(floor int)` → `GenerateFloor(floor int, rng *rand.Rand)`
+- 모든 랜덤 호출을 `rng` 인스턴스로 교체
+
+**Success criteria:** 8개 이상 랜덤 이벤트, 4개 층 테마, 비밀 방, 4개 미니보스.
+
+**Affected packages:** `dungeon/`, `game/`, `entity/`, `combat/`
 
 ## Phase 3: Retention Systems
 
 ### 3-1. Daily Challenge
 
-- 날짜 기반 시드로 동일한 던전 구조/몬스터 배치 생성
+- 날짜 기반 시드(`time.Now().Format("2006-01-02")` → hash → seed)로 동일 던전 생성
+- Phase 2-2에서 리팩토링된 시드 기반 생성기 활용
 - 일일 전용 리더보드
-- 참여 시 포인트 적립, 연속 참여 보너스
-- `game/daily.go` — 시드 생성 및 일일 세션 관리
-- `store/daily.go` — 일일 기록 및 연속 참여 추적
+
+```go
+// store/daily.go  (BoltDB bucket: "daily_runs")
+// Key: "YYYY-MM-DD:playerFingerprint"
+type DailyRecord struct {
+    Date       string `json:"date"`
+    Player     string `json:"player"`
+    FloorReached int  `json:"floor_reached"`
+    GoldEarned int    `json:"gold_earned"`
+    Streak     int    `json:"streak"`  // consecutive days played
+}
+```
+
+**Success criteria:** 동일 날짜에 같은 시드 던전 보장, 일일 리더보드 표시.
 
 ### 3-2. Meta Progression
 
-**Unlock System Expansion:**
-- 현재 업적 10개 → 조건부 언락 콘텐츠 추가
-  - "10층 이상 클리어" → 5번째 클래스 해금
-  - "3인 이상 클리어" → 하드 모드 해금
-- `store/unlocks.go` — 언락 조건 및 상태 관리
+**Unlock System:**
+
+```go
+// store/unlocks.go  (BoltDB bucket: "unlocks")
+// Key: "playerFingerprint:unlockID"
+type Unlock struct {
+    ID        string `json:"id"`
+    Condition string `json:"condition"`  // human-readable
+    Unlocked  bool   `json:"unlocked"`
+}
+```
+
+언락 콘텐츠:
+- "10층 이상 클리어" → 5번째 클래스 해금
+- "3인 이상 클리어" → 하드 모드 해금
+- "20층 클리어" → 주간 변이 모드 해금
 
 **Player Titles:**
-- 업적/기록 기반 칭호 부여
-- 로비에서 닉네임 옆에 표시
-- `store/titles.go` — 칭호 정의 및 부여 로직
+
+```go
+// store/titles.go  (BoltDB bucket: "titles")
+// Key: "playerFingerprint"
+type PlayerTitle struct {
+    ActiveTitle string   `json:"active_title"`
+    Earned      []string `json:"earned"`  // list of title IDs
+}
+```
 
 **Codex System:**
-- 조우한 몬스터/획득한 아이템/발견한 이벤트 기록
-- 도감 완성률 표시
-- `store/codex.go` — 도감 데이터 관리
-- `ui/codex_view.go` — 도감 화면
+
+```go
+// store/codex.go  (BoltDB bucket: "codex")
+// Key: "playerFingerprint"
+type Codex struct {
+    Monsters map[string]bool `json:"monsters"`  // monsterID → encountered
+    Items    map[string]bool `json:"items"`     // itemID → acquired
+    Events   map[string]bool `json:"events"`    // eventID → discovered
+}
+```
+
+- `ui/codex_view.go` — 도감 화면, 완성률 표시
+
+**Success criteria:** 3개 이상 언락 콘텐츠, 5개 이상 칭호, 도감 완성률 추적.
 
 ### 3-3. Difficulty System
 
 **Hard Mode:**
+- 난이도 배율은 `config.yaml`에서 관리 (Phase 1-4의 설정 구조 활용)
 - 몬스터 스탯 1.5배, 상점 가격 2배, 회복량 절반
-- 언락 조건 충족 시 선택 가능
+- 언락 조건 충족 시 로비에서 선택 가능
 
 **Weekly Mutations:**
-- 매주 바뀌는 특수 규칙
-  - "스킬 사용 불가", "엘리트만 등장", "상점 없음" 등
-- `game/mutation.go` — 주간 변이 규칙 정의 및 적용
+- 매주 바뀌는 특수 규칙, 주 번호 기반 시드로 결정
 
-**Affected packages:** `game/`, `store/`, `ui/`
+```go
+// game/mutation.go
+type Mutation struct {
+    ID          string
+    Name        string  // "스킬 봉인", "엘리트 범람", "상점 폐쇄" 등
+    Description string
+    Apply       func(cfg *config.GameConfig)  // config 값 오버라이드
+}
+```
+
+**Affected packages:** `game/`, `store/`, `ui/`, `config/`
 
 ## Phase 4: Operational Stability
 
-### 4-1. Logging & Monitoring
+### 4-1. Admin Dashboard
 
-- `log/slog` (Go 표준) 도입, JSON 형식 구조화 로깅
-- 이벤트: 접속, 게임 시작, 전투, 종료, 에러
-- `/admin` HTTP 엔드포인트 — 접속자 수, 활성 방, 오늘의 런 수, 평균 클리어 층수
-- 패닉 리커버리 미들웨어 — 세션 크래시 격리
+- `/admin` HTTP 엔드포인트 (Basic Auth 인증)
+- JSON 응답 형식:
 
-**Affected packages:** `server/`, `web/`, `game/`
+```go
+type AdminStats struct {
+    OnlinePlayers  int            `json:"online_players"`
+    ActiveRooms    int            `json:"active_rooms"`
+    TodayRuns      int            `json:"today_runs"`
+    AvgFloorReach  float64        `json:"avg_floor_reached"`
+    Uptime         time.Duration  `json:"uptime"`
+}
+```
 
 ### 4-2. Data Safety
 
-- 설정 가능한 주기로 DB 파일 자동 백업 (`./data/backup/`)
+- 설정 가능한 주기로 DB 파일 자동 백업 (`./data/backup/`, `config.yaml`의 `backup.interval`)
 - 그레이스풀 셧다운: SIGTERM 시 진행 중인 세션 저장 후 종료
 - 재시작 시 미완료 세션 정리
 
-**Affected packages:** `store/`, `main.go`
+**Affected packages:** `store/`, `web/`, `main.go`
 
-### 4-3. Configuration Externalization
+## Data Migration
 
-- `config.yaml` — 서버 포트, 턴 타임아웃, 몬스터 스케일링, 상점 가격 배율 등
-- 밸런스 조정 시 재빌드 없이 설정 파일만 수정
-- `config/config.go` — YAML 파싱 및 기본값 관리
+기존 BoltDB 데이터와의 호환성:
+- 새 버킷(`daily_runs`, `unlocks`, `titles`, `codex`)은 `CreateBucketIfNotExists`로 안전하게 추가
+- 기존 `profiles`, `rankings`, `achievements` 버킷은 구조 변경 없음
+- 업적 시스템과 언락 시스템은 별도 버킷으로 독립 운영 (기존 업적 데이터 보존)
 
-**Affected packages:** 전체 (상수 참조 부분)
+## Testing Strategy
+
+- **단위 테스트:** 새 패키지별 `*_test.go` (스킬 트리 포인트 계산, 콤보 판정, 엘리트 스탯 변형)
+- **시드 결정성 테스트:** 동일 시드 → 동일 던전 보장 검증
+- **밸런스 시뮬레이션:** 엘리트/미니보스 스탯 범위가 솔로/파티 모두에서 적정한지 수치 검증
+- **통합 테스트:** 턴 실행 시 콤보 판정 → 대미지 계산 → 상태이상 적용 흐름
 
 ## Dependencies Between Phases
 
 ```
-Phase 1 (Foundation)
-  └── Phase 2 (Combat/Dungeon) — UI 리팩토링 완료 후 새 화면 추가가 용이
-      └── Phase 3 (Retention) — 전투/던전 콘텐츠 위에 메타 시스템 구축
-          └── Phase 4 (Operations) — 전체 기능 완성 후 운영 도구 보강
+Phase 1 (Foundation: UI정리 + 로깅 + 설정 외부화)
+  ├── Phase 2 (Combat/Dungeon) — 설정 구조 위에 밸런스 상수 추가
+  │   └── Phase 3 (Retention) — 시드 기반 생성기, 콘텐츠 위에 메타 시스템
+  └── Phase 4 (Operations) — 로깅 기반 위에 어드민/백업 추가
 ```
 
-Phase 4의 로깅/설정 외부화는 독립적이므로, 필요 시 Phase 2~3과 병행 가능.
+Phase 4는 Phase 1 완료 후 독립 진행 가능 (Phase 2~3과 병행).
 
 ## Out of Scope
 
