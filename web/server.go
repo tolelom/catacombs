@@ -131,7 +131,7 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 		for {
 			n, err := stdout.Read(buf)
 			if n > 0 {
-				if writeErr := ws.WriteMessage(websocket.TextMessage, buf[:n]); writeErr != nil {
+				if writeErr := ws.WriteMessage(websocket.BinaryMessage, buf[:n]); writeErr != nil {
 					return
 				}
 			}

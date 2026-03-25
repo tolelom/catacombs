@@ -72,8 +72,9 @@
         sendResize();
       };
 
+      ws.binaryType = 'arraybuffer';
       ws.onmessage = (e) => {
-        term.write(e.data);
+        term.write(new Uint8Array(e.data));
       };
 
       ws.onclose = () => {
