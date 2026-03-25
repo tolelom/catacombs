@@ -1,6 +1,9 @@
 package dungeon
 
-import "math/rand"
+import (
+	"math/rand"
+	"sort"
+)
 
 const (
 	MapWidth  = 60
@@ -35,18 +38,25 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 	var leaves []*bspNode
 	collectLeaves(root, &leaves)
 
-	// Shuffle leaves so room assignment is varied
-	rng.Shuffle(len(leaves), func(i, j int) {
-		leaves[i], leaves[j] = leaves[j], leaves[i]
-	})
-
-	// We want 5-8 rooms. If we have more leaves, merge some; if fewer, accept it.
-	// Ensure at least 5 leaves by re-generating if needed (BSP should produce enough).
-	// Cap at 8 rooms.
+	// We want 5-8 rooms. If we have more leaves, shuffle and trim.
 	targetRooms := 5 + rng.Intn(4) // 5..8
 	if len(leaves) > targetRooms {
+		rng.Shuffle(len(leaves), func(i, j int) {
+			leaves[i], leaves[j] = leaves[j], leaves[i]
+		})
 		leaves = leaves[:targetRooms]
 	}
+
+	// Sort leaves by physical position (left-to-right, top-to-bottom)
+	// so room indices match their map positions
+	sort.Slice(leaves, func(i, j int) bool {
+		ci := leaves[i].y + leaves[i].h/2
+		cj := leaves[j].y + leaves[j].h/2
+		if ci != cj {
+			return ci < cj
+		}
+		return leaves[i].x+leaves[i].w/2 < leaves[j].x+leaves[j].w/2
+	})
 	// If we somehow have fewer than 5, that's fine — the BSP with 60x20 and min 12x8 gives ~5-8 naturally.
 
 	// Place rooms inside each leaf
