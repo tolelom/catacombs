@@ -84,6 +84,8 @@ type GameSession struct {
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
 	HardMode       bool
 	ActiveMutation *Mutation
+	DailyMode      bool
+	DailyDate      string
 }
 
 type playerActionMsg struct {
@@ -210,7 +212,12 @@ func (s *GameSession) AddPlayer(p *entity.Player) {
 func (s *GameSession) StartFloor() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))
+	if s.DailyMode {
+		seed := DailySeed(s.DailyDate) + int64(s.state.FloorNum)
+		s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(seed)))
+	} else {
+		s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))
+	}
 	s.state.Phase = PhaseExploring
 	s.state.TurnNum = 0
 

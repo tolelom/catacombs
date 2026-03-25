@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -120,6 +121,22 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					return NewClassSelectScreen(), nil
 				}
 			}
+		} else if isKey(key, "d") {
+			// Daily Challenge: create a private solo daily session
+			if ctx.Lobby != nil {
+				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "'s Daily")
+				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
+					ctx.RoomCode = code
+					room := ctx.Lobby.GetRoom(code)
+					if room != nil {
+						room.Session = game.NewGameSession(ctx.Lobby.Cfg())
+						room.Session.DailyMode = true
+						room.Session.DailyDate = time.Now().Format("2006-01-02")
+						ctx.Session = room.Session
+					}
+					return NewClassSelectScreen(), nil
+				}
+			}
 		} else if isKey(key, "h") && s.hardUnlocked {
 			s.hardMode = !s.hardMode
 		} else if isKey(key, "q") {
@@ -171,7 +188,7 @@ func renderLobby(state lobbyState, width, height int) string {
 		Padding(0, 1)
 
 	header := headerStyle.Render(fmt.Sprintf("── Lobby ── %d online ──", state.online))
-	menu := "[C] Create Room  [J] Join by Code  [Up/Down] Select  [Enter] Join  [Q] Back"
+	menu := "[C] Create Room  [J] Join by Code  [D] Daily Challenge  [Up/Down] Select  [Enter] Join  [Q] Back"
 	if state.hardUnlocked {
 		hardStatus := "OFF"
 		if state.hardMode {

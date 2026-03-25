@@ -10,20 +10,25 @@ import (
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
 	"github.com/tolelom/catacombs/game"
+	"github.com/tolelom/catacombs/store"
 )
 
 // GameScreen handles the main gameplay: exploration, combat, and chat.
 type GameScreen struct {
-	gameState    game.GameState
-	targetCursor int
-	moveCursor   int
-	chatting     bool
-	chatInput    string
-	rankingSaved bool
+	gameState     game.GameState
+	targetCursor  int
+	moveCursor    int
+	chatting      bool
+	chatInput     string
+	rankingSaved  bool
+	codexRecorded map[string]bool
+	prevPhase     game.GamePhase
 }
 
 func NewGameScreen() *GameScreen {
-	return &GameScreen{}
+	return &GameScreen{
+		codexRecorded: make(map[string]bool),
+	}
 }
 
 func (s *GameScreen) pollState() tea.Cmd {
@@ -58,6 +63,30 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		} else {
 			s.targetCursor = 0
 		}
+
+		// Record codex entries for monsters when entering combat
+		if ctx.Store != nil && s.gameState.Phase == game.PhaseCombat {
+			for _, m := range s.gameState.Monsters {
+				key := "monster:" + m.Name
+				if !s.codexRecorded[key] {
+					ctx.Store.RecordCodexEntry(ctx.Fingerprint, "monster", m.Name)
+					s.codexRecorded[key] = true
+				}
+			}
+		}
+
+		// Record codex entries for shop items when entering shop
+		if ctx.Store != nil && s.gameState.Phase == game.PhaseShop && s.prevPhase != game.PhaseShop {
+			for _, item := range s.gameState.ShopItems {
+				key := "item:" + item.Name
+				if !s.codexRecorded[key] {
+					ctx.Store.RecordCodexEntry(ctx.Fingerprint, "item", item.Name)
+					s.codexRecorded[key] = true
+				}
+			}
+		}
+
+		s.prevPhase = s.gameState.Phase
 	}
 
 	if s.gameState.GameOver {
@@ -104,6 +133,54 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if len(s.gameState.Players) >= 4 {
 				ctx.Store.UnlockAchievement(ctx.PlayerName, "full_party")
 			}
+
+			// Unlock triggers
+			if s.gameState.FloorNum >= 10 {
+				ctx.Store.UnlockContent(ctx.Fingerprint, "fifth_class")
+			}
+			if len(s.gameState.Players) >= 3 && s.gameState.FloorNum >= 5 {
+				ctx.Store.UnlockContent(ctx.Fingerprint, "hard_mode")
+			}
+			if s.gameState.Victory {
+				ctx.Store.UnlockContent(ctx.Fingerprint, "mutations")
+			}
+
+			// Title triggers
+			ctx.Store.EarnTitle(ctx.Fingerprint, "novice")
+			if s.gameState.FloorNum >= 5 {
+				ctx.Store.EarnTitle(ctx.Fingerprint, "explorer")
+			}
+			if s.gameState.FloorNum >= 10 {
+				ctx.Store.EarnTitle(ctx.Fingerprint, "veteran")
+			}
+			if s.gameState.Victory {
+				ctx.Store.EarnTitle(ctx.Fingerprint, "champion")
+			}
+			// Check player gold for gold_king title
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint == ctx.Fingerprint && p.Gold >= 500 {
+					ctx.Store.EarnTitle(ctx.Fingerprint, "gold_king")
+				}
+			}
+
+			// Save daily record if in daily mode
+			if ctx.Session != nil && ctx.Session.DailyMode {
+				playerGold := 0
+				for _, p := range s.gameState.Players {
+					if p.Fingerprint == ctx.Fingerprint {
+						playerGold = p.Gold
+						break
+					}
+				}
+				ctx.Store.SaveDaily(store.DailyRecord{
+					Date:         ctx.Session.DailyDate,
+					Player:       ctx.Fingerprint,
+					PlayerName:   ctx.PlayerName,
+					FloorReached: s.gameState.FloorNum,
+					GoldEarned:   playerGold,
+				})
+			}
+
 			s.rankingSaved = true
 		}
 		return NewResultScreen(s.gameState, s.rankingSaved), nil

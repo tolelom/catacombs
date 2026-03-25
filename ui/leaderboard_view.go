@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -9,7 +10,9 @@ import (
 )
 
 // LeaderboardScreen shows the top runs.
-type LeaderboardScreen struct{}
+type LeaderboardScreen struct {
+	tab int // 0=all-time, 1=gold, 2=daily
+}
 
 func NewLeaderboardScreen() *LeaderboardScreen {
 	return &LeaderboardScreen{}
@@ -17,6 +20,10 @@ func NewLeaderboardScreen() *LeaderboardScreen {
 
 func (s *LeaderboardScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "tab") || key.Type == tea.KeyTab {
+			s.tab = (s.tab + 1) % 3
+			return s, nil
+		}
 		if isKey(key, "l") || isEnter(key) || isQuit(key) {
 			return NewTitleScreen(), nil
 		}
@@ -26,52 +33,80 @@ func (s *LeaderboardScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) 
 
 func (s *LeaderboardScreen) View(ctx *Context) string {
 	var byFloor, byGold []store.RunRecord
+	var daily []store.DailyRecord
 	if ctx.Store != nil {
 		byFloor, _ = ctx.Store.TopRuns(10)
 		byGold, _ = ctx.Store.TopRunsByGold(10)
+		daily, _ = ctx.Store.GetDailyLeaderboard(time.Now().Format("2006-01-02"), 20)
 	}
-	return renderLeaderboard(byFloor, byGold, ctx.Width, ctx.Height)
+	return renderLeaderboard(byFloor, byGold, daily, s.tab, ctx.Width, ctx.Height)
 }
 
-func renderLeaderboard(byFloor, byGold []store.RunRecord, width, height int) string {
+func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRecord, tab, width, height int) string {
 	title := styleHeader.Render("── Leaderboard ──")
 
-	// By Floor
-	var floorSection string
-	floorSection += styleCoop.Render("  Top by Floor") + "\n"
-	for i, r := range byFloor {
-		if i >= 5 {
-			break
+	// Tab header
+	tabs := []string{"Floor", "Gold", "Daily"}
+	var tabLine string
+	for i, t := range tabs {
+		if i == tab {
+			tabLine += styleHeader.Render(fmt.Sprintf(" [%s] ", t))
+		} else {
+			tabLine += styleSystem.Render(fmt.Sprintf("  %s  ", t))
 		}
-		medal := fmt.Sprintf("  %d.", i+1)
-		cls := ""
-		if r.Class != "" {
-			cls = fmt.Sprintf(" [%s]", r.Class)
-		}
-		floorSection += fmt.Sprintf("  %s %s%s  B%d  %s\n",
-			medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
-			r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
 	}
 
-	// By Gold
-	var goldSection string
-	goldSection += styleCoop.Render("\n  Top by Gold") + "\n"
-	for i, r := range byGold {
-		if i >= 5 {
-			break
+	var content string
+
+	switch tab {
+	case 0: // By Floor
+		content += styleCoop.Render("  Top by Floor") + "\n"
+		for i, r := range byFloor {
+			if i >= 10 {
+				break
+			}
+			medal := fmt.Sprintf("  %d.", i+1)
+			cls := ""
+			if r.Class != "" {
+				cls = fmt.Sprintf(" [%s]", r.Class)
+			}
+			content += fmt.Sprintf("  %s %s%s  B%d  %s\n",
+				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
+				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
 		}
-		medal := fmt.Sprintf("  %d.", i+1)
-		cls := ""
-		if r.Class != "" {
-			cls = fmt.Sprintf(" [%s]", r.Class)
+	case 1: // By Gold
+		content += styleCoop.Render("  Top by Gold") + "\n"
+		for i, r := range byGold {
+			if i >= 10 {
+				break
+			}
+			medal := fmt.Sprintf("  %d.", i+1)
+			cls := ""
+			if r.Class != "" {
+				cls = fmt.Sprintf(" [%s]", r.Class)
+			}
+			content += fmt.Sprintf("  %s %s%s  B%d  %s\n",
+				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
+				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
 		}
-		goldSection += fmt.Sprintf("  %s %s%s  B%d  %s\n",
-			medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
-			r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
+	case 2: // Daily
+		content += styleCoop.Render(fmt.Sprintf("  Daily Challenge — %s", time.Now().Format("2006-01-02"))) + "\n"
+		if len(daily) == 0 {
+			content += "  No daily runs yet today.\n"
+		}
+		for i, r := range daily {
+			if i >= 20 {
+				break
+			}
+			medal := fmt.Sprintf("  %d.", i+1)
+			content += fmt.Sprintf("  %s %s  B%d  %s\n",
+				medal, stylePlayer.Render(r.PlayerName),
+				r.FloorReached, styleGold.Render(fmt.Sprintf("%dg", r.GoldEarned)))
+		}
 	}
 
-	footer := styleSystem.Render("\n[L] Back")
+	footer := styleSystem.Render("\n[Tab] Switch Tab  [L] Back")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
-		lipgloss.JoinVertical(lipgloss.Center, title, "", floorSection, goldSection, footer))
+		lipgloss.JoinVertical(lipgloss.Center, title, tabLine, "", content, footer))
 }
