@@ -1,9 +1,16 @@
 package dungeon
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+)
+
+func newTestRng() *rand.Rand {
+	return rand.New(rand.NewSource(rand.Int63()))
+}
 
 func TestGenerateFloor(t *testing.T) {
-	floor := GenerateFloor(1)
+	floor := GenerateFloor(1, newTestRng())
 	if len(floor.Rooms) < 5 || len(floor.Rooms) > 8 {
 		t.Errorf("Room count: got %d, want 5~8", len(floor.Rooms))
 	}
@@ -32,8 +39,9 @@ func TestGenerateFloor(t *testing.T) {
 func TestRoomTypeProbability(t *testing.T) {
 	counts := make(map[RoomType]int)
 	n := 10000
+	rng := rand.New(rand.NewSource(12345))
 	for i := 0; i < n; i++ {
-		counts[RandomRoomType()]++
+		counts[RandomRoomType(rng)]++
 	}
 	combatPct := float64(counts[RoomCombat]) / float64(n) * 100
 	if combatPct < 40 || combatPct > 50 {
@@ -44,8 +52,9 @@ func TestRoomTypeProbability(t *testing.T) {
 func TestSecretRoomInRandomType(t *testing.T) {
 	counts := make(map[RoomType]int)
 	n := 10000
+	rng := rand.New(rand.NewSource(12345))
 	for i := 0; i < n; i++ {
-		counts[RandomRoomType()]++
+		counts[RandomRoomType(rng)]++
 	}
 	secretPct := float64(counts[RoomSecret]) / float64(n) * 100
 	if secretPct < 2 || secretPct > 8 {
@@ -59,7 +68,7 @@ func TestSecretRoomInRandomType(t *testing.T) {
 
 func TestMiniBossRoomPlacement(t *testing.T) {
 	for _, floorNum := range []int{4, 9, 14, 19} {
-		floor := GenerateFloor(floorNum)
+		floor := GenerateFloor(floorNum, newTestRng())
 		found := false
 		for _, r := range floor.Rooms {
 			if r.Type == RoomMiniBoss {
@@ -73,7 +82,7 @@ func TestMiniBossRoomPlacement(t *testing.T) {
 	}
 	// Non-miniboss floors should not have mini-boss rooms
 	for _, floorNum := range []int{1, 3, 5, 10} {
-		floor := GenerateFloor(floorNum)
+		floor := GenerateFloor(floorNum, newTestRng())
 		for _, r := range floor.Rooms {
 			if r.Type == RoomMiniBoss {
 				t.Errorf("Floor %d should not have a mini-boss room", floorNum)
@@ -84,7 +93,7 @@ func TestMiniBossRoomPlacement(t *testing.T) {
 }
 
 func TestFloorHasTileMap(t *testing.T) {
-	floor := GenerateFloor(1)
+	floor := GenerateFloor(1, newTestRng())
 	if floor.Tiles == nil {
 		t.Fatal("Floor should have tile map")
 	}
@@ -96,5 +105,29 @@ func TestFloorHasTileMap(t *testing.T) {
 	centerTile := floor.Tiles[room.Y+room.H/2][room.X+room.W/2]
 	if centerTile != TileFloor {
 		t.Errorf("Room center should be floor tile, got %d", centerTile)
+	}
+}
+
+func TestDeterministicGeneration(t *testing.T) {
+	rng1 := rand.New(rand.NewSource(42))
+	rng2 := rand.New(rand.NewSource(42))
+	f1 := GenerateFloor(5, rng1)
+	f2 := GenerateFloor(5, rng2)
+	if len(f1.Rooms) != len(f2.Rooms) {
+		t.Fatalf("room counts differ: %d vs %d", len(f1.Rooms), len(f2.Rooms))
+	}
+	for i, r := range f1.Rooms {
+		if r.Type != f2.Rooms[i].Type || r.X != f2.Rooms[i].X || r.Y != f2.Rooms[i].Y {
+			t.Errorf("room %d differs: type=%v/%v x=%d/%d y=%d/%d",
+				i, r.Type, f2.Rooms[i].Type, r.X, f2.Rooms[i].X, r.Y, f2.Rooms[i].Y)
+		}
+	}
+	// Also verify tile maps match
+	for y := 0; y < f1.Height; y++ {
+		for x := 0; x < f1.Width; x++ {
+			if f1.Tiles[y][x] != f2.Tiles[y][x] {
+				t.Errorf("tile at (%d,%d) differs: %d vs %d", x, y, f1.Tiles[y][x], f2.Tiles[y][x])
+			}
+		}
 	}
 }

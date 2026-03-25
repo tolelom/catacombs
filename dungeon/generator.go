@@ -19,7 +19,7 @@ type bspNode struct {
 	roomIdx     int
 }
 
-func GenerateFloor(floorNum int) *Floor {
+func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 	// Create tile map filled with walls
 	tiles := make([][]Tile, MapHeight)
 	for y := 0; y < MapHeight; y++ {
@@ -29,21 +29,21 @@ func GenerateFloor(floorNum int) *Floor {
 
 	// BSP tree
 	root := &bspNode{x: 0, y: 0, w: MapWidth, h: MapHeight}
-	splitBSP(root, 0)
+	splitBSP(root, 0, rng)
 
 	// Collect leaf nodes
 	var leaves []*bspNode
 	collectLeaves(root, &leaves)
 
 	// Shuffle leaves so room assignment is varied
-	rand.Shuffle(len(leaves), func(i, j int) {
+	rng.Shuffle(len(leaves), func(i, j int) {
 		leaves[i], leaves[j] = leaves[j], leaves[i]
 	})
 
 	// We want 5-8 rooms. If we have more leaves, merge some; if fewer, accept it.
 	// Ensure at least 5 leaves by re-generating if needed (BSP should produce enough).
 	// Cap at 8 rooms.
-	targetRooms := 5 + rand.Intn(4) // 5..8
+	targetRooms := 5 + rng.Intn(4) // 5..8
 	if len(leaves) > targetRooms {
 		leaves = leaves[:targetRooms]
 	}
@@ -64,21 +64,21 @@ func GenerateFloor(floorNum int) *Floor {
 
 		rw := MinRoomW
 		if maxW > MinRoomW {
-			rw = MinRoomW + rand.Intn(maxW-MinRoomW+1)
+			rw = MinRoomW + rng.Intn(maxW-MinRoomW+1)
 		}
 		rh := MinRoomH
 		if maxH > MinRoomH {
-			rh = MinRoomH + rand.Intn(maxH-MinRoomH+1)
+			rh = MinRoomH + rng.Intn(maxH-MinRoomH+1)
 		}
 
 		// Position room within the leaf
 		rx := leaf.x + RoomPad
 		if leaf.w-2*RoomPad > rw {
-			rx += rand.Intn(leaf.w - 2*RoomPad - rw + 1)
+			rx += rng.Intn(leaf.w - 2*RoomPad - rw + 1)
 		}
 		ry := leaf.y + RoomPad
 		if leaf.h-2*RoomPad > rh {
-			ry += rand.Intn(leaf.h - 2*RoomPad - rh + 1)
+			ry += rng.Intn(leaf.h - 2*RoomPad - rh + 1)
 		}
 
 		// Clamp to map bounds
@@ -95,7 +95,7 @@ func GenerateFloor(floorNum int) *Floor {
 			ry = 1
 		}
 
-		rt := RandomRoomType()
+		rt := RandomRoomType(rng)
 		rooms[i] = &Room{
 			Type:      rt,
 			X:         rx,
@@ -140,10 +140,10 @@ func GenerateFloor(floorNum int) *Floor {
 	}
 
 	// Add 1-2 extra connections
-	extras := 1 + rand.Intn(2)
+	extras := 1 + rng.Intn(2)
 	for e := 0; e < extras; e++ {
-		a := rand.Intn(len(rooms))
-		b := rand.Intn(len(rooms))
+		a := rng.Intn(len(rooms))
+		b := rng.Intn(len(rooms))
 		if a != b && !hasNeighbor(rooms[a], b) {
 			rooms[a].Neighbors = append(rooms[a].Neighbors, b)
 			rooms[b].Neighbors = append(rooms[b].Neighbors, a)
@@ -161,7 +161,7 @@ func GenerateFloor(floorNum int) *Floor {
 	}
 }
 
-func splitBSP(node *bspNode, depth int) {
+func splitBSP(node *bspNode, depth int, rng *rand.Rand) {
 	// Stop conditions
 	if depth > 4 {
 		return
@@ -171,12 +171,12 @@ func splitBSP(node *bspNode, depth int) {
 	}
 
 	// Random chance to stop splitting (more likely at deeper levels)
-	if depth > 2 && rand.Float64() < 0.3 {
+	if depth > 2 && rng.Float64() < 0.3 {
 		return
 	}
 
 	// Decide split direction
-	horizontal := rand.Float64() < 0.5
+	horizontal := rng.Float64() < 0.5
 	if node.w < MinLeafW*2 {
 		horizontal = true
 	}
@@ -188,20 +188,20 @@ func splitBSP(node *bspNode, depth int) {
 		if node.h < MinLeafH*2 {
 			return
 		}
-		split := MinLeafH + rand.Intn(node.h-MinLeafH*2+1)
+		split := MinLeafH + rng.Intn(node.h-MinLeafH*2+1)
 		node.left = &bspNode{x: node.x, y: node.y, w: node.w, h: split}
 		node.right = &bspNode{x: node.x, y: node.y + split, w: node.w, h: node.h - split}
 	} else {
 		if node.w < MinLeafW*2 {
 			return
 		}
-		split := MinLeafW + rand.Intn(node.w-MinLeafW*2+1)
+		split := MinLeafW + rng.Intn(node.w-MinLeafW*2+1)
 		node.left = &bspNode{x: node.x, y: node.y, w: split, h: node.h}
 		node.right = &bspNode{x: node.x + split, y: node.y, w: node.w - split, h: node.h}
 	}
 
-	splitBSP(node.left, depth+1)
-	splitBSP(node.right, depth+1)
+	splitBSP(node.left, depth+1, rng)
+	splitBSP(node.right, depth+1, rng)
 }
 
 func collectLeaves(node *bspNode, leaves *[]*bspNode) {

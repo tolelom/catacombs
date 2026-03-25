@@ -357,7 +357,7 @@ func (s *GameSession) advanceFloor() {
 		return
 	}
 	s.state.FloorNum++
-	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum)
+	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))
 	s.state.Phase = PhaseExploring
 	s.state.CombatTurn = 0
 	s.addLog(fmt.Sprintf("Descending to B%d...", s.state.FloorNum))

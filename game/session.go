@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -204,7 +205,7 @@ func (s *GameSession) AddPlayer(p *entity.Player) {
 func (s *GameSession) StartFloor() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum)
+	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))
 	s.state.Phase = PhaseExploring
 	s.state.TurnNum = 0
 

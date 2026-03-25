@@ -46,8 +46,8 @@ type Floor struct {
 	Height      int
 }
 
-func RandomRoomType() RoomType {
-	r := rand.Float64() * 100
+func RandomRoomType(rng *rand.Rand) RoomType {
+	r := rng.Float64() * 100
 	switch {
 	case r < 5:
 		return RoomSecret
