@@ -361,7 +361,11 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) bool {
 func (s *GameSession) SendChat(playerName, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.addLog(fmt.Sprintf("[%s] %s", playerName, message))
+	if emoteText, ok := ParseEmote(message); ok {
+		s.addLog(fmt.Sprintf("✨ %s %s", playerName, emoteText))
+	} else {
+		s.addLog(fmt.Sprintf("[%s] %s", playerName, message))
+	}
 }
 
 // LeaveShop exits the shop phase
