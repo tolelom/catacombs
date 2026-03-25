@@ -199,6 +199,9 @@ func (s *GameSession) signalCombat() {
 func (s *GameSession) AddPlayer(p *entity.Player) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if p.Skills == nil {
+		p.Skills = &entity.PlayerSkills{BranchIndex: -1}
+	}
 	s.state.Players = append(s.state.Players, p)
 }
 
@@ -231,6 +234,10 @@ func (s *GameSession) GetState() GameState {
 		copy(cp.Relics, p.Relics)
 		cp.Effects = make([]entity.ActiveEffect, len(p.Effects))
 		copy(cp.Effects, p.Effects)
+		if p.Skills != nil {
+			skillsCopy := *p.Skills
+			cp.Skills = &skillsCopy
+		}
 		players[i] = &cp
 	}
 
@@ -335,6 +342,21 @@ func (s *GameSession) TouchActivity(fingerprint string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.lastActivity[fingerprint] = time.Now()
+}
+
+// AllocateSkillPoint spends one skill point into the given branch for the player.
+func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, p := range s.state.Players {
+		if p.Fingerprint == fingerprint {
+			if p.Skills == nil || p.Skills.Points <= p.Skills.Allocated {
+				return fmt.Errorf("no skill points available")
+			}
+			return p.Skills.Allocate(branchIdx, p.Class)
+		}
+	}
+	return fmt.Errorf("player not found")
 }
 
 // BuyItem handles shop purchases

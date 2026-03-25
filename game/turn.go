@@ -147,10 +147,15 @@ func (s *GameSession) resolvePlayerActions() {
 				}
 				s.addLog(fmt.Sprintf("%s used Taunt! Enemies focus on %s for 2 turns", p.Name, p.Name))
 			case entity.ClassMage:
+				skillPower := 0
+				if p.Skills != nil {
+					skillPower = p.Skills.GetSkillPower(p.Class)
+				}
+				multiplier := 0.8 + float64(skillPower)/100.0
 				intents = append(intents, combat.AttackIntent{
 					PlayerATK:  p.EffectiveATK(),
 					TargetIdx:  -1,
-					Multiplier: 0.8,
+					Multiplier: multiplier,
 					IsAoE:      true,
 				})
 				intentOwners = append(intentOwners, p.Name)
@@ -170,8 +175,12 @@ func (s *GameSession) resolvePlayerActions() {
 						}
 					}
 				}
+				healAmount := 30
+				if p.Skills != nil {
+					healAmount += p.Skills.GetSkillPower(p.Class) / 2
+				}
 				before := target.HP
-				target.Heal(30)
+				target.Heal(healAmount)
 				s.addLog(fmt.Sprintf("%s healed %s for %d HP", p.Name, target.Name, target.HP-before))
 			case entity.ClassRogue:
 				currentRoom := s.state.Floor.Rooms[s.state.Floor.CurrentRoom]
@@ -355,6 +364,13 @@ func (s *GameSession) advanceFloor() {
 		s.state.GameOver = true
 		s.addLog("You conquered the Catacombs!")
 		return
+	}
+	// Grant 1 skill point per floor clear
+	for _, p := range s.state.Players {
+		if p.Skills == nil {
+			p.Skills = &entity.PlayerSkills{BranchIndex: -1}
+		}
+		p.Skills.Points++
 	}
 	s.state.FloorNum++
 	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))

@@ -169,6 +169,18 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					return s, nil
 				}
 			}
+			// Skill point allocation
+			if isKey(key, "[") || isKey(key, "]") {
+				if ctx.Session != nil {
+					branchIdx := 0
+					if isKey(key, "]") {
+						branchIdx = 1
+					}
+					ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx)
+					s.gameState = ctx.Session.GetState()
+				}
+				return s, nil
+			}
 			neighbors := s.getNeighbors()
 			if isUp(key) {
 				if s.moveCursor > 0 {
@@ -229,12 +241,12 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *GameScreen) View(ctx *Context) string {
-	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.moveCursor, s.chatting, s.chatInput)
+	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint)
 }
 
-func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int, chatting bool, chatInput string) string {
+func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string) string {
 	mapView := renderMap(state.Floor)
-	hudView := renderHUD(state, targetCursor, moveCursor)
+	hudView := renderHUD(state, targetCursor, moveCursor, fingerprint)
 	logView := renderCombatLog(state.CombatLog)
 
 	if chatting {
@@ -270,7 +282,7 @@ func renderMap(floor *dungeon.Floor) string {
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
-func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
+func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerprint string) string {
 	var sb strings.Builder
 	border := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
@@ -376,6 +388,30 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int) string {
 						sb.WriteString("\n")
 					}
 				}
+			}
+		}
+		// Show skill tree allocation UI if player has unspent points
+		for _, p := range state.Players {
+			if p.Fingerprint == fingerprint && p.Skills != nil && p.Skills.Points > p.Skills.Allocated && p.Skills.Allocated < 3 {
+				branches := entity.GetBranches(p.Class)
+				sb.WriteString("\n")
+				skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
+				sb.WriteString(skillStyle.Render(fmt.Sprintf("  Skill Point Available! (%d unspent)", p.Skills.Points-p.Skills.Allocated)))
+				sb.WriteString("\n")
+				for i, branch := range branches {
+					key := "["
+					if i == 1 {
+						key = "]"
+					}
+					nextNode := p.Skills.Allocated
+					if p.Skills.BranchIndex >= 0 && p.Skills.BranchIndex != i {
+						sb.WriteString(fmt.Sprintf("    [%s] %s (locked)\n", key, branch.Name))
+					} else if nextNode < 3 {
+						node := branch.Nodes[nextNode]
+						sb.WriteString(fmt.Sprintf("    [%s] %s -> %s\n", key, branch.Name, node.Name))
+					}
+				}
+				break
 			}
 		}
 		sb.WriteString("[Up/Down] Select  [Enter] Move  [Q] Quit")
