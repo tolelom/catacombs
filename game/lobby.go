@@ -117,10 +117,10 @@ func (l *Lobby) InvitePlayer(roomCode, fingerprint string) error {
 	defer l.mu.Unlock()
 	p, ok := l.online[fingerprint]
 	if !ok {
-		return fmt.Errorf("player not online")
+		return fmt.Errorf("플레이어가 온라인이 아닙니다")
 	}
 	if p.InRoom != "" {
-		return fmt.Errorf("player already in a room")
+		return fmt.Errorf("플레이어가 이미 방에 있습니다")
 	}
 	// Store the invite as a pending field
 	p.InRoom = "invited:" + roomCode
@@ -148,13 +148,13 @@ func (l *Lobby) JoinRoom(code, playerName, fingerprint string) error {
 	defer l.mu.Unlock()
 	room, ok := l.rooms[code]
 	if !ok {
-		return fmt.Errorf("room %s not found", code)
+		return fmt.Errorf("방 %s을(를) 찾을 수 없습니다", code)
 	}
 	if len(room.Players) >= l.cfg.Game.MaxPlayers {
-		return fmt.Errorf("room %s is full", code)
+		return fmt.Errorf("방 %s이(가) 가득 찼습니다", code)
 	}
 	if room.Status != RoomWaiting {
-		return fmt.Errorf("room %s already in progress", code)
+		return fmt.Errorf("방 %s이(가) 이미 진행 중입니다", code)
 	}
 	room.Players = append(room.Players, LobbyPlayer{Name: playerName, Fingerprint: fingerprint})
 	slog.Info("player joined", "room", code, "player", playerName)

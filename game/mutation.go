@@ -19,15 +19,15 @@ type Mutation struct {
 
 // Mutations is the list of all available mutations.
 var Mutations = []Mutation{
-	{ID: "no_skills", Name: "Skill Lockout", Description: "Class skills are disabled",
+	{ID: "no_skills", Name: "스킬 봉인", Description: "직업 스킬 사용 불가",
 		Apply: func(cfg *config.GameConfig) { cfg.SkillUses = 0 }},
-	{ID: "speed_run", Name: "Speed Run", Description: "Turn timeout halved",
+	{ID: "speed_run", Name: "스피드 런", Description: "턴 제한 시간 절반",
 		Apply: func(cfg *config.GameConfig) { cfg.TurnTimeoutSec = max(cfg.TurnTimeoutSec/2, 2) }},
-	{ID: "no_shop", Name: "Shop Closed", Description: "Shops are unavailable",
+	{ID: "no_shop", Name: "상점 폐쇄", Description: "상점 이용 불가",
 		Apply: func(cfg *config.GameConfig) {}}, // handled at runtime in EnterRoom
-	{ID: "glass_cannon", Name: "Glass Cannon", Description: "Double damage, half HP",
+	{ID: "glass_cannon", Name: "유리 대포", Description: "피해 2배, HP 절반",
 		Apply: func(cfg *config.GameConfig) {}}, // handled at runtime in AddPlayer/spawnMonsters
-	{ID: "elite_flood", Name: "Elite Flood", Description: "All monsters are elite",
+	{ID: "elite_flood", Name: "엘리트 범람", Description: "모든 몬스터가 엘리트",
 		Apply: func(cfg *config.GameConfig) {}}, // handled at runtime in spawnMonsters
 }
 

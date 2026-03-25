@@ -176,7 +176,7 @@ func (s *GameSession) combatLoop() {
 				if last, ok := s.lastActivity[p.Fingerprint]; ok {
 					if now.Sub(last) > 60*time.Second {
 						slog.Warn("player inactive removed", "fingerprint", p.Fingerprint, "name", p.Name)
-						s.addLog(fmt.Sprintf("%s removed (disconnected)", p.Name))
+						s.addLog(fmt.Sprintf("%s 제거됨 (접속 끊김)", p.Name))
 						changed = true
 						continue
 					}
@@ -335,15 +335,15 @@ func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
 	desc := ""
 	switch action.Type {
 	case ActionAttack:
-		desc = "Attacking"
+		desc = "공격"
 	case ActionSkill:
-		desc = "Using Skill"
+		desc = "스킬 사용"
 	case ActionItem:
-		desc = "Using Item"
+		desc = "아이템 사용"
 	case ActionFlee:
-		desc = "Fleeing"
+		desc = "도주"
 	case ActionWait:
-		desc = "Defending"
+		desc = "방어"
 	}
 	if s.state.SubmittedActions == nil {
 		s.state.SubmittedActions = make(map[string]string)
@@ -382,12 +382,12 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) erro
 	for _, p := range s.state.Players {
 		if p.Fingerprint == fingerprint {
 			if p.Skills == nil || p.Skills.Points <= p.Skills.Allocated {
-				return fmt.Errorf("no skill points available")
+				return fmt.Errorf("스킬 포인트가 없습니다")
 			}
 			return p.Skills.Allocate(branchIdx, p.Class)
 		}
 	}
-	return fmt.Errorf("player not found")
+	return fmt.Errorf("플레이어를 찾을 수 없습니다")
 }
 
 // BuyResult describes the outcome of a shop purchase attempt.

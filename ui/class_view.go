@@ -69,10 +69,10 @@ var classOptions = []struct {
 	name  string
 	desc  string
 }{
-	{entity.ClassWarrior, "Warrior", "HP:120 ATK:12 DEF:8  Skill: Taunt (draw enemy fire)"},
-	{entity.ClassMage, "Mage", "HP:70  ATK:20 DEF:3  Skill: Fireball (AoE damage)"},
-	{entity.ClassHealer, "Healer", "HP:90  ATK:8  DEF:5  Skill: Heal (restore 30 HP)"},
-	{entity.ClassRogue, "Rogue", "HP:85  ATK:15 DEF:4  Skill: Scout (reveal rooms)"},
+	{entity.ClassWarrior, "Warrior", "HP:120 ATK:12 DEF:8  스킬: Taunt (적의 공격을 끌어옴)"},
+	{entity.ClassMage, "Mage", "HP:70  ATK:20 DEF:3  스킬: Fireball (광역 피해)"},
+	{entity.ClassHealer, "Healer", "HP:90  ATK:8  DEF:5  스킬: Heal (HP 30 회복)"},
+	{entity.ClassRogue, "Rogue", "HP:85  ATK:15 DEF:4  스킬: Scout (주변 방 탐색)"},
 }
 
 func renderClassSelect(state classSelectState, width, height int) string {
@@ -90,7 +90,7 @@ func renderClassSelect(state classSelectState, width, height int) string {
 	descStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240"))
 
-	header := headerStyle.Render("── Choose Your Class ──")
+	header := headerStyle.Render("── 직업을 선택하세요 ──")
 	list := ""
 	for i, opt := range classOptions {
 		marker := "  "
@@ -103,7 +103,7 @@ func renderClassSelect(state classSelectState, width, height int) string {
 			marker, style.Render(opt.name), descStyle.Render(opt.desc))
 	}
 
-	menu := "[Up/Down] Select  [Enter] Confirm"
+	menu := "[Up/Down] 선택  [Enter] 확인"
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,

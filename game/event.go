@@ -41,7 +41,7 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 		s.signalCombat()
 	case dungeon.RoomShop:
 		if s.hasMutation("no_shop") {
-			s.addLog("The shop is closed! (Weekly mutation)")
+			s.addLog("상점이 닫혔습니다! (주간 변이)")
 			room.Cleared = true
 			return
 		}
@@ -169,7 +169,7 @@ func (s *GameSession) grantTreasure() {
 	floor := s.state.FloorNum
 	for _, p := range s.state.Players {
 		if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
-			s.addLog(fmt.Sprintf("%s's inventory is full!", p.Name))
+			s.addLog(fmt.Sprintf("%s의 인벤토리가 가득 찼습니다!", p.Name))
 			continue
 		}
 		if rand.Float64() < 0.5 {
@@ -178,14 +178,14 @@ func (s *GameSession) grantTreasure() {
 				Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus,
 			}
 			p.Inventory = append(p.Inventory, item)
-			s.addLog(fmt.Sprintf("%s found %s (ATK+%d)", p.Name, item.Name, item.Bonus))
+			s.addLog(fmt.Sprintf("%s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
 		} else {
 			bonus := 2 + rand.Intn(4) + floor/4
 			item := entity.Item{
 				Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus,
 			}
 			p.Inventory = append(p.Inventory, item)
-			s.addLog(fmt.Sprintf("%s found %s (DEF+%d)", p.Name, item.Name, item.Bonus))
+			s.addLog(fmt.Sprintf("%s %s 발견 (DEF+%d)", p.Name, item.Name, item.Bonus))
 		}
 	}
 }
@@ -245,7 +245,7 @@ func armorName(floor int) string {
 func (s *GameSession) triggerEvent() {
 	event := PickRandomEvent()
 	s.state.LastEventName = event.Name
-	s.addLog(fmt.Sprintf("Event: %s — %s", event.Name, event.Description))
+	s.addLog(fmt.Sprintf("이벤트: %s — %s", event.Name, event.Description))
 
 	// Auto-resolve with a random choice
 	choice := event.Choices[rand.Intn(len(event.Choices))]
@@ -267,10 +267,10 @@ func (s *GameSession) triggerEvent() {
 	if outcome.HPChange > 0 {
 		before := target.HP
 		target.Heal(outcome.HPChange)
-		s.addLog(fmt.Sprintf("  %s heals %d HP", target.Name, target.HP-before))
+		s.addLog(fmt.Sprintf("  %s HP %d 회복", target.Name, target.HP-before))
 	} else if outcome.HPChange < 0 {
 		target.TakeDamage(-outcome.HPChange)
-		s.addLog(fmt.Sprintf("  %s takes %d damage", target.Name, -outcome.HPChange))
+		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", target.Name, -outcome.HPChange))
 	}
 
 	if outcome.GoldChange != 0 {
@@ -279,9 +279,9 @@ func (s *GameSession) triggerEvent() {
 			target.Gold = 0
 		}
 		if outcome.GoldChange > 0 {
-			s.addLog(fmt.Sprintf("  %s gains %d gold", target.Name, outcome.GoldChange))
+			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", target.Name, outcome.GoldChange))
 		} else {
-			s.addLog(fmt.Sprintf("  %s loses %d gold", target.Name, -outcome.GoldChange))
+			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", target.Name, -outcome.GoldChange))
 		}
 	}
 
@@ -292,27 +292,27 @@ func (s *GameSession) triggerEvent() {
 				bonus := 3 + rand.Intn(6) + floor/3
 				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
 				target.Inventory = append(target.Inventory, item)
-				s.addLog(fmt.Sprintf("  %s found %s (ATK+%d)", target.Name, item.Name, item.Bonus))
+				s.addLog(fmt.Sprintf("  %s %s 발견 (ATK+%d)", target.Name, item.Name, item.Bonus))
 			} else {
 				bonus := 2 + rand.Intn(4) + floor/4
 				item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
 				target.Inventory = append(target.Inventory, item)
-				s.addLog(fmt.Sprintf("  %s found %s (DEF+%d)", target.Name, item.Name, item.Bonus))
+				s.addLog(fmt.Sprintf("  %s %s 발견 (DEF+%d)", target.Name, item.Name, item.Bonus))
 			}
 		} else {
-			s.addLog(fmt.Sprintf("  %s's inventory is full!", target.Name))
+			s.addLog(fmt.Sprintf("  %s의 인벤토리가 가득 찼습니다!", target.Name))
 		}
 	}
 }
 
 func (s *GameSession) grantSecretTreasure() {
-	s.addLog("You discovered a secret room filled with treasure!")
+	s.addLog("보물로 가득 찬 비밀의 방을 발견했습니다!")
 	floor := s.state.FloorNum
 	// Double treasure: grant two items per player
 	for _, p := range s.state.Players {
 		for i := 0; i < 2; i++ {
 			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
-				s.addLog(fmt.Sprintf("%s's inventory is full!", p.Name))
+				s.addLog(fmt.Sprintf("%s의 인벤토리가 가득 찼습니다!", p.Name))
 				break
 			}
 			if rand.Float64() < 0.5 {
@@ -321,14 +321,14 @@ func (s *GameSession) grantSecretTreasure() {
 					Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus,
 				}
 				p.Inventory = append(p.Inventory, item)
-				s.addLog(fmt.Sprintf("%s found %s (ATK+%d)", p.Name, item.Name, item.Bonus))
+				s.addLog(fmt.Sprintf("%s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
 			} else {
 				bonus := 2 + rand.Intn(4) + floor/4
 				item := entity.Item{
 					Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus,
 				}
 				p.Inventory = append(p.Inventory, item)
-				s.addLog(fmt.Sprintf("%s found %s (DEF+%d)", p.Name, item.Name, item.Bonus))
+				s.addLog(fmt.Sprintf("%s %s 발견 (DEF+%d)", p.Name, item.Name, item.Bonus))
 			}
 		}
 	}
@@ -376,7 +376,7 @@ func (s *GameSession) spawnMiniBoss() {
 		miniBoss.ATK = int(float64(miniBoss.ATK) * mult)
 	}
 	s.state.Monsters = []*entity.Monster{miniBoss}
-	s.addLog(fmt.Sprintf("A mini-boss appears: %s!", miniBoss.Name))
+	s.addLog(fmt.Sprintf("미니보스 등장: %s!", miniBoss.Name))
 
 	// Reset skill uses for all players at combat start
 	for _, p := range s.state.Players {

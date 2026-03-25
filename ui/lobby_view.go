@@ -54,9 +54,9 @@ func (s *LobbyScreen) refreshLobby(ctx *Context) {
 	rooms := ctx.Lobby.ListRooms()
 	s.rooms = make([]roomInfo, len(rooms))
 	for i, r := range rooms {
-		status := "Waiting"
+		status := "대기중"
 		if r.Status == game.RoomPlaying {
-			status = "Playing"
+			status = "진행중"
 		}
 		players := make([]playerInfo, len(r.Players))
 		for j, p := range r.Players {
@@ -108,7 +108,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		// Normal lobby key handling
 		if isKey(key, "c") {
 			if ctx.Lobby != nil {
-				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "'s Room")
+				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 방")
 				ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint)
 				ctx.RoomCode = code
 				return NewClassSelectScreen(), nil
@@ -135,7 +135,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		} else if isKey(key, "d") {
 			// Daily Challenge: create a private solo daily session
 			if ctx.Lobby != nil {
-				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "'s Daily")
+				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 일일 도전")
 				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 					ctx.RoomCode = code
 					room := ctx.Lobby.GetRoom(code)
@@ -200,14 +200,14 @@ func renderLobby(state lobbyState, width, height int) string {
 		Border(lipgloss.RoundedBorder()).
 		Padding(0, 1)
 
-	header := headerStyle.Render(fmt.Sprintf("── Lobby ── %d online ──", state.online))
-	menu := "[C] Create Room  [J] Join by Code  [D] Daily Challenge  [Up/Down] Select  [Enter] Join  [Q] Back"
+	header := headerStyle.Render(fmt.Sprintf("── 로비 ── %d명 접속중 ──", state.online))
+	menu := "[C] 방 만들기  [J] 코드로 참가  [D] 일일 도전  [Up/Down] 선택  [Enter] 참가  [Q] 뒤로"
 	if state.hardUnlocked {
 		hardStatus := "OFF"
 		if state.hardMode {
 			hardStatus = "ON"
 		}
-		menu += fmt.Sprintf("  [H] Hard Mode: %s", hardStatus)
+		menu += fmt.Sprintf("  [H] 하드 모드: %s", hardStatus)
 	}
 
 	roomList := ""
@@ -234,11 +234,11 @@ func renderLobby(state lobbyState, width, height int) string {
 		}
 	}
 	if roomList == "" {
-		roomList = "  No rooms available. Create one!"
+		roomList = "  방이 없습니다. 새로 만드세요!"
 	}
 	if state.joining {
 		inputStr := state.codeInput + strings.Repeat("_", 4-len(state.codeInput))
-		roomList += fmt.Sprintf("\n  Enter room code: [%s]  (Esc to cancel)\n", inputStr)
+		roomList += fmt.Sprintf("\n  방 코드 입력: [%s]  (Esc로 취소)\n", inputStr)
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left,

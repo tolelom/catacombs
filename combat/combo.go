@@ -27,7 +27,7 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassMage, ActionType: "skill"},
 			{Class: entity.ClassWarrior, ActionType: "attack"},
 		},
-		Effect: ComboEffect{DamageMultiplier: 1.5, Message: "💥 ICE SHATTER! Frozen enemies shatter!"},
+		Effect: ComboEffect{DamageMultiplier: 1.5, Message: "💥 ICE SHATTER! 동결된 적이 산산조각!"},
 	},
 	{
 		Name: "Holy Assault",
@@ -35,7 +35,7 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassHealer, ActionType: "skill"},
 			{Class: entity.ClassWarrior, ActionType: "attack"},
 		},
-		Effect: ComboEffect{DamageMultiplier: 1.3, HealAll: 10, Message: "✨ HOLY ASSAULT! Blessed strikes heal the party!"},
+		Effect: ComboEffect{DamageMultiplier: 1.3, HealAll: 10, Message: "✨ HOLY ASSAULT! 축복받은 공격이 파티를 치유!"},
 	},
 	{
 		Name: "Shadow Strike",
@@ -43,7 +43,7 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassRogue, ActionType: "skill"},
 			{Class: entity.ClassMage, ActionType: "attack"},
 		},
-		Effect: ComboEffect{DamageMultiplier: 1.4, Message: "🗡️ SHADOW STRIKE! Magical shadows amplify the attack!"},
+		Effect: ComboEffect{DamageMultiplier: 1.4, Message: "🗡️ SHADOW STRIKE! 마법의 그림자가 공격을 증폭!"},
 	},
 	{
 		Name: "Full Assault",
@@ -52,7 +52,7 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassMage, ActionType: "attack"},
 			{Class: entity.ClassRogue, ActionType: "attack"},
 		},
-		Effect: ComboEffect{DamageMultiplier: 1.3, BonusDamage: 5, Message: "⚔️ FULL ASSAULT! Combined attack overwhelms!"},
+		Effect: ComboEffect{DamageMultiplier: 1.3, BonusDamage: 5, Message: "⚔️ FULL ASSAULT! 합동 공격으로 압도!"},
 	},
 	{
 		Name: "Restoration",
@@ -60,7 +60,7 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassHealer, ActionType: "skill"},
 			{Class: entity.ClassRogue, ActionType: "item"},
 		},
-		Effect: ComboEffect{HealAll: 20, Message: "💚 RESTORATION! Combined healing surges!"},
+		Effect: ComboEffect{HealAll: 20, Message: "💚 RESTORATION! 합동 치유가 폭발적으로 발동!"},
 	},
 }
 

@@ -16,7 +16,7 @@ const (
 )
 
 func (r RoomType) String() string {
-	return [...]string{"Combat", "Treasure", "Shop", "Event", "Empty", "Boss", "Secret", "MiniBoss"}[r]
+	return [...]string{"전투", "보물", "상점", "이벤트", "빈 방", "보스", "비밀", "미니보스"}[r]
 }
 
 type Tile int

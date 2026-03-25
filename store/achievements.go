@@ -14,16 +14,16 @@ type Achievement struct {
 }
 
 var AchievementDefs = []Achievement{
-	{ID: "first_clear", Name: "Dungeon Delver", Description: "Clear floor 5 for the first time"},
-	{ID: "boss_slayer", Name: "Boss Slayer", Description: "Defeat any boss"},
-	{ID: "floor10", Name: "Deep Explorer", Description: "Reach floor 10"},
-	{ID: "floor20", Name: "Conqueror", Description: "Conquer the Catacombs (floor 20)"},
-	{ID: "solo_clear", Name: "Lone Wolf", Description: "Clear floor 5 solo"},
-	{ID: "gold_hoarder", Name: "Gold Hoarder", Description: "Accumulate 200+ gold in one run"},
-	{ID: "no_death", Name: "Untouchable", Description: "Complete a floor without anyone dying"},
-	{ID: "full_party", Name: "Fellowship", Description: "Start a game with 4 players"},
-	{ID: "relic_collector", Name: "Relic Collector", Description: "Collect 3+ relics in one run"},
-	{ID: "flee_master", Name: "Tactical Retreat", Description: "Successfully flee from combat"},
+	{ID: "first_clear", Name: "던전 탐험가", Description: "처음으로 5층 클리어"},
+	{ID: "boss_slayer", Name: "보스 슬레이어", Description: "보스 처치"},
+	{ID: "floor10", Name: "심층 탐험가", Description: "10층 도달"},
+	{ID: "floor20", Name: "정복자", Description: "카타콤 정복 (20층)"},
+	{ID: "solo_clear", Name: "외로운 늑대", Description: "솔로로 5층 클리어"},
+	{ID: "gold_hoarder", Name: "골드 수집가", Description: "한 번의 플레이에서 골드 200 이상 모으기"},
+	{ID: "no_death", Name: "무적", Description: "아무도 죽지 않고 층 클리어"},
+	{ID: "full_party", Name: "동료들", Description: "4명으로 게임 시작"},
+	{ID: "relic_collector", Name: "유물 수집가", Description: "한 번의 플레이에서 유물 3개 이상 수집"},
+	{ID: "flee_master", Name: "전략적 후퇴", Description: "전투에서 도주 성공"},
 }
 
 func (d *DB) initAchievements() error {

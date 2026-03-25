@@ -83,7 +83,7 @@ func (s *WaitingScreen) View(ctx *Context) string {
 	notReadyStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("240"))
 
-	header := headerStyle.Render(fmt.Sprintf("── Waiting Room [%s] ──", ctx.RoomCode))
+	header := headerStyle.Render(fmt.Sprintf("── 대기실 [%s] ──", ctx.RoomCode))
 
 	playerList := ""
 	if ctx.Lobby != nil {
@@ -92,7 +92,7 @@ func (s *WaitingScreen) View(ctx *Context) string {
 			for _, p := range room.Players {
 				status := notReadyStyle.Render("...")
 				if p.Ready {
-					status = readyStyle.Render("READY")
+					status = readyStyle.Render("준비 완료")
 				}
 				cls := p.Class
 				if cls == "" {
@@ -103,11 +103,11 @@ func (s *WaitingScreen) View(ctx *Context) string {
 		}
 	}
 
-	menu := "[Enter] Ready"
+	menu := "[Enter] 준비"
 	if s.ready {
-		menu = "Waiting for other players..."
+		menu = "다른 플레이어를 기다리는 중..."
 	}
-	menu += "  [Esc] Leave"
+	menu += "  [Esc] 나가기"
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,

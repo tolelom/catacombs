@@ -39,7 +39,7 @@ func (s *NicknameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					gs := NewGameScreen()
 					gs.gameState = ctx.Session.GetState()
 					ctx.Session.TouchActivity(ctx.Fingerprint)
-					ctx.Session.SendChat("System", ctx.PlayerName+" reconnected!")
+					ctx.Session.SendChat("System", ctx.PlayerName+" 재접속!")
 					return gs, gs.pollState()
 				}
 			}
@@ -66,7 +66,7 @@ func (s *NicknameScreen) View(ctx *Context) string {
 }
 
 func renderNickname(input string, width, height int) string {
-	title := styleHeader.Render("── Enter Your Name ──")
+	title := styleHeader.Render("── 이름을 입력하세요 ──")
 
 	display := input
 	if display == "" {
@@ -81,8 +81,8 @@ func renderNickname(input string, width, height int) string {
 		Padding(0, 2).
 		Render(stylePlayer.Render(display))
 
-	hint := styleSystem.Render(fmt.Sprintf("(%d/12 characters)", len(input)))
-	footer := styleAction.Render("[Enter] Confirm    [Esc] Cancel")
+	hint := styleSystem.Render(fmt.Sprintf("(%d/12 글자)", len(input)))
+	footer := styleAction.Render("[Enter] 확인    [Esc] 취소")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
 		lipgloss.JoinVertical(lipgloss.Center, title, "", inputBox, hint, "", footer))

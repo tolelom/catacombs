@@ -8,11 +8,11 @@ func TestParseEmote(t *testing.T) {
 		isEmote  bool
 		expected string
 	}{
-		{"/hi", true, "👋 waves hello!"},
-		{"/gg", true, "🎉 says GG!"},
-		{"/go", true, "⚔️ says Let's go!"},
-		{"/wait", true, "✋ says Wait!"},
-		{"/help", true, "🆘 calls for help!"},
+		{"/hi", true, "👋 인사합니다!"},
+		{"/gg", true, "🎉 GG!"},
+		{"/go", true, "⚔️ 가자!"},
+		{"/wait", true, "✋ 기다려!"},
+		{"/help", true, "🆘 도움 요청!"},
 		{"/unknown", false, ""},
 		{"hello", false, ""},
 		{"", false, ""},

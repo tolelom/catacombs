@@ -71,10 +71,10 @@ func (s *CodexScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *CodexScreen) View(ctx *Context) string {
-	title := styleHeader.Render("-- Codex --")
+	title := styleHeader.Render("-- 도감 --")
 
 	// Tab headers
-	tabNames := []string{"Monsters", "Items", "Events"}
+	tabNames := []string{"몬스터", "아이템", "이벤트"}
 	var tabs []string
 	for i, name := range tabNames {
 		if i == s.tab {
@@ -117,7 +117,7 @@ func (s *CodexScreen) View(ctx *Context) string {
 	}
 
 	completion := lipgloss.NewStyle().Foreground(colorCyan).
-		Render(fmt.Sprintf("Discovered: %d/%d (%.0f%%)", count, total, pct))
+		Render(fmt.Sprintf("발견: %d/%d (%.0f%%)", count, total, pct))
 
 	// Sort discovered keys for consistent display
 	discoveredKeys := make([]string, 0, len(discovered))
@@ -151,7 +151,7 @@ func (s *CodexScreen) View(ctx *Context) string {
 		}
 	}
 
-	footer := styleSystem.Render("[Tab/Left/Right] Switch Tab  [Esc] Back")
+	footer := styleSystem.Render("[Tab/Left/Right] 탭 전환  [Esc] 뒤로")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		title,

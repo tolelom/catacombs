@@ -28,211 +28,211 @@ func GetRandomEvents() []RandomEvent {
 	return []RandomEvent{
 		{
 			Name:        "altar",
-			Description: "You discover an ancient altar glowing with strange energy.",
+			Description: "이상한 에너지로 빛나는 고대 제단을 발견했습니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Pray at the altar",
+					Label: "제단에서 기도하기",
 					Resolve: func(floor int) EventOutcome {
 						if rand.Float64() < 0.6 {
 							heal := 15 + floor*2
-							return EventOutcome{HPChange: heal, Description: "The altar blesses you with healing light."}
+							return EventOutcome{HPChange: heal, Description: "제단이 치유의 빛으로 축복합니다."}
 						}
 						dmg := 10 + floor
-						return EventOutcome{HPChange: -dmg, Description: "The altar's energy lashes out at you!"}
+						return EventOutcome{HPChange: -dmg, Description: "제단의 에너지가 당신을 공격합니다!"}
 					},
 				},
 				{
-					Label: "Offer gold",
+					Label: "골드 바치기",
 					Resolve: func(floor int) EventOutcome {
 						cost := 10 + floor
-						return EventOutcome{GoldChange: -cost, ItemDrop: true, Description: "You offer gold and receive a divine gift."}
+						return EventOutcome{GoldChange: -cost, ItemDrop: true, Description: "골드를 바치고 신성한 선물을 받았습니다."}
 					},
 				},
 				{
-					Label: "Walk away",
+					Label: "그냥 지나가기",
 					Resolve: func(floor int) EventOutcome {
-						return EventOutcome{Description: "You leave the altar undisturbed."}
+						return EventOutcome{Description: "제단을 건드리지 않고 떠납니다."}
 					},
 				},
 			},
 		},
 		{
 			Name:        "fountain",
-			Description: "A shimmering fountain bubbles in the center of the room.",
+			Description: "방 중앙에서 빛나는 분수가 솟아오릅니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Drink from the fountain",
+					Label: "분수의 물 마시기",
 					Resolve: func(floor int) EventOutcome {
 						heal := 20 + floor*2
-						return EventOutcome{HPChange: heal, Description: "The water rejuvenates you!"}
+						return EventOutcome{HPChange: heal, Description: "물이 당신을 활기차게 합니다!"}
 					},
 				},
 				{
-					Label: "Toss a coin",
+					Label: "동전 던지기",
 					Resolve: func(floor int) EventOutcome {
 						if rand.Float64() < 0.5 {
 							gold := 15 + floor*3
-							return EventOutcome{GoldChange: gold, Description: "The fountain rewards your generosity!"}
+							return EventOutcome{GoldChange: gold, Description: "분수가 당신의 관대함에 보답합니다!"}
 						}
-						return EventOutcome{GoldChange: -5, Description: "The coin sinks and nothing happens."}
+						return EventOutcome{GoldChange: -5, Description: "동전이 가라앉고 아무 일도 일어나지 않습니다."}
 					},
 				},
 			},
 		},
 		{
 			Name:        "merchant",
-			Description: "A hooded merchant appears from the shadows.",
+			Description: "두건을 쓴 상인이 어둠 속에서 나타납니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Trade gold for healing",
+					Label: "골드로 치료 거래",
 					Resolve: func(floor int) EventOutcome {
 						cost := 15 + floor
 						heal := 25 + floor*2
-						return EventOutcome{HPChange: heal, GoldChange: -cost, Description: "The merchant sells you a healing draught."}
+						return EventOutcome{HPChange: heal, GoldChange: -cost, Description: "상인이 치유의 물약을 팝니다."}
 					},
 				},
 				{
-					Label: "Buy a mystery item",
+					Label: "미스터리 아이템 구매",
 					Resolve: func(floor int) EventOutcome {
 						cost := 20 + floor*2
-						return EventOutcome{GoldChange: -cost, ItemDrop: true, Description: "The merchant hands you a wrapped package."}
+						return EventOutcome{GoldChange: -cost, ItemDrop: true, Description: "상인이 포장된 꾸러미를 건넵니다."}
 					},
 				},
 				{
-					Label: "Decline",
+					Label: "거절하기",
 					Resolve: func(floor int) EventOutcome {
-						return EventOutcome{Description: "The merchant vanishes into the shadows."}
+						return EventOutcome{Description: "상인이 어둠 속으로 사라집니다."}
 					},
 				},
 			},
 		},
 		{
 			Name:        "trap_room",
-			Description: "The floor is covered with suspicious pressure plates.",
+			Description: "바닥이 수상한 압력판으로 덮여 있습니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Carefully navigate",
+					Label: "조심히 지나가기",
 					Resolve: func(floor int) EventOutcome {
 						if rand.Float64() < 0.5 {
-							return EventOutcome{Description: "You skillfully avoid all the traps!"}
+							return EventOutcome{Description: "능숙하게 모든 함정을 피했습니다!"}
 						}
 						dmg := 8 + floor
-						return EventOutcome{HPChange: -dmg, Description: "You trigger a trap and take damage!"}
+						return EventOutcome{HPChange: -dmg, Description: "함정을 밟아 피해를 입었습니다!"}
 					},
 				},
 				{
-					Label: "Rush through",
+					Label: "돌진하기",
 					Resolve: func(floor int) EventOutcome {
 						dmg := 5 + floor/2
 						gold := 10 + floor*2
-						return EventOutcome{HPChange: -dmg, GoldChange: gold, Description: "You take minor damage but find hidden gold!"}
+						return EventOutcome{HPChange: -dmg, GoldChange: gold, Description: "약간의 피해를 입었지만 숨겨진 골드를 발견했습니다!"}
 					},
 				},
 			},
 		},
 		{
 			Name:        "shrine",
-			Description: "A glowing shrine hums with divine power.",
+			Description: "신성한 힘으로 울리는 빛나는 성소가 있습니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Kneel and pray",
+					Label: "무릎 꿇고 기도하기",
 					Resolve: func(floor int) EventOutcome {
 						heal := 30 + floor*2
-						return EventOutcome{HPChange: heal, Description: "The shrine fills you with renewed vigor!"}
+						return EventOutcome{HPChange: heal, Description: "성소가 새로운 활력으로 가득 채워줍니다!"}
 					},
 				},
 				{
-					Label: "Take the offering",
+					Label: "제물 가져가기",
 					Resolve: func(floor int) EventOutcome {
 						gold := 20 + floor*3
 						dmg := 15 + floor
-						return EventOutcome{HPChange: -dmg, GoldChange: gold, Description: "You steal the offering but anger the spirits!"}
+						return EventOutcome{HPChange: -dmg, GoldChange: gold, Description: "제물을 훔쳤지만 영혼들이 분노합니다!"}
 					},
 				},
 			},
 		},
 		{
 			Name:        "chest",
-			Description: "An ornate chest sits in the corner of the room.",
+			Description: "방 구석에 화려한 상자가 놓여 있습니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Open carefully",
+					Label: "조심히 열기",
 					Resolve: func(floor int) EventOutcome {
 						if rand.Float64() < 0.7 {
 							gold := 15 + floor*2
-							return EventOutcome{GoldChange: gold, Description: "The chest contains a pile of gold!"}
+							return EventOutcome{GoldChange: gold, Description: "상자 안에 골드 더미가 있습니다!"}
 						}
 						dmg := 12 + floor
-						return EventOutcome{HPChange: -dmg, Description: "The chest was a mimic! It bites you!"}
+						return EventOutcome{HPChange: -dmg, Description: "상자가 미믹이었습니다! 물어뜯깁니다!"}
 					},
 				},
 				{
-					Label: "Smash it open",
+					Label: "부수어 열기",
 					Resolve: func(floor int) EventOutcome {
-						return EventOutcome{ItemDrop: true, Description: "You smash the chest and find equipment inside!"}
+						return EventOutcome{ItemDrop: true, Description: "상자를 부수고 안에서 장비를 발견했습니다!"}
 					},
 				},
 				{
-					Label: "Leave it",
+					Label: "그냥 두기",
 					Resolve: func(floor int) EventOutcome {
-						return EventOutcome{Description: "Better safe than sorry."}
+						return EventOutcome{Description: "안전한 게 최고입니다."}
 					},
 				},
 			},
 		},
 		{
 			Name:        "ghost",
-			Description: "A spectral figure materializes before you.",
+			Description: "유령 같은 형체가 눈앞에 나타납니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Speak with the ghost",
+					Label: "유령과 대화하기",
 					Resolve: func(floor int) EventOutcome {
 						gold := 10 + floor*2
-						return EventOutcome{GoldChange: gold, Description: "The ghost thanks you for listening and rewards you."}
+						return EventOutcome{GoldChange: gold, Description: "유령이 들어줘서 감사하며 보상합니다."}
 					},
 				},
 				{
-					Label: "Attack the ghost",
+					Label: "유령 공격하기",
 					Resolve: func(floor int) EventOutcome {
 						if rand.Float64() < 0.4 {
-							return EventOutcome{ItemDrop: true, Description: "The ghost drops a spectral weapon as it fades!"}
+							return EventOutcome{ItemDrop: true, Description: "유령이 사라지며 유령 무기를 떨어뜨립니다!"}
 						}
 						dmg := 15 + floor
-						return EventOutcome{HPChange: -dmg, Description: "The ghost retaliates with ghostly fury!"}
+						return EventOutcome{HPChange: -dmg, Description: "유령이 분노하여 반격합니다!"}
 					},
 				},
 			},
 		},
 		{
 			Name:        "mushroom",
-			Description: "Strange glowing mushrooms grow in clusters here.",
+			Description: "이상하게 빛나는 버섯들이 무리 지어 자라고 있습니다.",
 			Choices: []EventChoice{
 				{
-					Label: "Eat a mushroom",
+					Label: "버섯 먹기",
 					Resolve: func(floor int) EventOutcome {
 						r := rand.Float64()
 						if r < 0.33 {
 							heal := 20 + floor*2
-							return EventOutcome{HPChange: heal, Description: "The mushroom tastes great and heals you!"}
+							return EventOutcome{HPChange: heal, Description: "버섯이 맛있고 치유 효과가 있습니다!"}
 						} else if r < 0.66 {
 							dmg := 10 + floor
-							return EventOutcome{HPChange: -dmg, Description: "The mushroom was poisonous!"}
+							return EventOutcome{HPChange: -dmg, Description: "독버섯이었습니다!"}
 						}
 						gold := 10 + floor
-						return EventOutcome{GoldChange: gold, Description: "The mushroom gives you strange visions... and gold falls from above!"}
+						return EventOutcome{GoldChange: gold, Description: "버섯이 이상한 환각을 보여주고... 위에서 골드가 떨어집니다!"}
 					},
 				},
 				{
-					Label: "Collect and sell",
+					Label: "채집하여 팔기",
 					Resolve: func(floor int) EventOutcome {
 						gold := 8 + floor
-						return EventOutcome{GoldChange: gold, Description: "You carefully harvest the mushrooms for sale."}
+						return EventOutcome{GoldChange: gold, Description: "조심히 버섯을 채집하여 판매합니다."}
 					},
 				},
 				{
-					Label: "Ignore them",
+					Label: "무시하기",
 					Resolve: func(floor int) EventOutcome {
-						return EventOutcome{Description: "You wisely avoid the mysterious fungi."}
+						return EventOutcome{Description: "의문의 균류를 현명하게 피합니다."}
 					},
 				},
 			},

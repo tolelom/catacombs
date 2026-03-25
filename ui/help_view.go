@@ -26,38 +26,38 @@ func (s *HelpScreen) View(ctx *Context) string {
 }
 
 func renderHelp(width, height int) string {
-	title := styleHeader.Render("── Controls ──")
+	title := styleHeader.Render("── 조작법 ──")
 
 	sections := []struct{ header, body string }{
-		{"Lobby", `  [C]  Create room    [J]  Join by code
-  [Enter] Join selected room
-  [D]  Daily Challenge  [H]  Hard Mode toggle
-  [Q]  Back to title`},
-		{"Exploration", `  [Up/Down]  Select room
-  [Enter]    Move to room
-  [[]  / []]  Allocate skill point (branch 1/2)
-  [/]        Chat
-  [Q]        Quit`},
-		{"Combat (10s per turn)", `  [1]  Attack      [2]  Skill
-  [3]  Use Item    [4]  Flee
-  [5]  Defend      [Tab] Switch Target
-  [/]  Chat`},
-		{"Shop", `  [1-3]  Buy item
-  [Q]    Leave shop`},
-		{"Classes", `  Warrior  120HP 12ATK 8DEF  Taunt (draw fire 2t)
-  Mage      70HP 20ATK 3DEF  Fireball (AoE 0.8x)
-  Healer    90HP  8ATK 5DEF  Heal (restore 30HP)
-  Rogue     85HP 15ATK 4DEF  Scout (reveal rooms)`},
-		{"Multiplayer", `  • Up to 4 players per room
-  • Co-op bonus: +10% dmg when 2+ target same enemy
-  • Class combos trigger bonus effects
-  • All players ready → game starts`},
-		{"Tips", `  • Skills have 3 uses per combat
-  • Items are limited to 10 per player
-  • Dead players revive next floor at 30% HP
-  • Bosses appear at floors 5, 10, 15, 20
-  • Skill points: 1 per floor clear (max 3)
-  • Weekly mutations rotate gameplay modifiers`},
+		{"로비", `  [C]  방 만들기     [J]  코드로 참가
+  [Enter] 선택한 방 참가
+  [D]  일일 도전      [H]  하드 모드 전환
+  [Q]  타이틀로 돌아가기`},
+		{"탐험", `  [Up/Down]  방 선택
+  [Enter]    방으로 이동
+  [[]  / []]  스킬 포인트 배분 (분기 1/2)
+  [/]        채팅
+  [Q]        종료`},
+		{"전투 (턴당 10초)", `  [1]  공격        [2]  스킬
+  [3]  아이템 사용  [4]  도주
+  [5]  방어        [Tab] 대상 변경
+  [/]  채팅`},
+		{"상점", `  [1-3]  아이템 구매
+  [Q]    상점 나가기`},
+		{"직업", `  Warrior  120HP 12ATK 8DEF  Taunt (2턴간 적 공격 유도)
+  Mage      70HP 20ATK 3DEF  Fireball (광역 0.8배)
+  Healer    90HP  8ATK 5DEF  Heal (HP 30 회복)
+  Rogue     85HP 15ATK 4DEF  Scout (주변 방 공개)`},
+		{"멀티플레이", `  • 방당 최대 4명
+  • 협동 보너스: 2명 이상이 같은 적 공격 시 피해 +10%
+  • 직업 콤보로 추가 효과 발동
+  • 모든 플레이어 준비 완료 시 게임 시작`},
+		{"팁", `  • 스킬은 전투당 3회 사용 가능
+  • 아이템은 플레이어당 10개 제한
+  • 사망한 플레이어는 다음 층에서 HP 30%로 부활
+  • 보스는 5, 10, 15, 20층에 등장
+  • 스킬 포인트: 층 클리어당 1포인트 (최대 3)
+  • 주간 변이가 게임플레이를 변경`},
 	}
 
 	var content string
@@ -69,7 +69,7 @@ func renderHelp(width, height int) string {
 		content += bodyStyle.Render(s.body) + "\n\n"
 	}
 
-	footer := styleSystem.Render("[H] Back")
+	footer := styleSystem.Render("[H] 뒤로")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
 		lipgloss.JoinVertical(lipgloss.Center, title, "", content, footer))

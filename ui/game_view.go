@@ -386,7 +386,7 @@ func renderMap(floor *dungeon.Floor) string {
 	}
 	total := len(floor.Rooms)
 
-	header := headerStyle.Render(fmt.Sprintf("── Catacombs B%d: %s ── %d/%d Rooms ──", floor.Number, theme.Name, explored, total))
+	header := headerStyle.Render(fmt.Sprintf("── 카타콤 B%d: %s ── %d/%d 방 ──", floor.Number, theme.Name, explored, total))
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
@@ -401,16 +401,16 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 		hpBar := renderHPBar(p.HP, p.MaxHP, 20)
 		status := ""
 		if p.IsDead() {
-			status = " [DEAD]"
+			status = " [사망]"
 		}
-		sb.WriteString(fmt.Sprintf("%s (%s) %s %d/%d%s  Gold: %d",
+		sb.WriteString(fmt.Sprintf("%s (%s) %s %d/%d%s  골드: %d",
 			p.Name, p.Class, hpBar, p.HP, p.MaxHP, status, p.Gold))
 
 		// Show inventory count
 		itemCount := len(p.Inventory)
 		relicCount := len(p.Relics)
 		if itemCount > 0 || relicCount > 0 {
-			sb.WriteString(fmt.Sprintf("  Items:%d Relics:%d", itemCount, relicCount))
+			sb.WriteString(fmt.Sprintf("  아이템:%d 유물:%d", itemCount, relicCount))
 		}
 		sb.WriteString("\n")
 	}
@@ -439,7 +439,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 		sb.WriteString("\n")
 
 		// Action bar
-		sb.WriteString(styleAction.Render("[1]Attack [2]Skill [3]Item [4]Flee [5]Wait [Tab]Target [/]Chat"))
+		sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 [Tab]대상 [/]채팅"))
 		sb.WriteString("\n")
 
 		// Timer
@@ -448,7 +448,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 			if remaining < 0 {
 				remaining = 0
 			}
-			sb.WriteString(styleTimer.Render(fmt.Sprintf("  Timer: %.1fs", remaining.Seconds())))
+			sb.WriteString(styleTimer.Render(fmt.Sprintf("  타이머: %.1f초", remaining.Seconds())))
 			sb.WriteString("\n")
 		}
 
@@ -458,15 +458,15 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 				var skillDesc string
 				switch p.Class {
 				case entity.ClassWarrior:
-					skillDesc = "Skill: Taunt — enemies attack you for 2 turns"
+					skillDesc = "스킬: Taunt — 2턴간 적의 공격을 끌어옴"
 				case entity.ClassMage:
-					skillDesc = "Skill: Fireball — AoE 0.8x dmg to all enemies"
+					skillDesc = "스킬: Fireball — 전체 적에게 0.8배 피해"
 				case entity.ClassHealer:
-					skillDesc = "Skill: Heal — restore 30 HP to an ally"
+					skillDesc = "스킬: Heal — 아군 HP 30 회복"
 				case entity.ClassRogue:
-					skillDesc = "Skill: Scout — reveal neighboring rooms"
+					skillDesc = "스킬: Scout — 주변 방 공개"
 				}
-				skillDesc += fmt.Sprintf(" (%d uses left)", p.SkillUses)
+				skillDesc += fmt.Sprintf(" (남은 횟수: %d)", p.SkillUses)
 				sb.WriteString(styleSystem.Render(skillDesc))
 				sb.WriteString("\n")
 				break
@@ -484,7 +484,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 						r := state.Floor.Rooms[n]
 						status := r.Type.String()
 						if r.Cleared {
-							status = "Cleared"
+							status = "클리어"
 						}
 						marker := "  "
 						style := normalStyle
@@ -492,7 +492,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 							marker = "> "
 							style = selectedStyle
 						}
-						sb.WriteString(style.Render(fmt.Sprintf("%sRoom %d: %s", marker, n, status)))
+						sb.WriteString(style.Render(fmt.Sprintf("%s방 %d: %s", marker, n, status)))
 						sb.WriteString("\n")
 					}
 				}
@@ -504,7 +504,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 				branches := entity.GetBranches(p.Class)
 				sb.WriteString("\n")
 				skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
-				sb.WriteString(skillStyle.Render(fmt.Sprintf("  Skill Point Available! (%d unspent)", p.Skills.Points-p.Skills.Allocated)))
+				sb.WriteString(skillStyle.Render(fmt.Sprintf("  스킬 포인트 사용 가능! (미사용: %d)", p.Skills.Points-p.Skills.Allocated)))
 				sb.WriteString("\n")
 				for i, branch := range branches {
 					key := "["
@@ -513,7 +513,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 					}
 					nextNode := p.Skills.Allocated
 					if p.Skills.BranchIndex >= 0 && p.Skills.BranchIndex != i {
-						sb.WriteString(fmt.Sprintf("    [%s] %s (locked)\n", key, branch.Name))
+						sb.WriteString(fmt.Sprintf("    [%s] %s (잠김)\n", key, branch.Name))
 					} else if nextNode < 3 {
 						node := branch.Nodes[nextNode]
 						sb.WriteString(fmt.Sprintf("    [%s] %s -> %s\n", key, branch.Name, node.Name))
@@ -522,7 +522,7 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 				break
 			}
 		}
-		sb.WriteString("[Up/Down] Select  [Enter] Move  [Q] Quit")
+		sb.WriteString("[Up/Down] 선택  [Enter] 이동  [Q] 종료")
 	}
 
 	if state.Phase == game.PhaseCombat {
@@ -550,19 +550,19 @@ func renderCombatLog(log []string) string {
 
 func colorizeLog(msg string) string {
 	switch {
-	case strings.Contains(msg, "fled"):
+	case strings.Contains(msg, "도주"):
 		return styleFlee.Render(msg)
-	case strings.Contains(msg, "co-op"):
+	case strings.Contains(msg, "협동"):
 		return styleCoop.Render(msg)
-	case strings.Contains(msg, "healed") || strings.Contains(msg, "Heal") || strings.Contains(msg, "Blessing"):
+	case strings.Contains(msg, "회복") || strings.Contains(msg, "Heal") || strings.Contains(msg, "치유") || strings.Contains(msg, "부활"):
 		return styleHeal.Render(msg)
-	case strings.Contains(msg, "dmg") || strings.Contains(msg, "hit") || strings.Contains(msg, "attacks") || strings.Contains(msg, "Trap"):
+	case strings.Contains(msg, "피해") || strings.Contains(msg, "공격") || strings.Contains(msg, "Trap") || strings.Contains(msg, "함정"):
 		return styleDamage.Render(msg)
-	case strings.Contains(msg, "Taunt") || strings.Contains(msg, "scouted"):
+	case strings.Contains(msg, "Taunt") || strings.Contains(msg, "정찰"):
 		return styleStatus.Render(msg)
-	case strings.Contains(msg, "gold") || strings.Contains(msg, "Gold") || strings.Contains(msg, "found"):
+	case strings.Contains(msg, "골드") || strings.Contains(msg, "Gold") || strings.Contains(msg, "발견"):
 		return styleGold.Render(msg)
-	case strings.Contains(msg, "defeated") || strings.Contains(msg, "cleared") || strings.Contains(msg, "Descending"):
+	case strings.Contains(msg, "처치") || strings.Contains(msg, "클리어") || strings.Contains(msg, "내려갑니다") || strings.Contains(msg, "정복"):
 		return styleSystem.Render(msg)
 	default:
 		return msg
@@ -600,14 +600,14 @@ func renderHPBar(current, max, width int) string {
 
 func renderPartyPanel(players []*entity.Player, submittedActions map[string]string) string {
 	var sb strings.Builder
-	sb.WriteString(styleHeader.Render("  PARTY") + "\n\n")
+	sb.WriteString(styleHeader.Render("  아군") + "\n\n")
 
 	for _, p := range players {
 		nameStr := stylePlayer.Render(fmt.Sprintf("  ♦ %s", p.Name))
 		classStr := styleSystem.Render(fmt.Sprintf(" (%s)", p.Class))
 		status := ""
 		if p.IsDead() {
-			status = styleDamage.Render(" [DEAD]")
+			status = styleDamage.Render(" [사망]")
 		}
 		sb.WriteString(nameStr + classStr + status + "\n")
 
@@ -637,7 +637,7 @@ func renderPartyPanel(players []*entity.Player, submittedActions map[string]stri
 			sb.WriteString(styleHeal.Render(fmt.Sprintf("    ✓ %s", action)))
 			sb.WriteString("\n")
 		} else if !p.IsOut() {
-			sb.WriteString(styleSystem.Render("    ... Waiting"))
+			sb.WriteString(styleSystem.Render("    ... 대기중"))
 			sb.WriteString("\n")
 		}
 		sb.WriteString("\n")
@@ -647,7 +647,7 @@ func renderPartyPanel(players []*entity.Player, submittedActions map[string]stri
 
 func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
 	var sb strings.Builder
-	sb.WriteString(styleHeader.Render("  ENEMIES") + "\n\n")
+	sb.WriteString(styleHeader.Render("  적") + "\n\n")
 
 	for i, m := range monsters {
 		if m.IsDead() {
@@ -667,7 +667,7 @@ func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
 		hpBar := renderHPBar(m.HP, m.MaxHP, 12)
 		taunt := ""
 		if m.TauntTarget {
-			taunt = styleStatus.Render(fmt.Sprintf(" [TAUNTED %dt]", m.TauntTurns))
+			taunt = styleStatus.Render(fmt.Sprintf(" [도발됨 %d턴]", m.TauntTurns))
 		}
 		sb.WriteString(fmt.Sprintf("  %s[%d] %s %s %d/%d%s\n\n",
 			marker, i, styleEnemy.Render(m.Name), hpBar, m.HP, m.MaxHP, taunt))

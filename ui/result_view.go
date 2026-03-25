@@ -56,30 +56,30 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 
 	// Title
 	if state.Victory {
-		sb.WriteString(styleHeal.Render("  ✦ VICTORY ✦  ") + "\n\n")
-		sb.WriteString(styleSystem.Render("  You conquered the Catacombs!") + "\n\n")
+		sb.WriteString(styleHeal.Render("  ✦ 승리 ✦  ") + "\n\n")
+		sb.WriteString(styleSystem.Render("  카타콤을 정복했습니다!") + "\n\n")
 	} else {
-		sb.WriteString(styleDamage.Render("  ✦ DEFEAT ✦  ") + "\n\n")
-		sb.WriteString(styleSystem.Render(fmt.Sprintf("  Fallen on floor B%d", state.FloorNum)) + "\n\n")
+		sb.WriteString(styleDamage.Render("  ✦ 패배 ✦  ") + "\n\n")
+		sb.WriteString(styleSystem.Render(fmt.Sprintf("  B%d층에서 쓰러졌습니다", state.FloorNum)) + "\n\n")
 	}
 
 	// Player summary
-	sb.WriteString(styleHeader.Render("── Party Summary ──") + "\n\n")
+	sb.WriteString(styleHeader.Render("── 파티 요약 ──") + "\n\n")
 	totalGold := 0
 	for _, p := range state.Players {
-		status := styleHeal.Render("Alive")
+		status := styleHeal.Render("생존")
 		if p.IsDead() {
-			status = styleDamage.Render("Dead")
+			status = styleDamage.Render("사망")
 		}
-		sb.WriteString(fmt.Sprintf("  %s (%s)  %s  Gold: %d  Items: %d  Relics: %d\n",
+		sb.WriteString(fmt.Sprintf("  %s (%s)  %s  골드: %d  아이템: %d  유물: %d\n",
 			stylePlayer.Render(p.Name), p.Class, status, p.Gold, len(p.Inventory), len(p.Relics)))
 		totalGold += p.Gold
 	}
-	sb.WriteString(fmt.Sprintf("\n  Total Gold: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold))))
+	sb.WriteString(fmt.Sprintf("\n  총 골드: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold))))
 
 	// Rankings
 	if len(rankings) > 0 {
-		sb.WriteString("\n" + styleHeader.Render("── Top Runs ──") + "\n\n")
+		sb.WriteString("\n" + styleHeader.Render("── 최고 기록 ──") + "\n\n")
 		for i, r := range rankings {
 			medal := "  "
 			switch i {
@@ -90,11 +90,11 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 			case 2:
 				medal = styleGold.Render("🥉")
 			}
-			sb.WriteString(fmt.Sprintf("  %s %s  Floor B%d  Score: %d\n", medal, r.Player, r.Floor, r.Score))
+			sb.WriteString(fmt.Sprintf("  %s %s  B%d층  점수: %d\n", medal, r.Player, r.Floor, r.Score))
 		}
 	}
 
-	sb.WriteString("\n" + styleAction.Render("  [Enter] Return to Lobby") + "\n")
+	sb.WriteString("\n" + styleAction.Render("  [Enter] 로비로 돌아가기") + "\n")
 
 	return sb.String()
 }

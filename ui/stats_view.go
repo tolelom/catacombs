@@ -33,22 +33,22 @@ func (s *StatsScreen) View(ctx *Context) string {
 }
 
 func renderStats(playerName string, stats store.PlayerStats, width, height int) string {
-	title := styleHeader.Render("── Player Statistics ──")
+	title := styleHeader.Render("── 플레이어 통계 ──")
 
 	var content string
 	content += stylePlayer.Render(fmt.Sprintf("  %s", playerName)) + "\n\n"
-	content += fmt.Sprintf("  Total Runs:   %s\n", styleGold.Render(fmt.Sprintf("%d", stats.TotalRuns)))
-	content += fmt.Sprintf("  Best Floor:   %s\n", styleGold.Render(fmt.Sprintf("B%d", stats.BestFloor)))
-	content += fmt.Sprintf("  Total Gold:   %s\n", styleGold.Render(fmt.Sprintf("%d", stats.TotalGold)))
-	content += fmt.Sprintf("  Victories:    %s\n", styleHeal.Render(fmt.Sprintf("%d", stats.Victories)))
+	content += fmt.Sprintf("  총 플레이:    %s\n", styleGold.Render(fmt.Sprintf("%d", stats.TotalRuns)))
+	content += fmt.Sprintf("  최고 층:      %s\n", styleGold.Render(fmt.Sprintf("B%d", stats.BestFloor)))
+	content += fmt.Sprintf("  총 골드:      %s\n", styleGold.Render(fmt.Sprintf("%d", stats.TotalGold)))
+	content += fmt.Sprintf("  승리 횟수:    %s\n", styleHeal.Render(fmt.Sprintf("%d", stats.Victories)))
 
 	winRate := 0.0
 	if stats.TotalRuns > 0 {
 		winRate = float64(stats.Victories) / float64(stats.TotalRuns) * 100
 	}
-	content += fmt.Sprintf("  Win Rate:     %s\n", styleSystem.Render(fmt.Sprintf("%.1f%%", winRate)))
+	content += fmt.Sprintf("  승률:         %s\n", styleSystem.Render(fmt.Sprintf("%.1f%%", winRate)))
 
-	footer := styleSystem.Render("[S] Back")
+	footer := styleSystem.Render("[S] 뒤로")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
 		lipgloss.JoinVertical(lipgloss.Center, title, "", content, "", footer))

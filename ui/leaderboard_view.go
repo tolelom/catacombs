@@ -43,10 +43,10 @@ func (s *LeaderboardScreen) View(ctx *Context) string {
 }
 
 func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRecord, tab, width, height int) string {
-	title := styleHeader.Render("── Leaderboard ──")
+	title := styleHeader.Render("── 리더보드 ──")
 
 	// Tab header
-	tabs := []string{"Floor", "Gold", "Daily"}
+	tabs := []string{"층수", "골드", "일일"}
 	var tabLine string
 	for i, t := range tabs {
 		if i == tab {
@@ -60,7 +60,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 
 	switch tab {
 	case 0: // By Floor
-		content += styleCoop.Render("  Top by Floor") + "\n"
+		content += styleCoop.Render("  층수 순위") + "\n"
 		for i, r := range byFloor {
 			if i >= 10 {
 				break
@@ -75,7 +75,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
 		}
 	case 1: // By Gold
-		content += styleCoop.Render("  Top by Gold") + "\n"
+		content += styleCoop.Render("  골드 순위") + "\n"
 		for i, r := range byGold {
 			if i >= 10 {
 				break
@@ -90,9 +90,9 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)))
 		}
 	case 2: // Daily
-		content += styleCoop.Render(fmt.Sprintf("  Daily Challenge — %s", time.Now().Format("2006-01-02"))) + "\n"
+		content += styleCoop.Render(fmt.Sprintf("  일일 도전 — %s", time.Now().Format("2006-01-02"))) + "\n"
 		if len(daily) == 0 {
-			content += "  No daily runs yet today.\n"
+			content += "  오늘 일일 도전 기록이 없습니다.\n"
 		}
 		for i, r := range daily {
 			if i >= 20 {
@@ -105,7 +105,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 		}
 	}
 
-	footer := styleSystem.Render("\n[Tab] Switch Tab  [L] Back")
+	footer := styleSystem.Render("\n[Tab] 탭 전환  [L] 뒤로")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
 		lipgloss.JoinVertical(lipgloss.Center, title, tabLine, "", content, footer))

@@ -200,7 +200,7 @@ func TestBleedEffect(t *testing.T) {
 	p.AddEffect(ActiveEffect{Type: StatusBleed, Duration: 3, Value: 2})
 
 	msgs := p.TickEffects()
-	if len(msgs) == 0 || !strings.Contains(msgs[0], "bleed") {
+	if len(msgs) == 0 || !strings.Contains(msgs[0], "출혈") {
 		t.Error("expected bleed damage message")
 	}
 	if p.HP != startHP-2 {
@@ -231,7 +231,7 @@ func TestFreezeTickMessage(t *testing.T) {
 	p := NewPlayer("Test", ClassMage)
 	p.AddEffect(ActiveEffect{Type: StatusFreeze, Duration: 1, Value: 0})
 	msgs := p.TickEffects()
-	if len(msgs) == 0 || !strings.Contains(msgs[0], "frozen") {
+	if len(msgs) == 0 || !strings.Contains(msgs[0], "동결") {
 		t.Error("expected freeze message")
 	}
 	// Freeze duration 1 -> removed after tick

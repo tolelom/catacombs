@@ -99,13 +99,13 @@ func (s *GameSession) resolvePlayerActions() {
 					bonus := int(float64(e.Value) * (theme.DamageMult - 1.0))
 					if bonus > 0 {
 						p.TakeDamage(bonus)
-						s.addLog(fmt.Sprintf("  (%s theme: +%d damage)", theme.Name, bonus))
+						s.addLog(fmt.Sprintf("  (%s 테마: +%d 피해)", theme.Name, bonus))
 					}
 				}
 			}
 
 			if p.IsDead() {
-				s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
+				s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 		// Frozen players skip their action
 		if frozenPlayers[p.Fingerprint] {
-			s.addLog(fmt.Sprintf("%s is frozen and cannot act!", p.Name))
+			s.addLog(fmt.Sprintf("%s 동결되어 행동할 수 없습니다!", p.Name))
 			continue
 		}
 		action, ok := s.actions[p.Fingerprint]
@@ -146,7 +146,7 @@ func (s *GameSession) resolvePlayerActions() {
 			intentOwners = append(intentOwners, p.Name)
 		case ActionSkill:
 			if p.SkillUses <= 0 {
-				s.addLog(fmt.Sprintf("%s has no skill uses left!", p.Name))
+				s.addLog(fmt.Sprintf("%s 스킬 사용 횟수가 없습니다!", p.Name))
 				break
 			}
 			p.SkillUses--
@@ -158,7 +158,7 @@ func (s *GameSession) resolvePlayerActions() {
 						m.TauntTurns = 2
 					}
 				}
-				s.addLog(fmt.Sprintf("%s used Taunt! Enemies focus on %s for 2 turns", p.Name, p.Name))
+				s.addLog(fmt.Sprintf("%s Taunt 사용! 적들이 2턴간 %s를 집중 공격합니다", p.Name, p.Name))
 			case entity.ClassMage:
 				skillPower := 0
 				if p.Skills != nil {
@@ -197,13 +197,13 @@ func (s *GameSession) resolvePlayerActions() {
 				}
 				before := target.HP
 				target.Heal(healAmount)
-				s.addLog(fmt.Sprintf("%s healed %s for %d HP", p.Name, target.Name, target.HP-before))
+				s.addLog(fmt.Sprintf("%s이(가) %s에게 HP %d 회복", p.Name, target.Name, target.HP-before))
 			case entity.ClassRogue:
 				currentRoom := s.state.Floor.Rooms[s.state.Floor.CurrentRoom]
 				for _, neighborIdx := range currentRoom.Neighbors {
 					s.state.Floor.Rooms[neighborIdx].Visited = true
 				}
-				s.addLog(fmt.Sprintf("%s scouted nearby rooms!", p.Name))
+				s.addLog(fmt.Sprintf("%s 주변 방을 정찰했습니다!", p.Name))
 			}
 		case ActionItem:
 			found := false
@@ -216,17 +216,17 @@ func (s *GameSession) resolvePlayerActions() {
 					}
 					p.Heal(healAmt)
 					p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
-					s.addLog(fmt.Sprintf("%s used %s, restored %d HP", p.Name, item.Name, p.HP-before))
+					s.addLog(fmt.Sprintf("%s %s 사용, HP %d 회복", p.Name, item.Name, p.HP-before))
 					found = true
 					break
 				}
 			}
 			if !found {
-				s.addLog(fmt.Sprintf("%s has no items to use!", p.Name))
+				s.addLog(fmt.Sprintf("%s 사용할 아이템이 없습니다!", p.Name))
 			}
 		case ActionFlee:
 			if combat.AttemptFlee(s.cfg.Combat.FleeChance) {
-				s.addLog(fmt.Sprintf("%s fled from battle!", p.Name))
+				s.addLog(fmt.Sprintf("%s 전투에서 도주했습니다!", p.Name))
 				s.state.FleeSucceeded = true
 				if s.state.SoloMode {
 					s.state.Phase = PhaseExploring
@@ -234,10 +234,10 @@ func (s *GameSession) resolvePlayerActions() {
 				}
 				p.Fled = true
 			} else {
-				s.addLog(fmt.Sprintf("%s failed to flee!", p.Name))
+				s.addLog(fmt.Sprintf("%s 도주에 실패했습니다!", p.Name))
 			}
 		case ActionWait:
-			s.addLog(fmt.Sprintf("%s is defending", p.Name))
+			s.addLog(fmt.Sprintf("%s 방어 중", p.Name))
 		}
 	}
 
@@ -252,7 +252,7 @@ func (s *GameSession) resolvePlayerActions() {
 	if allFled && !s.state.SoloMode {
 		s.state.Phase = PhaseExploring
 		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
-		s.addLog("All players fled!")
+		s.addLog("모든 플레이어가 도주했습니다!")
 		for _, p := range s.state.Players {
 			p.Fled = false
 		}
@@ -307,16 +307,16 @@ func (s *GameSession) resolvePlayerActions() {
 			if r.IsAoE {
 				coopStr := ""
 				if r.CoopApplied {
-					coopStr = " (co-op!)"
+					coopStr = " (협동!)"
 				}
-				s.addLog(fmt.Sprintf("%s hit all enemies for %d total dmg%s", owner, r.Damage, coopStr))
+				s.addLog(fmt.Sprintf("%s 전체 적에게 총 %d 피해%s", owner, r.Damage, coopStr))
 			} else if r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
 				target := s.state.Monsters[r.TargetIdx]
 				coopStr := ""
 				if r.CoopApplied {
-					coopStr = " (co-op!)"
+					coopStr = " (협동!)"
 				}
-				s.addLog(fmt.Sprintf("%s hit %s for %d dmg%s", owner, target.Name, r.Damage, coopStr))
+				s.addLog(fmt.Sprintf("%s이(가) %s에게 %d 피해%s", owner, target.Name, r.Damage, coopStr))
 			}
 			// Apply Life Siphon relic: heal percentage of damage dealt
 			if r.Damage > 0 {
@@ -326,7 +326,7 @@ func (s *GameSession) resolvePlayerActions() {
 							heal := r.Damage * rel.Value / 100
 							if heal > 0 {
 								p.Heal(heal)
-								s.addLog(fmt.Sprintf("  %s's Life Siphon heals %d HP", p.Name, heal))
+								s.addLog(fmt.Sprintf("  %s의 Life Siphon으로 HP %d 회복", p.Name, heal))
 							}
 						}
 					}
@@ -359,13 +359,13 @@ func (s *GameSession) resolvePlayerActions() {
 						}
 						if r.Effect == entity.RelicHealOnKill {
 							p.Heal(r.Value)
-							s.addLog(fmt.Sprintf("%s's relic heals %d HP", p.Name, r.Value))
+							s.addLog(fmt.Sprintf("%s의 유물로 HP %d 회복", p.Name, r.Value))
 						}
 					}
 					p.Gold += goldReward + bonus
 				}
 			}
-			s.addLog(fmt.Sprintf("%s defeated! +%d gold", m.Name, goldReward))
+			s.addLog(fmt.Sprintf("%s 처치! +%d 골드", m.Name, goldReward))
 			if m.IsBoss {
 				s.state.BossKilled = true
 				s.grantBossRelic()
@@ -385,7 +385,7 @@ func (s *GameSession) resolvePlayerActions() {
 	// Check if combat is over
 	if len(s.state.Monsters) == 0 {
 		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
-		s.addLog("Room cleared!")
+		s.addLog("방 클리어!")
 		for _, p := range s.state.Players {
 			p.Fled = false
 		}
@@ -402,7 +402,7 @@ func (s *GameSession) advanceFloor() {
 		s.state.Phase = PhaseResult
 		s.state.Victory = true
 		s.state.GameOver = true
-		s.addLog("You conquered the Catacombs!")
+		s.addLog("카타콤을 정복했습니다!")
 		return
 	}
 	// Grant 1 skill point per floor clear
@@ -421,11 +421,11 @@ func (s *GameSession) advanceFloor() {
 	}
 	s.state.Phase = PhaseExploring
 	s.state.CombatTurn = 0
-	s.addLog(fmt.Sprintf("Descending to B%d...", s.state.FloorNum))
+	s.addLog(fmt.Sprintf("B%d층으로 내려갑니다...", s.state.FloorNum))
 	for _, p := range s.state.Players {
 		if p.IsDead() {
 			p.Revive(0.30)
-			s.addLog(fmt.Sprintf("✦ %s revived at %d HP!", p.Name, p.HP))
+			s.addLog(fmt.Sprintf("✦ %s HP %d로 부활!", p.Name, p.HP))
 		}
 		p.Fled = false
 	}
@@ -445,7 +445,7 @@ func (s *GameSession) grantBossRelic() {
 		if !p.IsOut() {
 			r := relics[rand.Intn(len(relics))]
 			p.Relics = append(p.Relics, r)
-			s.addLog(fmt.Sprintf("%s obtained relic: %s", p.Name, r.Name))
+			s.addLog(fmt.Sprintf("%s 유물 획득: %s", p.Name, r.Name))
 		}
 	}
 }
@@ -464,9 +464,9 @@ func (s *GameSession) resolveMonsterActions() {
 				if !p.IsOut() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 0.5)
 					p.TakeDamage(dmg)
-					s.addLog(fmt.Sprintf("%s AoE hits %s for %d dmg", m.Name, p.Name, dmg))
+					s.addLog(fmt.Sprintf("%s 광역 공격으로 %s에게 %d 피해", m.Name, p.Name, dmg))
 					if p.IsDead() {
-						s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
+						s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
 					}
 				}
 			}
@@ -477,21 +477,21 @@ func (s *GameSession) resolveMonsterActions() {
 					for _, p := range s.state.Players {
 						if !p.IsOut() {
 							p.AddEffect(entity.ActiveEffect{Type: entity.StatusPoison, Duration: 3, Value: 5})
-							s.addLog(fmt.Sprintf("%s poisons %s!", m.Name, p.Name))
+							s.addLog(fmt.Sprintf("%s이(가) %s에게 독을 걸었습니다!", m.Name, p.Name))
 						}
 					}
 				case entity.PatternBurn:
 					for _, p := range s.state.Players {
 						if !p.IsOut() {
 							p.AddEffect(entity.ActiveEffect{Type: entity.StatusBurn, Duration: 2, Value: 8})
-							s.addLog(fmt.Sprintf("%s burns %s!", m.Name, p.Name))
+							s.addLog(fmt.Sprintf("%s이(가) %s을(를) 불태웠습니다!", m.Name, p.Name))
 						}
 					}
 				case entity.PatternFreeze:
 					for _, p := range s.state.Players {
 						if !p.IsOut() {
 							p.AddEffect(entity.ActiveEffect{Type: entity.StatusFreeze, Duration: 1, Value: 0})
-							s.addLog(fmt.Sprintf("%s freezes %s!", m.Name, p.Name))
+							s.addLog(fmt.Sprintf("%s이(가) %s을(를) 동결시켰습니다!", m.Name, p.Name))
 						}
 					}
 				case entity.PatternHeal:
@@ -500,7 +500,7 @@ func (s *GameSession) resolveMonsterActions() {
 					if m.HP > m.MaxHP {
 						m.HP = m.MaxHP
 					}
-					s.addLog(fmt.Sprintf("%s regenerates %d HP!", m.Name, healAmt))
+					s.addLog(fmt.Sprintf("%s HP %d 재생!", m.Name, healAmt))
 				}
 			}
 		} else {
@@ -509,20 +509,20 @@ func (s *GameSession) resolveMonsterActions() {
 				if !p.IsOut() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 1.0)
 					p.TakeDamage(dmg)
-					s.addLog(fmt.Sprintf("%s attacks %s for %d dmg", m.Name, p.Name, dmg))
+					s.addLog(fmt.Sprintf("%s이(가) %s을(를) 공격하여 %d 피해", m.Name, p.Name, dmg))
 					if m.IsElite {
 						def := entity.ElitePrefixDefs[m.ElitePrefix]
 						if def.OnHit >= 0 {
 							p.AddEffect(entity.ActiveEffect{Type: def.OnHit, Duration: 2, Value: 3})
-							s.addLog(fmt.Sprintf("%s's %s effect afflicts %s!", m.Name, def.Name, p.Name))
+							s.addLog(fmt.Sprintf("%s의 %s 효과가 %s에게 적용!", m.Name, def.Name, p.Name))
 						} else if m.ElitePrefix == entity.PrefixVampiric {
 							heal := dmg / 4
 							m.HP = min(m.HP+heal, m.MaxHP)
-							s.addLog(fmt.Sprintf("%s drains life from %s! (+%d HP)", m.Name, p.Name, heal))
+							s.addLog(fmt.Sprintf("%s이(가) %s의 생명력을 흡수! (+%d HP)", m.Name, p.Name, heal))
 						}
 					}
 					if p.IsDead() {
-						s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
+						s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
 					}
 				}
 			}
@@ -540,6 +540,6 @@ func (s *GameSession) resolveMonsterActions() {
 	if allPlayersDead {
 		s.state.Phase = PhaseResult
 		s.state.GameOver = true
-		s.addLog("Party wiped!")
+		s.addLog("파티가 전멸했습니다!")
 	}
 }

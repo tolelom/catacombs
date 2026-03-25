@@ -1,11 +1,11 @@
 package game
 
 var emotes = map[string]string{
-	"/hi":   "👋 waves hello!",
-	"/gg":   "🎉 says GG!",
-	"/go":   "⚔️ says Let's go!",
-	"/wait": "✋ says Wait!",
-	"/help": "🆘 calls for help!",
+	"/hi":   "👋 인사합니다!",
+	"/gg":   "🎉 GG!",
+	"/go":   "⚔️ 가자!",
+	"/wait": "✋ 기다려!",
+	"/help": "🆘 도움 요청!",
 }
 
 func ParseEmote(input string) (string, bool) {

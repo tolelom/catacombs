@@ -33,7 +33,7 @@ func (s *AchievementsScreen) View(ctx *Context) string {
 }
 
 func renderAchievements(playerName string, achievements []store.Achievement, width, height int) string {
-	title := styleHeader.Render("── Achievements ──")
+	title := styleHeader.Render("── 업적 ──")
 
 	var content string
 	unlocked := 0
@@ -49,9 +49,9 @@ func renderAchievements(playerName string, achievements []store.Achievement, wid
 		content += styleSystem.Render("    "+a.Description) + "\n"
 	}
 
-	progress := fmt.Sprintf("\n  %s", styleGold.Render(fmt.Sprintf("%d/%d Unlocked", unlocked, len(achievements))))
+	progress := fmt.Sprintf("\n  %s", styleGold.Render(fmt.Sprintf("%d/%d 해금", unlocked, len(achievements))))
 
-	footer := styleSystem.Render("\n[A] Back")
+	footer := styleSystem.Render("\n[A] 뒤로")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
 		lipgloss.JoinVertical(lipgloss.Center, title, "", content, progress, footer))

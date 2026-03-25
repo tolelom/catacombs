@@ -179,22 +179,22 @@ func (p *Player) TickEffects() []string {
 			if p.HP <= 0 {
 				p.HP = 1 // Poison can't kill, leaves at 1 HP
 			}
-			msgs = append(msgs, fmt.Sprintf("%s takes %d poison damage", p.Name, e.Value))
+			msgs = append(msgs, fmt.Sprintf("%s 독 피해 %d", p.Name, e.Value))
 		case StatusBurn:
 			p.HP -= e.Value
 			if p.HP <= 0 {
 				p.HP = 0
 				p.Dead = true
 			}
-			msgs = append(msgs, fmt.Sprintf("%s takes %d burn damage", p.Name, e.Value))
+			msgs = append(msgs, fmt.Sprintf("%s 화상 피해 %d", p.Name, e.Value))
 		case StatusFreeze:
-			msgs = append(msgs, fmt.Sprintf("%s is frozen!", p.Name))
+			msgs = append(msgs, fmt.Sprintf("%s 동결됨!", p.Name))
 		case StatusBleed:
 			p.HP -= e.Value
-			msgs = append(msgs, fmt.Sprintf("%s takes %d bleed damage", p.Name, e.Value))
+			msgs = append(msgs, fmt.Sprintf("%s 출혈 피해 %d", p.Name, e.Value))
 			e.Value++ // Bleed intensifies each turn
 		case StatusCurse:
-			msgs = append(msgs, fmt.Sprintf("%s is cursed! Healing reduced", p.Name))
+			msgs = append(msgs, fmt.Sprintf("%s 저주 상태! 회복량 감소", p.Name))
 		}
 		if p.HP < 0 {
 			p.HP = 0

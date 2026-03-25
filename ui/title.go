@@ -44,7 +44,7 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					gs := NewGameScreen()
 					gs.gameState = ctx.Session.GetState()
 					ctx.Session.TouchActivity(ctx.Fingerprint)
-					ctx.Session.SendChat("System", ctx.PlayerName+" reconnected!")
+					ctx.Session.SendChat("System", ctx.PlayerName+" 재접속!")
 					return gs, gs.pollState()
 				}
 			}
@@ -101,7 +101,7 @@ func renderTitle(width, height int) string {
 
 	subtitle := lipgloss.NewStyle().
 		Foreground(colorGray).
-		Render("⚔  A Cooperative Dungeon Crawler  ⚔")
+		Render("⚔  협동 던전 크롤러  ⚔")
 
 	server := lipgloss.NewStyle().
 		Foreground(colorCyan).
@@ -110,7 +110,7 @@ func renderTitle(width, height int) string {
 	menu := lipgloss.NewStyle().
 		Foreground(colorWhite).
 		Bold(true).
-		Render("[Enter] Start  [H] Help  [S] Stats  [A] Achievements  [L] Leaderboard  [C] Codex  [Q] Quit")
+		Render("[Enter] 시작  [H] 도움말  [S] 통계  [A] 업적  [L] 리더보드  [C] 도감  [Q] 종료")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		logo,

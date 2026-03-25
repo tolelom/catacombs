@@ -27,13 +27,13 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				idx := int(key.String()[0] - '1')
 				switch ctx.Session.BuyItem(ctx.Fingerprint, idx) {
 				case game.BuyOK:
-					s.shopMsg = "Purchased!"
+					s.shopMsg = "구매 완료!"
 				case game.BuyNoGold:
-					s.shopMsg = "Not enough gold!"
+					s.shopMsg = "골드가 부족합니다!"
 				case game.BuyInventoryFull:
-					s.shopMsg = "Inventory full!"
+					s.shopMsg = "인벤토리가 가득 찼습니다!"
 				default:
-					s.shopMsg = "Cannot buy that!"
+					s.shopMsg = "구매할 수 없습니다!"
 				}
 				s.gameState = ctx.Session.GetState()
 			}
@@ -76,23 +76,23 @@ func renderShop(state game.GameState, width, height int, shopMsg string) string 
 		Foreground(lipgloss.Color("196")).
 		Bold(true)
 
-	header := headerStyle.Render("── Shop ──")
+	header := headerStyle.Render("── 상점 ──")
 
 	// Show current player's gold
 	goldLine := ""
 	for _, p := range state.Players {
 		inventoryCount := len(p.Inventory)
-		goldLine += goldStyle.Render(fmt.Sprintf("  %s — Gold: %d  Items: %d/10", p.Name, p.Gold, inventoryCount))
+		goldLine += goldStyle.Render(fmt.Sprintf("  %s — 골드: %d  아이템: %d/10", p.Name, p.Gold, inventoryCount))
 		goldLine += "\n"
 	}
 
 	items := ""
 	for i, item := range state.ShopItems {
 		label := itemTypeLabel(item)
-		items += fmt.Sprintf("  [%d] %s %s — %d gold\n", i+1, item.Name, label, item.Price)
+		items += fmt.Sprintf("  [%d] %s %s — %d 골드\n", i+1, item.Name, label, item.Price)
 	}
 
-	menu := "[1-3] Buy  [Q] Leave Shop"
+	menu := "[1-3] 구매  [Q] 상점 나가기"
 
 	parts := []string{header, "", goldLine, items, "", menu}
 	if shopMsg != "" {
