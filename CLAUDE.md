@@ -16,11 +16,65 @@ go test ./entity/ -run TestName   # Run a specific test
 go vet ./...                      # Lint
 ```
 
-Docker:
+Docker (local):
 ```bash
 docker build -t catacombs .
 docker-compose up                 # SSH on :2222, HTTP on :8080
 ```
+
+## Deployment (tolelom.xyz)
+
+The game runs as a Docker container on the Mac Mini server, behind Caddy reverse proxy.
+
+**Server structure:**
+```
+~/server/
+├── docker-compose.yml      # All services (caddy, gitea, catacombs, etc.)
+├── caddy/Caddyfile          # Reverse proxy config
+└── apps/catacombs/          # Git clone of this repo
+```
+
+**First-time setup:**
+```bash
+cd ~/server
+git clone https://git.tolelom.xyz/tolelom/Catacombs.git apps/catacombs
+```
+
+Add to `docker-compose.yml` services:
+```yaml
+  catacombs:
+    build: ./apps/catacombs
+    restart: always
+    logging: *default-logging
+    volumes:
+      - catacombs_data:/app/data
+    networks:
+      - web
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          pids: 200
+```
+
+Add `catacombs_data:` to the `volumes:` section.
+
+Add to `caddy/Caddyfile`:
+```
+catacombs.tolelom.xyz {
+    encode gzip zstd
+    reverse_proxy catacombs:8080
+}
+```
+
+**Deploy / Update:**
+```bash
+cd ~/server/apps/catacombs && git pull
+cd ~/server && docker compose up -d --build catacombs
+docker restart server-caddy-1    # only needed if Caddyfile changed
+```
+
+**Access:** https://catacombs.tolelom.xyz/static/
 
 ## Architecture
 
