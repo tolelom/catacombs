@@ -8,9 +8,12 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh"
+	"github.com/tolelom/catacombs/game"
+	"github.com/tolelom/catacombs/store"
 )
 
 //go:embed static
@@ -26,8 +29,8 @@ type resizeMsg struct {
 	Rows int    `json:"rows"`
 }
 
-// Start launches the HTTP server for the web terminal.
-func Start(addr string, sshPort int) error {
+// Start launches the HTTP server for the web terminal and returns the server handle.
+func Start(addr string, sshPort int, lobby *game.Lobby, db *store.DB, startTime time.Time) *http.Server {
 	mux := http.NewServeMux()
 
 	// Serve static files from embedded FS
@@ -38,8 +41,19 @@ func Start(addr string, sshPort int) error {
 		handleWS(w, r, sshPort)
 	})
 
+	// Admin endpoint
+	mux.Handle("/admin", AdminHandler(lobby, db, startTime))
+
+	srv := &http.Server{Addr: addr, Handler: mux}
+
 	slog.Info("starting web terminal", "addr", addr)
-	return http.ListenAndServe(addr, mux)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("web server error", "error", err)
+		}
+	}()
+
+	return srv
 }
 
 func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {

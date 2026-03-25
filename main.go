@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/tolelom/catacombs/config"
 	"github.com/tolelom/catacombs/game"
@@ -41,12 +42,9 @@ func main() {
 	sshAddr := fmt.Sprintf("0.0.0.0:%d", cfg.Server.SSHPort)
 	webAddr := fmt.Sprintf(":%d", cfg.Server.HTTPPort)
 
-	// Start web terminal server in background
-	go func() {
-		if err := web.Start(webAddr, cfg.Server.SSHPort); err != nil {
-			slog.Error("web server error", "error", err)
-		}
-	}()
+	startTime := time.Now()
+	webServer := web.Start(webAddr, cfg.Server.SSHPort, lobby, db, startTime)
+	_ = webServer // used later for graceful shutdown
 
 	slog.Info("server starting", "ssh_port", cfg.Server.SSHPort, "http_port", cfg.Server.HTTPPort)
 	if err := server.Start(sshAddr, lobby, db); err != nil {
