@@ -37,6 +37,15 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Combat.MonsterScaling != 1.15 {
 		t.Errorf("expected monster scaling 1.15, got %f", cfg.Combat.MonsterScaling)
 	}
+	if cfg.Difficulty.HardModeMonsterMult != 1.5 {
+		t.Errorf("expected hard mode monster mult 1.5, got %f", cfg.Difficulty.HardModeMonsterMult)
+	}
+	if cfg.Difficulty.HardModeShopMult != 2.0 {
+		t.Errorf("expected hard mode shop mult 2.0, got %f", cfg.Difficulty.HardModeShopMult)
+	}
+	if cfg.Difficulty.HardModeHealMult != 0.5 {
+		t.Errorf("expected hard mode heal mult 0.5, got %f", cfg.Difficulty.HardModeHealMult)
+	}
 }
 
 func TestLoadFromFile(t *testing.T) {

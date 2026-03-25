@@ -42,3 +42,11 @@ backup:
   interval_min: 60
   # Directory for backup files
   dir: "./data/backup"
+
+difficulty:
+  # Monster stat multiplier in hard mode
+  hard_mode_monster_mult: 1.5
+  # Shop price multiplier in hard mode
+  hard_mode_shop_mult: 2.0
+  # Healing effectiveness multiplier in hard mode
+  hard_mode_heal_mult: 0.5

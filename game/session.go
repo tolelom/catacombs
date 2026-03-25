@@ -73,15 +73,17 @@ func (s *GameSession) clearLog() {
 }
 
 type GameSession struct {
-	mu           sync.Mutex
-	cfg          *config.Config
-	state        GameState
-	started      bool
-	actions      map[string]PlayerAction // playerName -> action
-	actionCh     chan playerActionMsg
-	combatSignal chan struct{}
-	done         chan struct{}
-	lastActivity map[string]time.Time // fingerprint -> last activity time
+	mu             sync.Mutex
+	cfg            *config.Config
+	state          GameState
+	started        bool
+	actions        map[string]PlayerAction // playerName -> action
+	actionCh       chan playerActionMsg
+	combatSignal   chan struct{}
+	done           chan struct{}
+	lastActivity   map[string]time.Time // fingerprint -> last activity time
+	HardMode       bool
+	ActiveMutation *Mutation
 }
 
 type playerActionMsg struct {

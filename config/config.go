@@ -7,11 +7,18 @@ import (
 )
 
 type Config struct {
-	Server  ServerConfig  `yaml:"server"`
-	Game    GameConfig    `yaml:"game"`
-	Combat  CombatConfig  `yaml:"combat"`
-	Dungeon DungeonConfig `yaml:"dungeon"`
-	Backup  BackupConfig  `yaml:"backup"`
+	Server     ServerConfig     `yaml:"server"`
+	Game       GameConfig       `yaml:"game"`
+	Combat     CombatConfig     `yaml:"combat"`
+	Dungeon    DungeonConfig    `yaml:"dungeon"`
+	Backup     BackupConfig     `yaml:"backup"`
+	Difficulty DifficultyConfig `yaml:"difficulty"`
+}
+
+type DifficultyConfig struct {
+	HardModeMonsterMult float64 `yaml:"hard_mode_monster_mult"`
+	HardModeShopMult    float64 `yaml:"hard_mode_shop_mult"`
+	HardModeHealMult    float64 `yaml:"hard_mode_heal_mult"`
 }
 
 type ServerConfig struct {
@@ -55,7 +62,8 @@ func defaults() Config {
 		},
 		Combat: CombatConfig{FleeChance: 0.50, MonsterScaling: 1.15, SoloHPReduction: 0.50},
 		Dungeon: DungeonConfig{MapWidth: 60, MapHeight: 20, MinRooms: 5, MaxRooms: 8},
-		Backup: BackupConfig{IntervalMin: 60, Dir: "./data/backup"},
+		Backup:     BackupConfig{IntervalMin: 60, Dir: "./data/backup"},
+		Difficulty: DifficultyConfig{HardModeMonsterMult: 1.5, HardModeShopMult: 2.0, HardModeHealMult: 0.5},
 	}
 }
 

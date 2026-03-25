@@ -24,14 +24,16 @@ type playerInfo struct {
 
 // LobbyScreen shows available rooms and lets players create/join.
 type LobbyScreen struct {
-	rooms     []roomInfo
-	input     string
-	cursor    int
-	creating  bool
-	roomName  string
-	joining   bool
-	codeInput string
-	online    int
+	rooms        []roomInfo
+	input        string
+	cursor       int
+	creating     bool
+	roomName     string
+	joining      bool
+	codeInput    string
+	online       int
+	hardMode     bool
+	hardUnlocked bool
 }
 
 func NewLobbyScreen() *LobbyScreen {
@@ -62,6 +64,9 @@ func (s *LobbyScreen) refreshLobby(ctx *Context) {
 	}
 	s.online = len(ctx.Lobby.ListOnline())
 	s.cursor = 0
+	if ctx.Store != nil {
+		s.hardUnlocked = ctx.Store.IsUnlocked(ctx.Fingerprint, "hard_mode")
+	}
 }
 
 func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
@@ -115,6 +120,8 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					return NewClassSelectScreen(), nil
 				}
 			}
+		} else if isKey(key, "h") && s.hardUnlocked {
+			s.hardMode = !s.hardMode
 		} else if isKey(key, "q") {
 			if ctx.Lobby != nil {
 				ctx.Lobby.PlayerOffline(ctx.Fingerprint)
@@ -127,27 +134,31 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 
 func (s *LobbyScreen) View(ctx *Context) string {
 	state := lobbyState{
-		rooms:     s.rooms,
-		input:     s.input,
-		cursor:    s.cursor,
-		creating:  s.creating,
-		roomName:  s.roomName,
-		joining:   s.joining,
-		codeInput: s.codeInput,
-		online:    s.online,
+		rooms:        s.rooms,
+		input:        s.input,
+		cursor:       s.cursor,
+		creating:     s.creating,
+		roomName:     s.roomName,
+		joining:      s.joining,
+		codeInput:    s.codeInput,
+		online:       s.online,
+		hardMode:     s.hardMode,
+		hardUnlocked: s.hardUnlocked,
 	}
 	return renderLobby(state, ctx.Width, ctx.Height)
 }
 
 type lobbyState struct {
-	rooms     []roomInfo
-	input     string
-	cursor    int
-	creating  bool
-	roomName  string
-	joining   bool
-	codeInput string
-	online    int
+	rooms        []roomInfo
+	input        string
+	cursor       int
+	creating     bool
+	roomName     string
+	joining      bool
+	codeInput    string
+	online       int
+	hardMode     bool
+	hardUnlocked bool
 }
 
 func renderLobby(state lobbyState, width, height int) string {
@@ -161,6 +172,13 @@ func renderLobby(state lobbyState, width, height int) string {
 
 	header := headerStyle.Render(fmt.Sprintf("── Lobby ── %d online ──", state.online))
 	menu := "[C] Create Room  [J] Join by Code  [Up/Down] Select  [Enter] Join  [Q] Back"
+	if state.hardUnlocked {
+		hardStatus := "OFF"
+		if state.hardMode {
+			hardStatus = "ON"
+		}
+		menu += fmt.Sprintf("  [H] Hard Mode: %s", hardStatus)
+	}
 
 	roomList := ""
 	for i, r := range state.rooms {
