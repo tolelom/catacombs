@@ -81,21 +81,21 @@ func (s *GameSession) spawnMonsters() {
 
 	for i := 0; i < count; i++ {
 		mt := valid[rand.Intn(len(valid))]
-		m := entity.NewMonster(mt, floor)
+		m := entity.NewMonster(mt, floor, s.cfg.Combat.MonsterScaling)
 		if s.state.SoloMode {
-			m.HP = m.HP / 2
+			m.HP = int(float64(m.HP) * s.cfg.Combat.SoloHPReduction)
 			if m.HP < 1 {
 				m.HP = 1
 			}
 			m.MaxHP = m.HP
-			m.DEF = m.DEF / 2
+			m.DEF = int(float64(m.DEF) * s.cfg.Combat.SoloHPReduction)
 		}
 		s.state.Monsters[i] = m
 	}
 
 	// Reset skill uses for all players at combat start
 	for _, p := range s.state.Players {
-		p.SkillUses = 3
+		p.SkillUses = s.cfg.Game.SkillUses
 	}
 }
 
@@ -113,7 +113,7 @@ func (s *GameSession) spawnBoss() {
 	default:
 		mt = entity.MonsterBoss5
 	}
-	boss := entity.NewMonster(mt, s.state.FloorNum)
+	boss := entity.NewMonster(mt, s.state.FloorNum, s.cfg.Combat.MonsterScaling)
 	switch mt {
 	case entity.MonsterBoss5:
 		boss.Pattern = entity.PatternAoE
@@ -125,22 +125,22 @@ func (s *GameSession) spawnBoss() {
 		boss.Pattern = entity.PatternHeal
 	}
 	if s.state.SoloMode {
-		boss.HP = boss.HP / 2
+		boss.HP = int(float64(boss.HP) * s.cfg.Combat.SoloHPReduction)
 		boss.MaxHP = boss.HP
-		boss.DEF = boss.DEF / 2
+		boss.DEF = int(float64(boss.DEF) * s.cfg.Combat.SoloHPReduction)
 	}
 	s.state.Monsters = []*entity.Monster{boss}
 
 	// Reset skill uses for all players at combat start
 	for _, p := range s.state.Players {
-		p.SkillUses = 3
+		p.SkillUses = s.cfg.Game.SkillUses
 	}
 }
 
 func (s *GameSession) grantTreasure() {
 	floor := s.state.FloorNum
 	for _, p := range s.state.Players {
-		if len(p.Inventory) >= 10 {
+		if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
 			s.addLog(fmt.Sprintf("%s's inventory is full!", p.Name))
 			continue
 		}

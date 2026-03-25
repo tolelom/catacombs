@@ -31,7 +31,7 @@ type AttackResult struct {
 	IsAoE       bool
 }
 
-func ResolveAttacks(intents []AttackIntent, monsters []*entity.Monster) []AttackResult {
+func ResolveAttacks(intents []AttackIntent, monsters []*entity.Monster, coopBonus float64) []AttackResult {
 	targetCount := make(map[int]int)
 	targetOrder := make(map[int]int)
 	for i, intent := range intents {
@@ -63,7 +63,7 @@ func ResolveAttacks(intents []AttackIntent, monsters []*entity.Monster) []Attack
 			dmg := CalcDamage(intent.PlayerATK, m.DEF, intent.Multiplier)
 			coopApplied := false
 			if targetCount[intent.TargetIdx] >= 2 && targetOrder[intent.TargetIdx] != i {
-				dmg = int(math.Round(float64(dmg) * 1.10))
+				dmg = int(math.Round(float64(dmg) * (1.0 + coopBonus)))
 				coopApplied = true
 			}
 			m.TakeDamage(dmg)
@@ -77,8 +77,8 @@ func ResolveAttacks(intents []AttackIntent, monsters []*entity.Monster) []Attack
 	return results
 }
 
-func AttemptFlee() bool {
-	return rand.Float64() < 0.5
+func AttemptFlee(fleeChance float64) bool {
+	return rand.Float64() < fleeChance
 }
 
 func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (targetIdx int, isAoE bool) {

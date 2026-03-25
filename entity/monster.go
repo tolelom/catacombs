@@ -54,11 +54,11 @@ type Monster struct {
 	Pattern     BossPattern
 }
 
-func NewMonster(mt MonsterType, floor int) *Monster {
+func NewMonster(mt MonsterType, floor int, scaling float64) *Monster {
 	base := monsterDefs[mt]
 	scale := 1.0
 	if !base.IsBoss && floor > base.MinFloor {
-		scale = math.Pow(1.15, float64(floor-base.MinFloor))
+		scale = math.Pow(scaling, float64(floor-base.MinFloor))
 	}
 	hp := int(math.Round(float64(base.HP) * scale))
 	atk := int(math.Round(float64(base.ATK) * scale))

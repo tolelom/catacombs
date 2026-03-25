@@ -53,6 +53,10 @@ func NewLobby(cfg *config.Config) *Lobby {
 	}
 }
 
+func (l *Lobby) Cfg() *config.Config {
+	return l.cfg
+}
+
 func (l *Lobby) RegisterSession(fingerprint, roomCode string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -144,7 +148,7 @@ func (l *Lobby) JoinRoom(code, playerName, fingerprint string) error {
 	if !ok {
 		return fmt.Errorf("room %s not found", code)
 	}
-	if len(room.Players) >= 4 {
+	if len(room.Players) >= l.cfg.Game.MaxPlayers {
 		return fmt.Errorf("room %s is full", code)
 	}
 	if room.Status != RoomWaiting {

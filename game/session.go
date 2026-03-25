@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tolelom/catacombs/config"
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
 )
@@ -71,6 +72,7 @@ func (s *GameSession) clearLog() {
 
 type GameSession struct {
 	mu           sync.Mutex
+	cfg          *config.Config
 	state        GameState
 	started      bool
 	actions      map[string]PlayerAction // playerName -> action
@@ -85,8 +87,9 @@ type playerActionMsg struct {
 	Action   PlayerAction
 }
 
-func NewGameSession() *GameSession {
+func NewGameSession(cfg *config.Config) *GameSession {
 	return &GameSession{
+		cfg: cfg,
 		state: GameState{
 			FloorNum: 1,
 		},
@@ -340,7 +343,7 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) bool {
 	item := s.state.ShopItems[itemIdx]
 	for _, p := range s.state.Players {
 		if p.Fingerprint == playerID && p.Gold >= item.Price {
-			if len(p.Inventory) >= 10 {
+			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
 				return false
 			}
 			p.Gold -= item.Price

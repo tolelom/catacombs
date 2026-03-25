@@ -25,7 +25,7 @@ func TestCoopBonus(t *testing.T) {
 		{PlayerATK: 12, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},
 		{PlayerATK: 15, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},
 	}
-	results := ResolveAttacks(attackers, []*entity.Monster{entity.NewMonster(entity.MonsterSlime, 1)})
+	results := ResolveAttacks(attackers, []*entity.Monster{entity.NewMonster(entity.MonsterSlime, 1, 1.15)}, 0.10)
 	if !results[1].CoopApplied {
 		t.Error("Second attacker should get co-op bonus")
 	}
@@ -37,10 +37,10 @@ func TestAoENoCoopBonus(t *testing.T) {
 		{PlayerATK: 20, TargetIdx: -1, Multiplier: 0.8, IsAoE: true},
 	}
 	monsters := []*entity.Monster{
-		entity.NewMonster(entity.MonsterSlime, 1),
-		entity.NewMonster(entity.MonsterSlime, 1),
+		entity.NewMonster(entity.MonsterSlime, 1, 1.15),
+		entity.NewMonster(entity.MonsterSlime, 1, 1.15),
 	}
-	results := ResolveAttacks(attackers, monsters)
+	results := ResolveAttacks(attackers, monsters, 0.10)
 	if results[0].CoopApplied {
 		t.Error("AoE should not trigger co-op bonus")
 	}
@@ -68,7 +68,7 @@ func TestMonsterAITauntDeadWarrior(t *testing.T) {
 func TestFleeChance(t *testing.T) {
 	successes := 0
 	for i := 0; i < 100; i++ {
-		if AttemptFlee() {
+		if AttemptFlee(0.50) {
 			successes++
 		}
 	}

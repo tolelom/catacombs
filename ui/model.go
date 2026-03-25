@@ -405,7 +405,7 @@ func (m Model) updateClassSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
 				room := m.lobby.GetRoom(m.roomCode)
 				if room != nil {
 					if room.Session == nil {
-						room.Session = game.NewGameSession()
+						room.Session = game.NewGameSession(m.lobby.Cfg())
 					}
 					m.session = room.Session
 					player := entity.NewPlayer(m.playerName, selectedClass)

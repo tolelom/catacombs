@@ -4,11 +4,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tolelom/catacombs/config"
 	"github.com/tolelom/catacombs/entity"
 )
 
+func testCfg(t *testing.T) *config.Config {
+	t.Helper()
+	cfg, _ := config.Load("")
+	return cfg
+}
+
 func TestGetStateNoRace(t *testing.T) {
-	s := NewGameSession()
+	s := NewGameSession(testCfg(t))
 	p := entity.NewPlayer("Racer", entity.ClassWarrior)
 	p.Fingerprint = "test-fp"
 	s.AddPlayer(p)
@@ -40,7 +47,7 @@ func TestGetStateNoRace(t *testing.T) {
 }
 
 func TestSessionTurnTimeout(t *testing.T) {
-	s := NewGameSession()
+	s := NewGameSession(testCfg(t))
 	p := entity.NewPlayer("test", entity.ClassWarrior)
 	p.Fingerprint = "test-fp"
 	s.AddPlayer(p)
@@ -62,7 +69,7 @@ func TestSessionTurnTimeout(t *testing.T) {
 }
 
 func TestRevealNextLog(t *testing.T) {
-	s := NewGameSession()
+	s := NewGameSession(testCfg(t))
 
 	// No logs to reveal
 	if s.RevealNextLog() {
@@ -95,7 +102,7 @@ func TestRevealNextLog(t *testing.T) {
 }
 
 func TestDeepCopyIndependence(t *testing.T) {
-	s := NewGameSession()
+	s := NewGameSession(testCfg(t))
 	p := entity.NewPlayer("Test", entity.ClassWarrior)
 	p.Fingerprint = "fp-test"
 	p.Inventory = append(p.Inventory, entity.Item{Name: "Sword", Type: entity.ItemWeapon, Bonus: 5})
@@ -118,7 +125,7 @@ func TestDeepCopyIndependence(t *testing.T) {
 }
 
 func TestBuyItemInventoryFull(t *testing.T) {
-	s := NewGameSession()
+	s := NewGameSession(testCfg(t))
 	p := entity.NewPlayer("Buyer", entity.ClassWarrior)
 	p.Fingerprint = "fp-buyer"
 	p.Gold = 1000
@@ -141,7 +148,7 @@ func TestBuyItemInventoryFull(t *testing.T) {
 }
 
 func TestSendChat(t *testing.T) {
-	s := NewGameSession()
+	s := NewGameSession(testCfg(t))
 	s.SendChat("Alice", "hello")
 	st := s.GetState()
 	if len(st.CombatLog) != 1 || st.CombatLog[0] != "[Alice] hello" {

@@ -10,8 +10,6 @@ import (
 	"github.com/tolelom/catacombs/entity"
 )
 
-const TurnTimeout = 5 * time.Second
-
 func (s *GameSession) RunTurn() {
 	s.mu.Lock()
 	s.state.TurnNum++
@@ -28,9 +26,10 @@ func (s *GameSession) RunTurn() {
 	s.mu.Unlock()
 
 	// Collect actions with timeout
-	timer := time.NewTimer(TurnTimeout)
+	turnTimeout := time.Duration(s.cfg.Game.TurnTimeoutSec) * time.Second
+	timer := time.NewTimer(turnTimeout)
 	s.mu.Lock()
-	s.state.TurnDeadline = time.Now().Add(TurnTimeout)
+	s.state.TurnDeadline = time.Now().Add(turnTimeout)
 	s.mu.Unlock()
 	collected := 0
 
@@ -180,7 +179,7 @@ func (s *GameSession) resolvePlayerActions() {
 				s.addLog(fmt.Sprintf("%s has no items to use!", p.Name))
 			}
 		case ActionFlee:
-			if combat.AttemptFlee() {
+			if combat.AttemptFlee(s.cfg.Combat.FleeChance) {
 				s.addLog(fmt.Sprintf("%s fled from battle!", p.Name))
 				s.state.FleeSucceeded = true
 				if s.state.SoloMode {
@@ -215,7 +214,7 @@ func (s *GameSession) resolvePlayerActions() {
 	}
 
 	if len(intents) > 0 && len(s.state.Monsters) > 0 {
-		results := combat.ResolveAttacks(intents, s.state.Monsters)
+		results := combat.ResolveAttacks(intents, s.state.Monsters, s.cfg.Game.CoopBonus)
 		for i, r := range results {
 			owner := intentOwners[i]
 			if r.IsAoE {
@@ -287,7 +286,7 @@ func (s *GameSession) resolvePlayerActions() {
 }
 
 func (s *GameSession) advanceFloor() {
-	if s.state.FloorNum >= 20 {
+	if s.state.FloorNum >= s.cfg.Game.MaxFloors {
 		s.state.Phase = PhaseResult
 		s.state.Victory = true
 		s.state.GameOver = true
