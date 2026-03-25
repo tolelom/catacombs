@@ -185,7 +185,7 @@ type EventChoice struct {
   - 1~5층 습지 (독 강화) → Guardian 보스 (독 패턴으로 변경)
   - 6~10층 화산 (화상 강화) → Warden 보스 (화상 패턴으로 변경)
   - 11~15층 얼음 (빙결 강화) → Overlord 보스 (빙결 패턴)
-  - 16~20층 지옥 (전체 강화) → Archfiend 최종 보스
+  - 16~20층 지옥 (전체 강화) → Archlich 최종 보스 (AoE + 회복 패턴, 기존 Guardian의 AoE를 최종 보스로 이동)
 
 ```go
 // dungeon/theme.go
