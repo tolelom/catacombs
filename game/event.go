@@ -212,21 +212,63 @@ func armorName(floor int) string {
 }
 
 func (s *GameSession) triggerEvent() {
+	event := PickRandomEvent()
+	s.addLog(fmt.Sprintf("Event: %s — %s", event.Name, event.Description))
+
+	// Auto-resolve with a random choice
+	choice := event.Choices[rand.Intn(len(event.Choices))]
+	outcome := choice.Resolve(s.state.FloorNum)
+	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
+
+	// Pick a random alive player to apply the outcome
+	var alive []*entity.Player
 	for _, p := range s.state.Players {
-		if p.IsDead() {
-			continue
+		if !p.IsDead() {
+			alive = append(alive, p)
 		}
-		if rand.Float64() < 0.5 {
-			baseDmg := 10 + s.state.FloorNum
-			dmg := baseDmg + rand.Intn(baseDmg/2+1)
-			p.TakeDamage(dmg)
-			s.addLog(fmt.Sprintf("Trap! %s takes %d damage", p.Name, dmg))
+	}
+	if len(alive) == 0 {
+		return
+	}
+	target := alive[rand.Intn(len(alive))]
+
+	if outcome.HPChange > 0 {
+		before := target.HP
+		target.Heal(outcome.HPChange)
+		s.addLog(fmt.Sprintf("  %s heals %d HP", target.Name, target.HP-before))
+	} else if outcome.HPChange < 0 {
+		target.TakeDamage(-outcome.HPChange)
+		s.addLog(fmt.Sprintf("  %s takes %d damage", target.Name, -outcome.HPChange))
+	}
+
+	if outcome.GoldChange != 0 {
+		target.Gold += outcome.GoldChange
+		if target.Gold < 0 {
+			target.Gold = 0
+		}
+		if outcome.GoldChange > 0 {
+			s.addLog(fmt.Sprintf("  %s gains %d gold", target.Name, outcome.GoldChange))
 		} else {
-			baseHeal := 15 + s.state.FloorNum
-			heal := baseHeal + rand.Intn(baseHeal/2+1)
-			before := p.HP
-			p.Heal(heal)
-			s.addLog(fmt.Sprintf("Blessing! %s heals %d HP", p.Name, p.HP-before))
+			s.addLog(fmt.Sprintf("  %s loses %d gold", target.Name, -outcome.GoldChange))
+		}
+	}
+
+	if outcome.ItemDrop {
+		if len(target.Inventory) < s.cfg.Game.InventoryLimit {
+			floor := s.state.FloorNum
+			if rand.Float64() < 0.5 {
+				bonus := 3 + rand.Intn(6) + floor/3
+				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
+				target.Inventory = append(target.Inventory, item)
+				s.addLog(fmt.Sprintf("  %s found %s (ATK+%d)", target.Name, item.Name, item.Bonus))
+			} else {
+				bonus := 2 + rand.Intn(4) + floor/4
+				item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
+				target.Inventory = append(target.Inventory, item)
+				s.addLog(fmt.Sprintf("  %s found %s (DEF+%d)", target.Name, item.Name, item.Bonus))
+			}
+		} else {
+			s.addLog(fmt.Sprintf("  %s's inventory is full!", target.Name))
 		}
 	}
 }
