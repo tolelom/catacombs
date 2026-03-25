@@ -59,6 +59,8 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			return NewAchievementsScreen(), nil
 		} else if isKey(key, "l") {
 			return NewLeaderboardScreen(), nil
+		} else if isKey(key, "c") {
+			return NewCodexScreen(ctx), nil
 		} else if isQuit(key) {
 			return s, tea.Quit
 		}
@@ -108,7 +110,7 @@ func renderTitle(width, height int) string {
 	menu := lipgloss.NewStyle().
 		Foreground(colorWhite).
 		Bold(true).
-		Render("[Enter] Start  [H] Help  [S] Stats  [A] Achievements  [L] Leaderboard  [Q] Quit")
+		Render("[Enter] Start  [H] Help  [S] Stats  [A] Achievements  [L] Leaderboard  [C] Codex  [Q] Quit")
 
 	content := lipgloss.JoinVertical(lipgloss.Center,
 		logo,
