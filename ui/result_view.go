@@ -36,7 +36,7 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
 			return ls, ls.pollLobby()
-		} else if isQuit(key) {
+		} else if isForceQuit(key) {
 			return s, tea.Quit
 		}
 	}

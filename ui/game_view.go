@@ -31,6 +31,23 @@ func NewGameScreen() *GameScreen {
 	}
 }
 
+func (s *GameScreen) leaveGame(ctx *Context) (Screen, tea.Cmd) {
+	if ctx.Lobby != nil && ctx.Fingerprint != "" {
+		ctx.Lobby.UnregisterSession(ctx.Fingerprint)
+	}
+	if ctx.Session != nil {
+		ctx.Session.Stop()
+		ctx.Session = nil
+	}
+	if ctx.Lobby != nil && ctx.RoomCode != "" {
+		ctx.Lobby.RemoveRoom(ctx.RoomCode)
+	}
+	ctx.RoomCode = ""
+	ls := NewLobbyScreen()
+	ls.refreshLobby(ctx)
+	return ls, ls.pollLobby()
+}
+
 func (s *GameScreen) pollState() tea.Cmd {
 	return tea.Tick(time.Millisecond*200, func(t time.Time) tea.Msg {
 		return tickMsg{}
@@ -247,10 +264,13 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 
 		switch s.gameState.Phase {
 		case game.PhaseExploring:
+			if isForceQuit(key) {
+				return s, tea.Quit
+			}
 			for _, p := range s.gameState.Players {
 				if p.Fingerprint == ctx.Fingerprint && p.IsDead() {
-					if isQuit(key) {
-						return s, tea.Quit
+					if isKey(key, "q") {
+						return s.leaveGame(ctx)
 					}
 					return s, nil
 				}
@@ -286,8 +306,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						return s, s.pollState()
 					}
 				}
-			} else if isQuit(key) {
+			} else if isForceQuit(key) {
 				return s, tea.Quit
+			} else if isKey(key, "q") {
+				return s.leaveGame(ctx)
 			}
 		case game.PhaseCombat:
 			isPlayerDead := false

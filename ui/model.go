@@ -94,6 +94,10 @@ func isQuit(key tea.KeyMsg) bool {
 	return isKey(key, "q", "ctrl+c") || key.Type == tea.KeyCtrlC
 }
 
+func isForceQuit(key tea.KeyMsg) bool {
+	return isKey(key, "ctrl+c") || key.Type == tea.KeyCtrlC
+}
+
 func isUp(key tea.KeyMsg) bool {
 	return isKey(key, "up") || key.Type == tea.KeyUp
 }
