@@ -1,12 +1,13 @@
 package ui
 
 import (
+	"os"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tolelom/catacombs/config"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
-	"os"
 )
 
 func testDB(t *testing.T) *store.DB {
@@ -18,7 +19,7 @@ func testDB(t *testing.T) *store.DB {
 }
 
 func TestTitleToLobby(t *testing.T) {
-	lobby := game.NewLobby()
+	lobby := game.NewLobby(func() *config.Config { c, _ := config.Load(""); return c }())
 	db := testDB(t)
 	defer func() { db.Close(); os.Remove("test_ui.db") }()
 
@@ -55,7 +56,7 @@ func TestTitleToLobby(t *testing.T) {
 }
 
 func TestLobbyCreateRoom(t *testing.T) {
-	lobby := game.NewLobby()
+	lobby := game.NewLobby(func() *config.Config { c, _ := config.Load(""); return c }())
 	db := testDB(t)
 	defer func() { db.Close(); os.Remove("test_ui.db") }()
 
@@ -86,7 +87,7 @@ func TestLobbyCreateRoom(t *testing.T) {
 }
 
 func TestClassSelectToGame(t *testing.T) {
-	lobby := game.NewLobby()
+	lobby := game.NewLobby(func() *config.Config { c, _ := config.Load(""); return c }())
 	db := testDB(t)
 	defer func() { db.Close(); os.Remove("test_ui.db") }()
 

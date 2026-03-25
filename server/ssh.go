@@ -14,9 +14,9 @@ import (
 	"github.com/tolelom/catacombs/ui"
 )
 
-func Start(host string, port int, lobby *game.Lobby, db *store.DB) error {
+func Start(addr string, lobby *game.Lobby, db *store.DB) error {
 	s, err := wish.NewServer(
-		wish.WithAddress(fmt.Sprintf("%s:%d", host, port)),
+		wish.WithAddress(addr),
 		wish.WithHostKeyPath(".ssh/catacombs_host_key"),
 		wish.WithPublicKeyAuth(func(_ ssh.Context, _ ssh.PublicKey) bool {
 			return true // accept all keys
@@ -40,6 +40,6 @@ func Start(host string, port int, lobby *game.Lobby, db *store.DB) error {
 		return fmt.Errorf("could not create server: %w", err)
 	}
 
-	log.Printf("Starting SSH server on %s:%d", host, port)
+	log.Printf("Starting SSH server on %s", addr)
 	return s.ListenAndServe()
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+
+	"github.com/tolelom/catacombs/config"
 )
 
 type RoomStatus int
@@ -36,13 +38,15 @@ type OnlinePlayer struct {
 
 type Lobby struct {
 	mu             sync.RWMutex
+	cfg            *config.Config
 	rooms          map[string]*LobbyRoom
 	online         map[string]*OnlinePlayer // fingerprint -> player
 	activeSessions map[string]string        // fingerprint -> room code (for reconnect)
 }
 
-func NewLobby() *Lobby {
+func NewLobby(cfg *config.Config) *Lobby {
 	return &Lobby{
+		cfg:            cfg,
 		rooms:          make(map[string]*LobbyRoom),
 		online:         make(map[string]*OnlinePlayer),
 		activeSessions: make(map[string]string),

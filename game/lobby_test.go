@@ -1,9 +1,19 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/tolelom/catacombs/config"
+)
+
+func testConfig(t *testing.T) *config.Config {
+	t.Helper()
+	cfg, _ := config.Load("")
+	return cfg
+}
 
 func TestCreateRoom(t *testing.T) {
-	lobby := NewLobby()
+	lobby := NewLobby(testConfig(t))
 	code := lobby.CreateRoom("Test Room")
 	if len(code) != 4 {
 		t.Errorf("Room code length: got %d, want 4", len(code))
@@ -15,7 +25,7 @@ func TestCreateRoom(t *testing.T) {
 }
 
 func TestJoinRoom(t *testing.T) {
-	lobby := NewLobby()
+	lobby := NewLobby(testConfig(t))
 	code := lobby.CreateRoom("Test Room")
 	err := lobby.JoinRoom(code, "player1", "fp-player1")
 	if err != nil {
@@ -28,7 +38,7 @@ func TestJoinRoom(t *testing.T) {
 }
 
 func TestRoomStatusTransition(t *testing.T) {
-	l := NewLobby()
+	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
 	l.JoinRoom(code, "Alice", "fp-alice")
 	r := l.GetRoom(code)
@@ -47,7 +57,7 @@ func TestRoomStatusTransition(t *testing.T) {
 }
 
 func TestJoinRoomFull(t *testing.T) {
-	lobby := NewLobby()
+	lobby := NewLobby(testConfig(t))
 	code := lobby.CreateRoom("Test Room")
 	for i := 0; i < 4; i++ {
 		lobby.JoinRoom(code, "player", "fp-player")
@@ -59,7 +69,7 @@ func TestJoinRoomFull(t *testing.T) {
 }
 
 func TestSetPlayerClass(t *testing.T) {
-	l := NewLobby()
+	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
 	l.JoinRoom(code, "Alice", "fp-alice")
 	l.SetPlayerClass(code, "fp-alice", "Warrior")
@@ -70,7 +80,7 @@ func TestSetPlayerClass(t *testing.T) {
 }
 
 func TestAllReady(t *testing.T) {
-	l := NewLobby()
+	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
 	l.JoinRoom(code, "Alice", "fp-alice")
 	l.JoinRoom(code, "Bob", "fp-bob")
@@ -91,7 +101,7 @@ func TestAllReady(t *testing.T) {
 }
 
 func TestAllReadyEmptyRoom(t *testing.T) {
-	l := NewLobby()
+	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
 	if l.AllReady(code) {
 		t.Error("empty room should not be all ready")
