@@ -59,33 +59,66 @@ func roomOwnership(floor *Floor) [][]int {
 	return owner
 }
 
-// corridorVisibility determines if a corridor tile should be visible.
-// A corridor is visible if it's adjacent to a visible or visited room.
-func corridorVisible(floor *Floor, owner [][]int, x, y int) Visibility {
-	best := Hidden
-	// Check neighboring tiles for room ownership
-	for dy := -1; dy <= 1; dy++ {
-		for dx := -1; dx <= 1; dx++ {
-			ny, nx := y+dy, x+dx
-			if ny >= 0 && ny < floor.Height && nx >= 0 && nx < floor.Width {
-				ri := owner[ny][nx]
-				if ri >= 0 {
-					v := GetRoomVisibility(floor, ri)
-					if v > best {
-						best = v
+// buildCorridorVisibility flood-fills corridor visibility from visible/visited rooms.
+// Returns a map of (y,x) → Visibility for all corridor tiles.
+func buildCorridorVisibility(floor *Floor, owner [][]int) [][]Visibility {
+	vis := make([][]Visibility, floor.Height)
+	for y := 0; y < floor.Height; y++ {
+		vis[y] = make([]Visibility, floor.Width)
+	}
+
+	// Seed: corridor tiles adjacent to visible/visited rooms
+	type pos struct{ y, x int }
+	queue := []pos{}
+
+	for y := 0; y < floor.Height; y++ {
+		for x := 0; x < floor.Width; x++ {
+			if floor.Tiles[y][x] != TileCorridor {
+				continue
+			}
+			best := Hidden
+			for dy := -1; dy <= 1; dy++ {
+				for dx := -1; dx <= 1; dx++ {
+					ny, nx := y+dy, x+dx
+					if ny >= 0 && ny < floor.Height && nx >= 0 && nx < floor.Width {
+						ri := owner[ny][nx]
+						if ri >= 0 {
+							v := GetRoomVisibility(floor, ri)
+							if v > best {
+								best = v
+							}
+						}
 					}
+				}
+			}
+			if best > Hidden {
+				vis[y][x] = best
+				queue = append(queue, pos{y, x})
+			}
+		}
+	}
+
+	// Flood-fill along corridor tiles (4-directional)
+	dirs := [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		for _, d := range dirs {
+			ny, nx := cur.y+d[0], cur.x+d[1]
+			if ny >= 0 && ny < floor.Height && nx >= 0 && nx < floor.Width {
+				if floor.Tiles[ny][nx] == TileCorridor && vis[ny][nx] < vis[cur.y][cur.x] {
+					vis[ny][nx] = vis[cur.y][cur.x]
+					queue = append(queue, pos{ny, nx})
 				}
 			}
 		}
 	}
-	// Also check along the corridor path: if this corridor connects two rooms,
-	// it should be visible if either room is visible/visited.
-	// The adjacency check above handles most cases.
-	return best
+
+	return vis
 }
 
-// wallVisibility determines if a wall tile should be shown based on adjacent rooms.
-func wallVisible(floor *Floor, owner [][]int, x, y int) Visibility {
+// wallVisibility determines if a wall tile should be shown based on adjacent rooms/corridors.
+func wallVisible(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) Visibility {
 	best := Hidden
 	for dy := -1; dy <= 1; dy++ {
 		for dx := -1; dx <= 1; dx++ {
@@ -101,9 +134,8 @@ func wallVisible(floor *Floor, owner [][]int, x, y int) Visibility {
 					}
 				}
 				if floor.Tiles[ny][nx] == TileCorridor {
-					cv := corridorVisible(floor, owner, nx, ny)
-					if cv > best {
-						best = cv
+					if corrVis[ny][nx] > best {
+						best = corrVis[ny][nx]
 					}
 				}
 			}
@@ -155,6 +187,9 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 		playerPos = [2]int{r.Y + r.H/2, r.X + r.W/2}
 	}
 
+	// Pre-compute corridor visibility via flood-fill
+	corrVis := buildCorridorVisibility(floor, owner)
+
 	buf := make([]byte, 0, floor.Width*floor.Height*4)
 
 	for y := 0; y < floor.Height; y++ {
@@ -173,9 +208,9 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 						vis = Hidden
 					}
 				case TileCorridor:
-					vis = corridorVisible(floor, owner, x, y)
+					vis = corrVis[y][x]
 				case TileWall:
-					vis = wallVisible(floor, owner, x, y)
+					vis = wallVisible(floor, owner, corrVis, x, y)
 				default:
 					vis = Hidden
 				}
