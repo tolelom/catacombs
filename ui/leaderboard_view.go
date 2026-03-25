@@ -3,9 +3,35 @@ package ui
 import (
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tolelom/catacombs/store"
 )
+
+// LeaderboardScreen shows the top runs.
+type LeaderboardScreen struct{}
+
+func NewLeaderboardScreen() *LeaderboardScreen {
+	return &LeaderboardScreen{}
+}
+
+func (s *LeaderboardScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "l") || isEnter(key) || isQuit(key) {
+			return NewTitleScreen(), nil
+		}
+	}
+	return s, nil
+}
+
+func (s *LeaderboardScreen) View(ctx *Context) string {
+	var byFloor, byGold []store.RunRecord
+	if ctx.Store != nil {
+		byFloor, _ = ctx.Store.TopRuns(10)
+		byGold, _ = ctx.Store.TopRunsByGold(10)
+	}
+	return renderLeaderboard(byFloor, byGold, ctx.Width, ctx.Height)
+}
 
 func renderLeaderboard(byFloor, byGold []store.RunRecord, width, height int) string {
 	title := styleHeader.Render("── Leaderboard ──")

@@ -25,16 +25,16 @@ func TestTitleToLobby(t *testing.T) {
 
 	m := NewModel(80, 24, "testfp", lobby, db)
 
-	if m.screen != screenTitle {
-		t.Fatalf("initial screen: got %d, want screenTitle(0)", m.screen)
+	if m.screenType() != screenTitle {
+		t.Fatalf("initial screen: got %d, want screenTitle(0)", m.screenType())
 	}
 
 	// First-time player: Enter goes to nickname screen
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := result.(Model)
 
-	if m2.screen != screenNickname {
-		t.Errorf("after Enter (first time): screen=%d, want screenNickname(%d)", m2.screen, screenNickname)
+	if m2.screenType() != screenNickname {
+		t.Errorf("after Enter (first time): screen=%d, want screenNickname(%d)", m2.screenType(), screenNickname)
 	}
 
 	// Type a name
@@ -47,10 +47,10 @@ func TestTitleToLobby(t *testing.T) {
 	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m3 := result.(Model)
 
-	if m3.screen != screenLobby {
-		t.Errorf("after nickname Enter: screen=%d, want screenLobby(1)", m3.screen)
+	if m3.screenType() != screenLobby {
+		t.Errorf("after nickname Enter: screen=%d, want screenLobby(1)", m3.screenType())
 	}
-	if m3.playerName == "" {
+	if m3.playerName() == "" {
 		t.Error("playerName should be set")
 	}
 }
@@ -78,10 +78,10 @@ func TestLobbyCreateRoom(t *testing.T) {
 	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
 	m3 := result.(Model)
 
-	if m3.screen != screenClassSelect {
-		t.Errorf("after 'c': screen=%d, want screenClassSelect(2)", m3.screen)
+	if m3.screenType() != screenClassSelect {
+		t.Errorf("after 'c': screen=%d, want screenClassSelect(2)", m3.screenType())
 	}
-	if m3.roomCode == "" {
+	if m3.roomCode() == "" {
 		t.Error("roomCode should be set")
 	}
 }
@@ -107,18 +107,18 @@ func TestClassSelectToGame(t *testing.T) {
 	result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
 	m3 := result.(Model)
 
-	if m3.screen != screenClassSelect {
-		t.Fatalf("should be at class select, got %d", m3.screen)
+	if m3.screenType() != screenClassSelect {
+		t.Fatalf("should be at class select, got %d", m3.screenType())
 	}
 
 	// Press Enter to select Warrior (default cursor=0)
 	result, _ = m3.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m4 := result.(Model)
 
-	if m4.screen != screenGame {
-		t.Errorf("after class select Enter: screen=%d, want screenGame(3)", m4.screen)
+	if m4.screenType() != screenGame {
+		t.Errorf("after class select Enter: screen=%d, want screenGame(3)", m4.screenType())
 	}
-	if m4.session == nil {
+	if m4.session() == nil {
 		t.Error("session should be set")
 	}
 }

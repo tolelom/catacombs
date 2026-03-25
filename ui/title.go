@@ -1,10 +1,74 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+// TitleScreen is the main menu screen.
+type TitleScreen struct{}
+
+func NewTitleScreen() *TitleScreen {
+	return &TitleScreen{}
+}
+
+func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isEnter(key) {
+			if ctx.Fingerprint == "" {
+				ctx.Fingerprint = fmt.Sprintf("anon-%d", time.Now().UnixNano())
+			}
+			if ctx.Store != nil {
+				name, err := ctx.Store.GetProfile(ctx.Fingerprint)
+				if err != nil {
+					// First time player — show nickname input
+					return NewNicknameScreen(), nil
+				}
+				ctx.PlayerName = name
+			} else {
+				ctx.PlayerName = "Adventurer"
+			}
+			if ctx.Lobby != nil {
+				ctx.Lobby.PlayerOnline(ctx.Fingerprint, ctx.PlayerName)
+			}
+			// Check for active session to reconnect
+			if ctx.Lobby != nil {
+				code, session := ctx.Lobby.GetActiveSession(ctx.Fingerprint)
+				if session != nil {
+					ctx.RoomCode = code
+					ctx.Session = session
+					gs := NewGameScreen()
+					gs.gameState = ctx.Session.GetState()
+					ctx.Session.TouchActivity(ctx.Fingerprint)
+					ctx.Session.SendChat("System", ctx.PlayerName+" reconnected!")
+					return gs, gs.pollState()
+				}
+			}
+			ls := NewLobbyScreen()
+			ls.refreshLobby(ctx)
+			return ls, nil
+		} else if isKey(key, "h") {
+			return NewHelpScreen(), nil
+		} else if isKey(key, "s") {
+			return NewStatsScreen(), nil
+		} else if isKey(key, "a") {
+			return NewAchievementsScreen(), nil
+		} else if isKey(key, "l") {
+			return NewLeaderboardScreen(), nil
+		} else if isQuit(key) {
+			return s, tea.Quit
+		}
+	}
+	return s, nil
+}
+
+func (s *TitleScreen) View(ctx *Context) string {
+	return renderTitle(ctx.Width, ctx.Height)
+}
 
 var titleLines = []string{
 	` ██████╗ █████╗ ████████╗ █████╗  ██████╗ ██████╗ ███╗   ███╗██████╗ ███████╗`,

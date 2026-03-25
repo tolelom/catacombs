@@ -3,9 +3,34 @@ package ui
 import (
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tolelom/catacombs/store"
 )
+
+// StatsScreen shows player statistics.
+type StatsScreen struct{}
+
+func NewStatsScreen() *StatsScreen {
+	return &StatsScreen{}
+}
+
+func (s *StatsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "s") || isEnter(key) || isQuit(key) {
+			return NewTitleScreen(), nil
+		}
+	}
+	return s, nil
+}
+
+func (s *StatsScreen) View(ctx *Context) string {
+	var stats store.PlayerStats
+	if ctx.Store != nil {
+		stats, _ = ctx.Store.GetStats(ctx.PlayerName)
+	}
+	return renderStats(ctx.PlayerName, stats, ctx.Width, ctx.Height)
+}
 
 func renderStats(playerName string, stats store.PlayerStats, width, height int) string {
 	title := styleHeader.Render("── Player Statistics ──")

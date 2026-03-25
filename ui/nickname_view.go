@@ -4,8 +4,63 @@ import (
 	"fmt"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+// NicknameScreen handles first-time player name input.
+type NicknameScreen struct {
+	input string
+}
+
+func NewNicknameScreen() *NicknameScreen {
+	return &NicknameScreen{}
+}
+
+func (s *NicknameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isEnter(key) && len(s.input) > 0 {
+			ctx.PlayerName = s.input
+			if ctx.Store != nil && ctx.Fingerprint != "" {
+				ctx.Store.SaveProfile(ctx.Fingerprint, ctx.PlayerName)
+			}
+			if ctx.Lobby != nil {
+				ctx.Lobby.PlayerOnline(ctx.Fingerprint, ctx.PlayerName)
+			}
+			// Check for active session to reconnect
+			if ctx.Lobby != nil {
+				code, session := ctx.Lobby.GetActiveSession(ctx.Fingerprint)
+				if session != nil {
+					ctx.RoomCode = code
+					ctx.Session = session
+					gs := NewGameScreen()
+					gs.gameState = ctx.Session.GetState()
+					ctx.Session.TouchActivity(ctx.Fingerprint)
+					ctx.Session.SendChat("System", ctx.PlayerName+" reconnected!")
+					return gs, gs.pollState()
+				}
+			}
+			ls := NewLobbyScreen()
+			ls.refreshLobby(ctx)
+			return ls, nil
+		} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
+			s.input = ""
+			return NewTitleScreen(), nil
+		} else if key.Type == tea.KeyBackspace && len(s.input) > 0 {
+			s.input = s.input[:len(s.input)-1]
+		} else if len(key.Runes) == 1 && len(s.input) < 12 {
+			ch := string(key.Runes)
+			if len(ch) == 1 && ch[0] >= 32 && ch[0] < 127 {
+				s.input += ch
+			}
+		}
+	}
+	return s, nil
+}
+
+func (s *NicknameScreen) View(ctx *Context) string {
+	return renderNickname(s.input, ctx.Width, ctx.Height)
+}
 
 func renderNickname(input string, width, height int) string {
 	title := styleHeader.Render("── Enter Your Name ──")

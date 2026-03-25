@@ -4,9 +4,52 @@ import (
 	"fmt"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
 )
+
+// ResultScreen shows the end-of-run summary and rankings.
+type ResultScreen struct {
+	gameState    game.GameState
+	rankingSaved bool
+}
+
+func NewResultScreen(state game.GameState, rankingSaved bool) *ResultScreen {
+	return &ResultScreen{gameState: state, rankingSaved: rankingSaved}
+}
+
+func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isEnter(key) {
+			if ctx.Lobby != nil && ctx.Fingerprint != "" {
+				ctx.Lobby.UnregisterSession(ctx.Fingerprint)
+			}
+			if ctx.Session != nil {
+				ctx.Session.Stop()
+				ctx.Session = nil
+			}
+			if ctx.Lobby != nil && ctx.RoomCode != "" {
+				ctx.Lobby.RemoveRoom(ctx.RoomCode)
+			}
+			ctx.RoomCode = ""
+			ls := NewLobbyScreen()
+			ls.refreshLobby(ctx)
+			return ls, nil
+		} else if isQuit(key) {
+			return s, tea.Quit
+		}
+	}
+	return s, nil
+}
+
+func (s *ResultScreen) View(ctx *Context) string {
+	var rankings []store.RunRecord
+	if ctx.Store != nil {
+		rankings, _ = ctx.Store.TopRuns(10)
+	}
+	return renderResult(s.gameState, rankings)
+}
 
 func renderResult(state game.GameState, rankings []store.RunRecord) string {
 	var sb strings.Builder

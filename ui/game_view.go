@@ -5,11 +5,232 @@ import (
 	"strings"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
 	"github.com/tolelom/catacombs/game"
 )
+
+// GameScreen handles the main gameplay: exploration, combat, and chat.
+type GameScreen struct {
+	gameState    game.GameState
+	targetCursor int
+	moveCursor   int
+	chatting     bool
+	chatInput    string
+	rankingSaved bool
+}
+
+func NewGameScreen() *GameScreen {
+	return &GameScreen{}
+}
+
+func (s *GameScreen) pollState() tea.Cmd {
+	return tea.Tick(time.Millisecond*200, func(t time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
+
+func (s *GameScreen) getNeighbors() []int {
+	if s.gameState.Floor == nil {
+		return nil
+	}
+	cur := s.gameState.Floor.CurrentRoom
+	if cur < 0 || cur >= len(s.gameState.Floor.Rooms) {
+		return nil
+	}
+	return s.gameState.Floor.Rooms[cur].Neighbors
+}
+
+func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if ctx.Session != nil && ctx.Fingerprint != "" {
+		ctx.Session.TouchActivity(ctx.Fingerprint)
+	}
+	// Refresh state on every update
+	if ctx.Session != nil {
+		s.gameState = ctx.Session.GetState()
+		// Clamp target cursor to valid range after monsters die
+		if len(s.gameState.Monsters) > 0 {
+			if s.targetCursor >= len(s.gameState.Monsters) {
+				s.targetCursor = len(s.gameState.Monsters) - 1
+			}
+		} else {
+			s.targetCursor = 0
+		}
+	}
+
+	if s.gameState.GameOver {
+		if ctx.Store != nil && !s.rankingSaved {
+			score := 0
+			for _, p := range s.gameState.Players {
+				score += p.Gold
+			}
+			playerClass := ""
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint == ctx.Fingerprint {
+					playerClass = p.Class.String()
+					break
+				}
+			}
+			ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass)
+			// Check achievements
+			if s.gameState.FloorNum >= 5 {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "first_clear")
+			}
+			if s.gameState.FloorNum >= 10 {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "floor10")
+			}
+			if s.gameState.Victory {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "floor20")
+			}
+			if s.gameState.SoloMode && s.gameState.FloorNum >= 5 {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "solo_clear")
+			}
+			if s.gameState.BossKilled {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "boss_slayer")
+			}
+			if s.gameState.FleeSucceeded {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "flee_master")
+			}
+			for _, p := range s.gameState.Players {
+				if p.Gold >= 200 {
+					ctx.Store.UnlockAchievement(p.Name, "gold_hoarder")
+				}
+				if len(p.Relics) >= 3 {
+					ctx.Store.UnlockAchievement(p.Name, "relic_collector")
+				}
+			}
+			if len(s.gameState.Players) >= 4 {
+				ctx.Store.UnlockAchievement(ctx.PlayerName, "full_party")
+			}
+			s.rankingSaved = true
+		}
+		return NewResultScreen(s.gameState, s.rankingSaved), nil
+	}
+	if s.gameState.Phase == game.PhaseShop {
+		return NewShopScreen(s.gameState), nil
+	}
+
+	switch msg.(type) {
+	case tickMsg:
+		if ctx.Session != nil {
+			ctx.Session.RevealNextLog()
+		}
+		if s.gameState.Phase == game.PhaseCombat {
+			return s, s.pollState()
+		}
+		if len(s.gameState.PendingLogs) > 0 {
+			return s, s.pollState()
+		}
+		return s, nil
+	}
+
+	if key, ok := msg.(tea.KeyMsg); ok {
+		// Chat mode
+		if s.chatting {
+			if isEnter(key) && len(s.chatInput) > 0 {
+				if ctx.Session != nil {
+					ctx.Session.SendChat(ctx.PlayerName, s.chatInput)
+					s.gameState = ctx.Session.GetState()
+				}
+				s.chatting = false
+				s.chatInput = ""
+			} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
+				s.chatting = false
+				s.chatInput = ""
+			} else if key.Type == tea.KeyBackspace && len(s.chatInput) > 0 {
+				s.chatInput = s.chatInput[:len(s.chatInput)-1]
+			} else if len(key.Runes) == 1 && len(s.chatInput) < 40 {
+				s.chatInput += string(key.Runes)
+			}
+			if s.gameState.Phase == game.PhaseCombat {
+				return s, s.pollState()
+			}
+			return s, nil
+		}
+
+		if isKey(key, "/") {
+			s.chatting = true
+			s.chatInput = ""
+			if s.gameState.Phase == game.PhaseCombat {
+				return s, s.pollState()
+			}
+			return s, nil
+		}
+
+		switch s.gameState.Phase {
+		case game.PhaseExploring:
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint == ctx.Fingerprint && p.IsDead() {
+					if isQuit(key) {
+						return s, tea.Quit
+					}
+					return s, nil
+				}
+			}
+			neighbors := s.getNeighbors()
+			if isUp(key) {
+				if s.moveCursor > 0 {
+					s.moveCursor--
+				}
+			} else if isDown(key) {
+				if s.moveCursor < len(neighbors)-1 {
+					s.moveCursor++
+				}
+			} else if isEnter(key) {
+				if ctx.Session != nil && len(neighbors) > 0 {
+					roomIdx := neighbors[s.moveCursor]
+					ctx.Session.EnterRoom(roomIdx)
+					s.gameState = ctx.Session.GetState()
+					s.moveCursor = 0
+					if s.gameState.Phase == game.PhaseCombat {
+						return s, s.pollState()
+					}
+				}
+			} else if isQuit(key) {
+				return s, tea.Quit
+			}
+		case game.PhaseCombat:
+			isPlayerDead := false
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint == ctx.Fingerprint && p.IsDead() {
+					isPlayerDead = true
+					break
+				}
+			}
+			if isPlayerDead {
+				return s, s.pollState()
+			}
+			if isKey(key, "tab") || key.Type == tea.KeyTab {
+				if len(s.gameState.Monsters) > 0 {
+					s.targetCursor = (s.targetCursor + 1) % len(s.gameState.Monsters)
+				}
+				return s, s.pollState()
+			}
+			if ctx.Session != nil {
+				switch key.String() {
+				case "1":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionAttack, TargetIdx: s.targetCursor})
+				case "2":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionSkill, TargetIdx: s.targetCursor})
+				case "3":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionItem})
+				case "4":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionFlee})
+				case "5":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionWait})
+				}
+				return s, s.pollState()
+			}
+		}
+	}
+	return s, nil
+}
+
+func (s *GameScreen) View(ctx *Context) string {
+	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.moveCursor, s.chatting, s.chatInput)
+}
 
 func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int, chatting bool, chatInput string) string {
 	mapView := renderMap(state.Floor)

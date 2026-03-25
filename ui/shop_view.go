@@ -3,10 +3,50 @@ package ui
 import (
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tolelom/catacombs/entity"
 	"github.com/tolelom/catacombs/game"
 )
+
+// ShopScreen handles the shop between floors.
+type ShopScreen struct {
+	gameState game.GameState
+	shopMsg   string
+}
+
+func NewShopScreen(state game.GameState) *ShopScreen {
+	return &ShopScreen{gameState: state}
+}
+
+func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		switch key.String() {
+		case "1", "2", "3":
+			if ctx.Session != nil {
+				idx := int(key.String()[0] - '1')
+				if ctx.Session.BuyItem(ctx.Fingerprint, idx) {
+					s.shopMsg = "Purchased!"
+				} else {
+					s.shopMsg = "Not enough gold!"
+				}
+				s.gameState = ctx.Session.GetState()
+			}
+		case "q":
+			if ctx.Session != nil {
+				ctx.Session.LeaveShop()
+				gs := NewGameScreen()
+				gs.gameState = ctx.Session.GetState()
+				return gs, nil
+			}
+		}
+	}
+	return s, nil
+}
+
+func (s *ShopScreen) View(ctx *Context) string {
+	return renderShop(s.gameState, ctx.Width, ctx.Height, s.shopMsg)
+}
 
 func itemTypeLabel(item entity.Item) string {
 	switch item.Type {

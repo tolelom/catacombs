@@ -3,9 +3,63 @@ package ui
 import (
 	"fmt"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/tolelom/catacombs/entity"
+	"github.com/tolelom/catacombs/game"
 )
+
+// ClassSelectScreen lets the player choose a class before entering the game.
+type ClassSelectScreen struct {
+	cursor int
+}
+
+func NewClassSelectScreen() *ClassSelectScreen {
+	return &ClassSelectScreen{}
+}
+
+func (s *ClassSelectScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isUp(key) {
+			if s.cursor > 0 {
+				s.cursor--
+			}
+		} else if isDown(key) {
+			if s.cursor < len(classOptions)-1 {
+				s.cursor++
+			}
+		} else if isEnter(key) {
+			if ctx.Lobby != nil {
+				selectedClass := classOptions[s.cursor].class
+				ctx.Lobby.SetPlayerClass(ctx.RoomCode, ctx.Fingerprint, selectedClass.String())
+				room := ctx.Lobby.GetRoom(ctx.RoomCode)
+				if room != nil {
+					if room.Session == nil {
+						room.Session = game.NewGameSession(ctx.Lobby.Cfg())
+					}
+					ctx.Session = room.Session
+					player := entity.NewPlayer(ctx.PlayerName, selectedClass)
+					player.Fingerprint = ctx.Fingerprint
+					ctx.Session.AddPlayer(player)
+					if ctx.Lobby != nil {
+						ctx.Lobby.RegisterSession(ctx.Fingerprint, ctx.RoomCode)
+					}
+					ctx.Session.StartGame()
+					ctx.Lobby.StartRoom(ctx.RoomCode)
+					gs := NewGameScreen()
+					gs.gameState = ctx.Session.GetState()
+					return gs, nil
+				}
+			}
+		}
+	}
+	return s, nil
+}
+
+func (s *ClassSelectScreen) View(ctx *Context) string {
+	state := classSelectState{cursor: s.cursor}
+	return renderClassSelect(state, ctx.Width, ctx.Height)
+}
 
 type classSelectState struct {
 	cursor int

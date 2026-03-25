@@ -1,8 +1,29 @@
 package ui
 
 import (
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+// HelpScreen shows controls and tips.
+type HelpScreen struct{}
+
+func NewHelpScreen() *HelpScreen {
+	return &HelpScreen{}
+}
+
+func (s *HelpScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if isKey(key, "h") || isEnter(key) || isQuit(key) {
+			return NewTitleScreen(), nil
+		}
+	}
+	return s, nil
+}
+
+func (s *HelpScreen) View(ctx *Context) string {
+	return renderHelp(ctx.Width, ctx.Height)
+}
 
 func renderHelp(width, height int) string {
 	title := styleHeader.Render("── Controls ──")
