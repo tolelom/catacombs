@@ -72,13 +72,30 @@ collecting:
 }
 
 func (s *GameSession) resolvePlayerActions() {
-	// Tick status effects
+	// Tick status effects with floor theme damage bonus
+	theme := dungeon.GetTheme(s.state.FloorNum)
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
+			// Snapshot effects before tick to compute theme bonus
+			effectsBefore := make([]entity.ActiveEffect, len(p.Effects))
+			copy(effectsBefore, p.Effects)
+
 			msgs := p.TickEffects()
 			for _, msg := range msgs {
 				s.addLog(msg)
 			}
+
+			// Apply theme damage bonus for matching status effects
+			for _, e := range effectsBefore {
+				if e.Value > 0 && (theme.StatusBoost == entity.StatusEffect(-1) || e.Type == theme.StatusBoost) {
+					bonus := int(float64(e.Value) * (theme.DamageMult - 1.0))
+					if bonus > 0 {
+						p.TakeDamage(bonus)
+						s.addLog(fmt.Sprintf("  (%s theme: +%d damage)", theme.Name, bonus))
+					}
+				}
+			}
+
 			if p.IsDead() {
 				s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
 			}
@@ -407,6 +424,13 @@ func (s *GameSession) resolveMonsterActions() {
 						if !p.IsOut() {
 							p.AddEffect(entity.ActiveEffect{Type: entity.StatusBurn, Duration: 2, Value: 8})
 							s.addLog(fmt.Sprintf("%s burns %s!", m.Name, p.Name))
+						}
+					}
+				case entity.PatternFreeze:
+					for _, p := range s.state.Players {
+						if !p.IsOut() {
+							p.AddEffect(entity.ActiveEffect{Type: entity.StatusFreeze, Duration: 1, Value: 0})
+							s.addLog(fmt.Sprintf("%s freezes %s!", m.Name, p.Name))
 						}
 					}
 				case entity.PatternHeal:

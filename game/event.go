@@ -119,13 +119,13 @@ func (s *GameSession) spawnBoss() {
 	boss := entity.NewMonster(mt, s.state.FloorNum, s.cfg.Combat.MonsterScaling)
 	switch mt {
 	case entity.MonsterBoss5:
-		boss.Pattern = entity.PatternAoE
+		boss.Pattern = entity.PatternPoison // Swamp theme
 	case entity.MonsterBoss10:
-		boss.Pattern = entity.PatternPoison
+		boss.Pattern = entity.PatternBurn // Volcano theme
 	case entity.MonsterBoss15:
-		boss.Pattern = entity.PatternBurn
+		boss.Pattern = entity.PatternFreeze // Glacier theme
 	case entity.MonsterBoss20:
-		boss.Pattern = entity.PatternHeal
+		boss.Pattern = entity.PatternHeal // Inferno theme (+ natural AoE every 3 turns)
 	}
 	if s.state.SoloMode {
 		boss.HP = int(float64(boss.HP) * s.cfg.Combat.SoloHPReduction)

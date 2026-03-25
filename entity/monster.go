@@ -41,6 +41,7 @@ const (
 	PatternPoison              // applies poison
 	PatternBurn                // applies burn to random player
 	PatternHeal                // heals self
+	PatternFreeze              // applies freeze to all players
 )
 
 type Monster struct {
