@@ -63,8 +63,8 @@ func TestSessionTurnTimeout(t *testing.T) {
 	select {
 	case <-done:
 		// Turn completed via timeout
-	case <-time.After(7 * time.Second):
-		t.Error("Turn did not timeout within 7 seconds")
+	case <-time.After(12 * time.Second):
+		t.Error("Turn did not timeout within 12 seconds")
 	}
 }
 

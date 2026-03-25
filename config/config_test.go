@@ -16,8 +16,8 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Server.HTTPPort != 8080 {
 		t.Errorf("expected HTTP port 8080, got %d", cfg.Server.HTTPPort)
 	}
-	if cfg.Game.TurnTimeoutSec != 5 {
-		t.Errorf("expected turn timeout 5, got %d", cfg.Game.TurnTimeoutSec)
+	if cfg.Game.TurnTimeoutSec != 10 {
+		t.Errorf("expected turn timeout 10, got %d", cfg.Game.TurnTimeoutSec)
 	}
 	if cfg.Game.MaxPlayers != 4 {
 		t.Errorf("expected max players 4, got %d", cfg.Game.MaxPlayers)

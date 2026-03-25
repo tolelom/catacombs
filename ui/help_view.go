@@ -29,11 +29,16 @@ func renderHelp(width, height int) string {
 	title := styleHeader.Render("── Controls ──")
 
 	sections := []struct{ header, body string }{
+		{"Lobby", `  [C]  Create room    [J]  Join by code
+  [Enter] Join selected room
+  [D]  Daily Challenge  [H]  Hard Mode toggle
+  [Q]  Back to title`},
 		{"Exploration", `  [Up/Down]  Select room
   [Enter]    Move to room
+  [[]  / []]  Allocate skill point (branch 1/2)
   [/]        Chat
   [Q]        Quit`},
-		{"Combat", `  [1]  Attack      [2]  Skill
+		{"Combat (10s per turn)", `  [1]  Attack      [2]  Skill
   [3]  Use Item    [4]  Flee
   [5]  Defend      [Tab] Switch Target
   [/]  Chat`},
@@ -43,10 +48,16 @@ func renderHelp(width, height int) string {
   Mage      70HP 20ATK 3DEF  Fireball (AoE 0.8x)
   Healer    90HP  8ATK 5DEF  Heal (restore 30HP)
   Rogue     85HP 15ATK 4DEF  Scout (reveal rooms)`},
+		{"Multiplayer", `  • Up to 4 players per room
+  • Co-op bonus: +10% dmg when 2+ target same enemy
+  • Class combos trigger bonus effects
+  • All players ready → game starts`},
 		{"Tips", `  • Skills have 3 uses per combat
-  • Co-op bonus: 10% extra when 2+ attack same target
   • Items are limited to 10 per player
-  • Dead players revive next floor at 30% HP`},
+  • Dead players revive next floor at 30% HP
+  • Bosses appear at floors 5, 10, 15, 20
+  • Skill points: 1 per floor clear (max 3)
+  • Weekly mutations rotate gameplay modifiers`},
 	}
 
 	var content string

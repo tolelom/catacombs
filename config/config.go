@@ -63,7 +63,7 @@ func defaults() Config {
 	return Config{
 		Server: ServerConfig{SSHPort: 2222, HTTPPort: 8080},
 		Game: GameConfig{
-			TurnTimeoutSec: 5, MaxPlayers: 4, MaxFloors: 20,
+			TurnTimeoutSec: 10, MaxPlayers: 4, MaxFloors: 20,
 			CoopBonus: 0.10, InventoryLimit: 10, SkillUses: 3,
 		},
 		Combat: CombatConfig{FleeChance: 0.50, MonsterScaling: 1.15, SoloHPReduction: 0.50},
