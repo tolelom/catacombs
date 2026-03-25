@@ -50,3 +50,8 @@ difficulty:
   hard_mode_shop_mult: 2.0
   # Healing effectiveness multiplier in hard mode
   hard_mode_heal_mult: 0.5
+
+admin:
+  # Basic auth credentials for /admin endpoint
+  username: "admin"
+  password: "catacombs"

@@ -13,6 +13,12 @@ type Config struct {
 	Dungeon    DungeonConfig    `yaml:"dungeon"`
 	Backup     BackupConfig     `yaml:"backup"`
 	Difficulty DifficultyConfig `yaml:"difficulty"`
+	Admin      AdminConfig      `yaml:"admin"`
+}
+
+type AdminConfig struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 type DifficultyConfig struct {
@@ -64,6 +70,7 @@ func defaults() Config {
 		Dungeon: DungeonConfig{MapWidth: 60, MapHeight: 20, MinRooms: 5, MaxRooms: 8},
 		Backup:     BackupConfig{IntervalMin: 60, Dir: "./data/backup"},
 		Difficulty: DifficultyConfig{HardModeMonsterMult: 1.5, HardModeShopMult: 2.0, HardModeHealMult: 0.5},
+		Admin:      AdminConfig{Username: "admin", Password: "catacombs"},
 	}
 }
 
