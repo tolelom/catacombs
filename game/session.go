@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -143,6 +144,7 @@ func (s *GameSession) combatLoop() {
 		s.mu.Unlock()
 
 		if gameOver {
+			slog.Info("game over", "floor", s.state.FloorNum, "victory", s.state.Victory)
 			return
 		}
 
@@ -155,6 +157,7 @@ func (s *GameSession) combatLoop() {
 			if p.Fingerprint != "" && !p.IsOut() {
 				if last, ok := s.lastActivity[p.Fingerprint]; ok {
 					if now.Sub(last) > 60*time.Second {
+						slog.Warn("player inactive removed", "fingerprint", p.Fingerprint, "name", p.Name)
 						s.addLog(fmt.Sprintf("%s removed (disconnected)", p.Name))
 						changed = true
 						continue

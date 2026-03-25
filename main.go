@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/tolelom/catacombs/config"
@@ -14,6 +15,11 @@ import (
 
 func main() {
 	os.MkdirAll("data", 0755)
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	slog.SetDefault(logger)
 
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
@@ -38,11 +44,11 @@ func main() {
 	// Start web terminal server in background
 	go func() {
 		if err := web.Start(webAddr, cfg.Server.SSHPort); err != nil {
-			log.Printf("Web server error: %v", err)
+			slog.Error("web server error", "error", err)
 		}
 	}()
 
-	log.Printf("Catacombs server starting — SSH :%d, Web :%d", cfg.Server.SSHPort, cfg.Server.HTTPPort)
+	slog.Info("server starting", "ssh_port", cfg.Server.SSHPort, "http_port", cfg.Server.HTTPPort)
 	if err := server.Start(sshAddr, lobby, db); err != nil {
 		log.Fatal(err)
 	}

@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
@@ -31,6 +31,14 @@ func Start(addr string, lobby *game.Lobby, db *store.DB) error {
 				if s.PublicKey() != nil {
 					fingerprint = gossh.FingerprintSHA256(s.PublicKey())
 				}
+
+				defer func() {
+					if r := recover(); r != nil {
+						slog.Error("session panic recovered", "error", r, "fingerprint", fingerprint)
+					}
+				}()
+
+				slog.Info("new SSH session", "fingerprint", fingerprint, "width", pty.Window.Width, "height", pty.Window.Height)
 				m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db)
 				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
@@ -40,6 +48,6 @@ func Start(addr string, lobby *game.Lobby, db *store.DB) error {
 		return fmt.Errorf("could not create server: %w", err)
 	}
 
-	log.Printf("Starting SSH server on %s", addr)
+	slog.Info("starting SSH server", "addr", addr)
 	return s.ListenAndServe()
 }

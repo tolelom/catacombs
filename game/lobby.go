@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"sync"
 
@@ -138,6 +139,7 @@ func (l *Lobby) CreateRoom(name string) string {
 		Name:   name,
 		Status: RoomWaiting,
 	}
+	slog.Info("room created", "code", code, "name", name)
 	return code
 }
 
@@ -155,6 +157,7 @@ func (l *Lobby) JoinRoom(code, playerName, fingerprint string) error {
 		return fmt.Errorf("room %s already in progress", code)
 	}
 	room.Players = append(room.Players, LobbyPlayer{Name: playerName, Fingerprint: fingerprint})
+	slog.Info("player joined", "room", code, "player", playerName)
 	return nil
 }
 
@@ -218,6 +221,7 @@ func (l *Lobby) StartRoom(code string) {
 	defer l.mu.Unlock()
 	if room, ok := l.rooms[code]; ok {
 		room.Status = RoomPlaying
+		slog.Info("game started", "room", code, "players", len(room.Players))
 	}
 }
 

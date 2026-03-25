@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 
@@ -38,14 +38,14 @@ func Start(addr string, sshPort int) error {
 		handleWS(w, r, sshPort)
 	})
 
-	log.Printf("Starting web terminal on %s", addr)
+	slog.Info("starting web terminal", "addr", addr)
 	return http.ListenAndServe(addr, mux)
 }
 
 func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade error: %v", err)
+		slog.Error("WebSocket upgrade error", "error", err)
 		return
 	}
 	defer ws.Close()
@@ -62,7 +62,7 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 	sshAddr := fmt.Sprintf("localhost:%d", sshPort)
 	client, err := ssh.Dial("tcp", sshAddr, sshConfig)
 	if err != nil {
-		log.Printf("SSH dial error: %v", err)
+		slog.Error("SSH dial error", "error", err)
 		ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Failed to connect to game server: %v\r\n", err)))
 		return
 	}
@@ -70,7 +70,7 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 
 	session, err := client.NewSession()
 	if err != nil {
-		log.Printf("SSH session error: %v", err)
+		slog.Error("SSH session error", "error", err)
 		return
 	}
 	defer session.Close()
@@ -81,24 +81,24 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
 	}); err != nil {
-		log.Printf("PTY request error: %v", err)
+		slog.Error("PTY request error", "error", err)
 		return
 	}
 
 	stdin, err := session.StdinPipe()
 	if err != nil {
-		log.Printf("stdin pipe error: %v", err)
+		slog.Error("stdin pipe error", "error", err)
 		return
 	}
 
 	stdout, err := session.StdoutPipe()
 	if err != nil {
-		log.Printf("stdout pipe error: %v", err)
+		slog.Error("stdout pipe error", "error", err)
 		return
 	}
 
 	if err := session.Shell(); err != nil {
-		log.Printf("shell error: %v", err)
+		slog.Error("shell error", "error", err)
 		return
 	}
 
