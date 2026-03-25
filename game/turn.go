@@ -409,8 +409,8 @@ func (s *GameSession) resolveMonsterActions() {
 					}
 				}
 			}
-			if m.IsBoss {
-				// Boss special pattern
+			if m.IsBoss || m.IsMiniBoss {
+				// Boss/mini-boss special pattern
 				switch m.Pattern {
 				case entity.PatternPoison:
 					for _, p := range s.state.Players {

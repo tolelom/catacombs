@@ -11,10 +11,12 @@ const (
 	RoomEvent
 	RoomEmpty
 	RoomBoss
+	RoomSecret
+	RoomMiniBoss
 )
 
 func (r RoomType) String() string {
-	return [...]string{"Combat", "Treasure", "Shop", "Event", "Empty", "Boss"}[r]
+	return [...]string{"Combat", "Treasure", "Shop", "Event", "Empty", "Boss", "Secret", "MiniBoss"}[r]
 }
 
 type Tile int
@@ -47,13 +49,15 @@ type Floor struct {
 func RandomRoomType() RoomType {
 	r := rand.Float64() * 100
 	switch {
-	case r < 45:
+	case r < 5:
+		return RoomSecret
+	case r < 50:
 		return RoomCombat
-	case r < 60:
+	case r < 65:
 		return RoomTreasure
-	case r < 70:
+	case r < 75:
 		return RoomShop
-	case r < 85:
+	case r < 90:
 		return RoomEvent
 	default:
 		return RoomEmpty

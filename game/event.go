@@ -48,6 +48,14 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 	case dungeon.RoomEvent:
 		s.triggerEvent()
 		room.Cleared = true
+	case dungeon.RoomSecret:
+		s.grantSecretTreasure()
+		room.Cleared = true
+	case dungeon.RoomMiniBoss:
+		s.spawnMiniBoss()
+		s.state.Phase = PhaseCombat
+		s.state.CombatTurn = 0
+		s.signalCombat()
 	case dungeon.RoomEmpty:
 		room.Cleared = true
 	}
@@ -270,5 +278,78 @@ func (s *GameSession) triggerEvent() {
 		} else {
 			s.addLog(fmt.Sprintf("  %s's inventory is full!", target.Name))
 		}
+	}
+}
+
+func (s *GameSession) grantSecretTreasure() {
+	s.addLog("You discovered a secret room filled with treasure!")
+	floor := s.state.FloorNum
+	// Double treasure: grant two items per player
+	for _, p := range s.state.Players {
+		for i := 0; i < 2; i++ {
+			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
+				s.addLog(fmt.Sprintf("%s's inventory is full!", p.Name))
+				break
+			}
+			if rand.Float64() < 0.5 {
+				bonus := 3 + rand.Intn(6) + floor/3
+				item := entity.Item{
+					Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus,
+				}
+				p.Inventory = append(p.Inventory, item)
+				s.addLog(fmt.Sprintf("%s found %s (ATK+%d)", p.Name, item.Name, item.Bonus))
+			} else {
+				bonus := 2 + rand.Intn(4) + floor/4
+				item := entity.Item{
+					Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus,
+				}
+				p.Inventory = append(p.Inventory, item)
+				s.addLog(fmt.Sprintf("%s found %s (DEF+%d)", p.Name, item.Name, item.Bonus))
+			}
+		}
+	}
+}
+
+func (s *GameSession) spawnMiniBoss() {
+	var mt entity.MonsterType
+	floor := s.state.FloorNum
+	switch {
+	case floor <= 4:
+		mt = entity.MonsterMiniBoss5
+	case floor <= 9:
+		mt = entity.MonsterMiniBoss10
+	case floor <= 14:
+		mt = entity.MonsterMiniBoss15
+	default:
+		mt = entity.MonsterMiniBoss20
+	}
+	miniBoss := entity.NewMonster(mt, floor, s.cfg.Combat.MonsterScaling)
+
+	// Use same pattern as the subsequent boss
+	switch mt {
+	case entity.MonsterMiniBoss5:
+		miniBoss.Pattern = entity.PatternPoison
+	case entity.MonsterMiniBoss10:
+		miniBoss.Pattern = entity.PatternBurn
+	case entity.MonsterMiniBoss15:
+		miniBoss.Pattern = entity.PatternFreeze
+	case entity.MonsterMiniBoss20:
+		miniBoss.Pattern = entity.PatternHeal
+	}
+
+	if s.state.SoloMode {
+		miniBoss.HP = int(float64(miniBoss.HP) * s.cfg.Combat.SoloHPReduction)
+		if miniBoss.HP < 1 {
+			miniBoss.HP = 1
+		}
+		miniBoss.MaxHP = miniBoss.HP
+		miniBoss.DEF = int(float64(miniBoss.DEF) * s.cfg.Combat.SoloHPReduction)
+	}
+	s.state.Monsters = []*entity.Monster{miniBoss}
+	s.addLog(fmt.Sprintf("A mini-boss appears: %s!", miniBoss.Name))
+
+	// Reset skill uses for all players at combat start
+	for _, p := range s.state.Players {
+		p.SkillUses = s.cfg.Game.SkillUses
 	}
 }

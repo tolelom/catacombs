@@ -111,6 +111,14 @@ func GenerateFloor(floorNum int) *Floor {
 	// Last room is boss
 	rooms[len(rooms)-1].Type = RoomBoss
 
+	// On floors 4, 9, 14, 19: assign one room as mini-boss
+	if floorNum == 4 || floorNum == 9 || floorNum == 14 || floorNum == 19 {
+		// Pick the second room (index 1), or any non-first non-last room
+		if len(rooms) > 2 {
+			rooms[1].Type = RoomMiniBoss
+		}
+	}
+
 	// Carve rooms into tile map
 	for _, room := range rooms {
 		for dy := 0; dy < room.H; dy++ {

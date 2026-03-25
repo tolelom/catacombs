@@ -13,6 +13,10 @@ const (
 	MonsterBoss10
 	MonsterBoss15
 	MonsterBoss20
+	MonsterMiniBoss5
+	MonsterMiniBoss10
+	MonsterMiniBoss15
+	MonsterMiniBoss20
 )
 
 type monsterBase struct {
@@ -31,6 +35,10 @@ var monsterDefs = map[MonsterType]monsterBase{
 	MonsterBoss10:     {"Warden", 250, 22, 12, 10, true},
 	MonsterBoss15:     {"Overlord", 400, 30, 16, 15, true},
 	MonsterBoss20:     {"Archlich", 600, 40, 20, 20, true},
+	MonsterMiniBoss5:  {"Guardian's Herald", 90, 9, 5, 4, false},
+	MonsterMiniBoss10: {"Warden's Shadow", 150, 13, 7, 9, false},
+	MonsterMiniBoss15: {"Overlord's Lieutenant", 240, 18, 10, 14, false},
+	MonsterMiniBoss20: {"Archlich's Harbinger", 360, 24, 12, 19, false},
 }
 
 type BossPattern int
@@ -50,6 +58,7 @@ type Monster struct {
 	HP, MaxHP   int
 	ATK, DEF    int
 	IsBoss      bool
+	IsMiniBoss  bool
 	IsElite     bool
 	ElitePrefix ElitePrefixType
 	TauntTarget bool
@@ -59,21 +68,24 @@ type Monster struct {
 
 func NewMonster(mt MonsterType, floor int, scaling float64) *Monster {
 	base := monsterDefs[mt]
+	isMiniBoss := mt == MonsterMiniBoss5 || mt == MonsterMiniBoss10 ||
+		mt == MonsterMiniBoss15 || mt == MonsterMiniBoss20
 	scale := 1.0
-	if !base.IsBoss && floor > base.MinFloor {
+	if !base.IsBoss && !isMiniBoss && floor > base.MinFloor {
 		scale = math.Pow(scaling, float64(floor-base.MinFloor))
 	}
 	hp := int(math.Round(float64(base.HP) * scale))
 	atk := int(math.Round(float64(base.ATK) * scale))
 	def := int(math.Round(float64(base.DEF) * scale))
 	return &Monster{
-		Name:   base.Name,
-		Type:   mt,
-		HP:     hp,
-		MaxHP:  hp,
-		ATK:    atk,
-		DEF:    def,
-		IsBoss: base.IsBoss,
+		Name:       base.Name,
+		Type:       mt,
+		HP:         hp,
+		MaxHP:      hp,
+		ATK:        atk,
+		DEF:        def,
+		IsBoss:     base.IsBoss,
+		IsMiniBoss: isMiniBoss,
 	}
 }
 

@@ -49,6 +49,40 @@ func TestTickTaunt(t *testing.T) {
 	}
 }
 
+func TestMiniBossStats(t *testing.T) {
+	tests := []struct {
+		mt                     MonsterType
+		name                   string
+		wantHP, wantATK, wantDEF int
+	}{
+		{MonsterMiniBoss5, "Guardian's Herald", 90, 9, 5},
+		{MonsterMiniBoss10, "Warden's Shadow", 150, 13, 7},
+		{MonsterMiniBoss15, "Overlord's Lieutenant", 240, 18, 10},
+		{MonsterMiniBoss20, "Archlich's Harbinger", 360, 24, 12},
+	}
+	for _, tc := range tests {
+		m := NewMonster(tc.mt, tc.wantHP, 1.15) // floor doesn't matter, no scaling
+		if m.Name != tc.name {
+			t.Errorf("%v: name got %q, want %q", tc.mt, m.Name, tc.name)
+		}
+		if m.HP != tc.wantHP {
+			t.Errorf("%v: HP got %d, want %d", tc.mt, m.HP, tc.wantHP)
+		}
+		if m.ATK != tc.wantATK {
+			t.Errorf("%v: ATK got %d, want %d", tc.mt, m.ATK, tc.wantATK)
+		}
+		if m.DEF != tc.wantDEF {
+			t.Errorf("%v: DEF got %d, want %d", tc.mt, m.DEF, tc.wantDEF)
+		}
+		if !m.IsMiniBoss {
+			t.Errorf("%v: IsMiniBoss should be true", tc.mt)
+		}
+		if m.IsBoss {
+			t.Errorf("%v: IsBoss should be false for mini-bosses", tc.mt)
+		}
+	}
+}
+
 func TestMonsterAtMinFloor(t *testing.T) {
 	// Slime at floor 1 (minFloor=1) should have base stats
 	m := NewMonster(MonsterSlime, 1, 1.15)
