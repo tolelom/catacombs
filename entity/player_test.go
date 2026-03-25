@@ -1,6 +1,9 @@
 package entity
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNewPlayer(t *testing.T) {
 	p := NewPlayer("testuser", ClassWarrior)
@@ -188,5 +191,51 @@ func TestEffectOverwrite(t *testing.T) {
 	}
 	if p.Effects[0].Duration != 3 || p.Effects[0].Value != 10 {
 		t.Error("should have overwritten with new values")
+	}
+}
+
+func TestBleedEffect(t *testing.T) {
+	p := NewPlayer("Test", ClassWarrior)
+	startHP := p.HP
+	p.AddEffect(ActiveEffect{Type: StatusBleed, Duration: 3, Value: 2})
+
+	msgs := p.TickEffects()
+	if len(msgs) == 0 || !strings.Contains(msgs[0], "bleed") {
+		t.Error("expected bleed damage message")
+	}
+	if p.HP != startHP-2 {
+		t.Errorf("expected HP %d, got %d", startHP-2, p.HP)
+	}
+	// After tick, remaining bleed should have value 3 (increased by 1)
+	if len(p.Effects) == 0 || p.Effects[0].Value != 3 {
+		t.Error("expected bleed value to increase to 3")
+	}
+}
+
+func TestCurseReducesHealing(t *testing.T) {
+	p := NewPlayer("Test", ClassHealer)
+	p.HP = 50
+	p.AddEffect(ActiveEffect{Type: StatusCurse, Duration: 3, Value: 50})
+	p.Heal(100)
+	// Curse reduces by 50%, so heal 50 from HP 50 -> 100, capped at MaxHP
+	expected := p.MaxHP
+	if 50+50 < p.MaxHP {
+		expected = 50 + 50
+	}
+	if p.HP != expected {
+		t.Errorf("expected HP %d, got %d", expected, p.HP)
+	}
+}
+
+func TestFreezeTickMessage(t *testing.T) {
+	p := NewPlayer("Test", ClassMage)
+	p.AddEffect(ActiveEffect{Type: StatusFreeze, Duration: 1, Value: 0})
+	msgs := p.TickEffects()
+	if len(msgs) == 0 || !strings.Contains(msgs[0], "frozen") {
+		t.Error("expected freeze message")
+	}
+	// Freeze duration 1 -> removed after tick
+	if len(p.Effects) != 0 {
+		t.Error("expected freeze to be removed after 1 tick")
 	}
 }

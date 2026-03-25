@@ -32,6 +32,8 @@ const (
 	StatusPoison StatusEffect = iota
 	StatusBurn
 	StatusFreeze
+	StatusBleed
+	StatusCurse
 )
 
 type ActiveEffect struct {
@@ -76,6 +78,12 @@ func (p *Player) TakeDamage(dmg int) {
 }
 
 func (p *Player) Heal(amount int) {
+	for _, e := range p.Effects {
+		if e.Type == StatusCurse {
+			amount = amount * (100 - e.Value) / 100
+			break
+		}
+	}
 	p.HP += amount
 	if p.HP > p.MaxHP {
 		p.HP = p.MaxHP
@@ -157,29 +165,45 @@ func (p *Player) HasEffect(t StatusEffect) bool {
 	return false
 }
 
-func (p *Player) TickEffects() (damages []string) {
-	var remaining []ActiveEffect
-	for _, e := range p.Effects {
+func (p *Player) TickEffects() []string {
+	var msgs []string
+	remaining := p.Effects[:0] // reuse underlying array
+	for i := 0; i < len(p.Effects); i++ {
+		e := &p.Effects[i]
 		switch e.Type {
 		case StatusPoison:
 			p.HP -= e.Value
 			if p.HP <= 0 {
 				p.HP = 1 // Poison can't kill, leaves at 1 HP
 			}
-			damages = append(damages, fmt.Sprintf("%s takes %d poison damage", p.Name, e.Value))
+			msgs = append(msgs, fmt.Sprintf("%s takes %d poison damage", p.Name, e.Value))
 		case StatusBurn:
 			p.HP -= e.Value
 			if p.HP <= 0 {
 				p.HP = 0
 				p.Dead = true
 			}
-			damages = append(damages, fmt.Sprintf("%s takes %d burn damage", p.Name, e.Value))
+			msgs = append(msgs, fmt.Sprintf("%s takes %d burn damage", p.Name, e.Value))
+		case StatusFreeze:
+			msgs = append(msgs, fmt.Sprintf("%s is frozen!", p.Name))
+		case StatusBleed:
+			p.HP -= e.Value
+			msgs = append(msgs, fmt.Sprintf("%s takes %d bleed damage", p.Name, e.Value))
+			e.Value++ // Bleed intensifies each turn
+		case StatusCurse:
+			msgs = append(msgs, fmt.Sprintf("%s is cursed! Healing reduced", p.Name))
+		}
+		if p.HP < 0 {
+			p.HP = 0
 		}
 		e.Duration--
 		if e.Duration > 0 {
-			remaining = append(remaining, e)
+			remaining = append(remaining, *e)
 		}
 	}
 	p.Effects = remaining
-	return
+	if p.HP <= 0 && !p.Dead {
+		p.Dead = true
+	}
+	return msgs
 }
