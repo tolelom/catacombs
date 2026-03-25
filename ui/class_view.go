@@ -48,7 +48,7 @@ func (s *ClassSelectScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) 
 					ctx.Lobby.StartRoom(ctx.RoomCode)
 					gs := NewGameScreen()
 					gs.gameState = ctx.Session.GetState()
-					return gs, nil
+					return gs, gs.pollState()
 				}
 			}
 		}

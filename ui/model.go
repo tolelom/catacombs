@@ -8,11 +8,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// StateUpdateMsg is sent by GameSession to update the view
-type StateUpdateMsg struct {
-	State game.GameState
-}
-
 type tickMsg struct{}
 
 type Model struct {
@@ -64,11 +59,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.ctx.Height == 0 {
 			m.ctx.Height = 24
-		}
-		return m, nil
-	case StateUpdateMsg:
-		if gs, ok := m.currentScreen.(*GameScreen); ok {
-			gs.gameState = msg.State
 		}
 		return m, nil
 	}

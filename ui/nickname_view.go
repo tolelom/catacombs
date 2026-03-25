@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,7 +23,9 @@ func (s *NicknameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if isEnter(key) && len(s.input) > 0 {
 			ctx.PlayerName = s.input
 			if ctx.Store != nil && ctx.Fingerprint != "" {
-				ctx.Store.SaveProfile(ctx.Fingerprint, ctx.PlayerName)
+				if err := ctx.Store.SaveProfile(ctx.Fingerprint, ctx.PlayerName); err != nil {
+					slog.Error("failed to save profile", "error", err)
+				}
 			}
 			if ctx.Lobby != nil {
 				ctx.Lobby.PlayerOnline(ctx.Fingerprint, ctx.PlayerName)
