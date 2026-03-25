@@ -1,0 +1,44 @@
+# Catacombs Configuration
+# All values shown are defaults. Uncomment and modify as needed.
+
+server:
+  # SSH port for game client connections
+  ssh_port: 2222
+  # HTTP port for web interface
+  http_port: 8080
+
+game:
+  # Seconds allowed per player turn
+  turn_timeout_sec: 5
+  # Maximum players per game session
+  max_players: 4
+  # Maximum dungeon floors
+  max_floors: 20
+  # Cooperative play bonus multiplier
+  coop_bonus: 0.10
+  # Maximum items a player can carry
+  inventory_limit: 10
+  # Number of skill uses per floor
+  skill_uses: 3
+
+combat:
+  # Probability of successfully fleeing combat
+  flee_chance: 0.50
+  # Monster stat scaling per floor
+  monster_scaling: 1.15
+  # HP reduction when playing solo
+  solo_hp_reduction: 0.50
+
+dungeon:
+  # Map dimensions in tiles
+  map_width: 60
+  map_height: 20
+  # Room count range per floor
+  min_rooms: 5
+  max_rooms: 8
+
+backup:
+  # Minutes between automatic backups
+  interval_min: 60
+  # Directory for backup files
+  dir: "./data/backup"
