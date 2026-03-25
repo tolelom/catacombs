@@ -14,15 +14,17 @@ import (
 	"github.com/tolelom/catacombs/ui"
 )
 
-func Start(addr string, lobby *game.Lobby, db *store.DB) error {
+// NewServer creates the SSH server but does not start it.
+// The caller is responsible for calling ListenAndServe() and Shutdown().
+func NewServer(addr string, lobby *game.Lobby, db *store.DB) (*ssh.Server, error) {
 	s, err := wish.NewServer(
 		wish.WithAddress(addr),
 		wish.WithHostKeyPath(".ssh/catacombs_host_key"),
 		wish.WithPublicKeyAuth(func(_ ssh.Context, _ ssh.PublicKey) bool {
-			return true // accept all keys
+			return true
 		}),
 		wish.WithPasswordAuth(func(_ ssh.Context, _ string) bool {
-			return true // accept any password (game server, not secure shell)
+			return true
 		}),
 		wish.WithMiddleware(
 			bubbletea.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
@@ -45,9 +47,17 @@ func Start(addr string, lobby *game.Lobby, db *store.DB) error {
 		),
 	)
 	if err != nil {
-		return fmt.Errorf("could not create server: %w", err)
+		return nil, fmt.Errorf("could not create server: %w", err)
 	}
+	return s, nil
+}
 
+// Start creates and starts the SSH server (blocking).
+func Start(addr string, lobby *game.Lobby, db *store.DB) error {
+	s, err := NewServer(addr, lobby, db)
+	if err != nil {
+		return err
+	}
 	slog.Info("starting SSH server", "addr", addr)
 	return s.ListenAndServe()
 }
