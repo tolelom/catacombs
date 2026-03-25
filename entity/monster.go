@@ -49,6 +49,8 @@ type Monster struct {
 	HP, MaxHP   int
 	ATK, DEF    int
 	IsBoss      bool
+	IsElite     bool
+	ElitePrefix ElitePrefixType
 	TauntTarget bool
 	TauntTurns  int
 	Pattern     BossPattern

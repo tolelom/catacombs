@@ -379,6 +379,17 @@ func (s *GameSession) resolveMonsterActions() {
 					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 1.0)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s attacks %s for %d dmg", m.Name, p.Name, dmg))
+					if m.IsElite {
+						def := entity.ElitePrefixDefs[m.ElitePrefix]
+						if def.OnHit >= 0 {
+							p.AddEffect(entity.ActiveEffect{Type: def.OnHit, Duration: 2, Value: 3})
+							s.addLog(fmt.Sprintf("%s's %s effect afflicts %s!", m.Name, def.Name, p.Name))
+						} else if m.ElitePrefix == entity.PrefixVampiric {
+							heal := dmg / 4
+							m.HP = min(m.HP+heal, m.MaxHP)
+							s.addLog(fmt.Sprintf("%s drains life from %s! (+%d HP)", m.Name, p.Name, heal))
+						}
+					}
 					if p.IsDead() {
 						s.addLog(fmt.Sprintf("☠ %s has fallen!", p.Name))
 					}

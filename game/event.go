@@ -90,6 +90,9 @@ func (s *GameSession) spawnMonsters() {
 			m.MaxHP = m.HP
 			m.DEF = int(float64(m.DEF) * s.cfg.Combat.SoloHPReduction)
 		}
+		if rand.Float64() < 0.20 {
+			entity.ApplyPrefix(m, entity.RandomPrefix())
+		}
 		s.state.Monsters[i] = m
 	}
 
