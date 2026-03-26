@@ -20,6 +20,11 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 		}
 	}
 
+	s.enterRoomLocked(roomIdx)
+}
+
+// enterRoomLocked performs room entry logic. Caller must hold s.mu.
+func (s *GameSession) enterRoomLocked(roomIdx int) {
 	s.state.Floor.CurrentRoom = roomIdx
 	dungeon.UpdateVisibility(s.state.Floor)
 	room := s.state.Floor.Rooms[roomIdx]

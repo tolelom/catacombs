@@ -56,6 +56,7 @@ type GameState struct {
 	BossKilled       bool
 	FleeSucceeded    bool
 	LastEventName    string // name of the most recent random event (for codex)
+	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -83,6 +84,7 @@ type GameSession struct {
 	combatSignal   chan struct{}
 	done           chan struct{}
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
+	moveVotes      map[string]int       // fingerprint -> voted room index
 	HardMode       bool
 	ActiveMutation *Mutation
 	DailyMode      bool
@@ -302,6 +304,15 @@ func (s *GameSession) GetState() GameState {
 		submittedCopy[k] = v
 	}
 
+	// Copy move votes
+	var moveVotesCopy map[string]int
+	if s.state.MoveVotes != nil {
+		moveVotesCopy = make(map[string]int, len(s.state.MoveVotes))
+		for k, v := range s.state.MoveVotes {
+			moveVotesCopy[k] = v
+		}
+	}
+
 	// Copy pending logs
 	pendingCopy := make([]string, len(s.state.PendingLogs))
 	copy(pendingCopy, s.state.PendingLogs)
@@ -326,12 +337,28 @@ func (s *GameSession) GetState() GameState {
 		BossKilled:       s.state.BossKilled,
 		FleeSucceeded:    s.state.FleeSucceeded,
 		LastEventName:    s.state.LastEventName,
+		MoveVotes:        moveVotesCopy,
 	}
 }
 
 func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
 	s.mu.Lock()
 	s.lastActivity[playerID] = time.Now()
+
+	// Block dead/out players from submitting
+	for _, p := range s.state.Players {
+		if p.Fingerprint == playerID && p.IsOut() {
+			s.mu.Unlock()
+			return
+		}
+	}
+
+	// Prevent duplicate submissions in the same turn
+	if _, already := s.state.SubmittedActions[playerID]; already {
+		s.mu.Unlock()
+		return
+	}
+
 	desc := ""
 	switch action.Type {
 	case ActionAttack:
@@ -441,4 +468,83 @@ func (s *GameSession) LeaveShop() {
 	defer s.mu.Unlock()
 	s.state.Phase = PhaseExploring
 	s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+}
+
+// SubmitMoveVote records a player's room choice during exploration.
+// When all alive players have voted, the majority choice wins and the party moves.
+// Returns true if the vote triggered a move (all votes collected).
+func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.state.Phase != PhaseExploring {
+		return false
+	}
+
+	s.lastActivity[fingerprint] = time.Now()
+
+	if s.moveVotes == nil {
+		s.moveVotes = make(map[string]int)
+	}
+	s.moveVotes[fingerprint] = roomIdx
+
+	// Copy votes to state for UI display
+	s.state.MoveVotes = make(map[string]int, len(s.moveVotes))
+	for k, v := range s.moveVotes {
+		s.state.MoveVotes[k] = v
+	}
+
+	// Check if all alive players have voted
+	aliveCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			aliveCount++
+		}
+	}
+	voteCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			if _, ok := s.moveVotes[p.Fingerprint]; ok {
+				voteCount++
+			}
+		}
+	}
+
+	if voteCount < aliveCount {
+		return false
+	}
+
+	// All voted — resolve by majority
+	tally := make(map[int]int)
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			if room, ok := s.moveVotes[p.Fingerprint]; ok {
+				tally[room]++
+			}
+		}
+	}
+	bestRoom := -1
+	bestCount := 0
+	for room, count := range tally {
+		if count > bestCount || (count == bestCount && room < bestRoom) {
+			bestRoom = room
+			bestCount = count
+		}
+	}
+
+	// Clear votes
+	s.moveVotes = nil
+	s.state.MoveVotes = nil
+
+	// Execute the move (inline EnterRoom logic since we already hold the lock)
+	s.enterRoomLocked(bestRoom)
+	return true
+}
+
+// ClearMoveVotes resets any pending move votes (e.g. when phase changes).
+func (s *GameSession) ClearMoveVotes() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.moveVotes = nil
+	s.state.MoveVotes = nil
 }

@@ -17,6 +17,7 @@ import (
 type GameScreen struct {
 	gameState     game.GameState
 	targetCursor  int
+	allyCursor    int // for Healer skill targeting allies
 	moveCursor    int
 	chatting      bool
 	chatInput     string
@@ -289,18 +290,27 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				return s, nil
 			}
 			neighbors := s.getNeighbors()
+			// Block input if this player already voted in multiplayer
+			alreadyVoted := false
+			if !s.gameState.SoloMode && s.gameState.MoveVotes != nil {
+				_, alreadyVoted = s.gameState.MoveVotes[ctx.Fingerprint]
+			}
 			if isUp(key) {
-				if s.moveCursor > 0 {
+				if !alreadyVoted && s.moveCursor > 0 {
 					s.moveCursor--
 				}
 			} else if isDown(key) {
-				if s.moveCursor < len(neighbors)-1 {
+				if !alreadyVoted && s.moveCursor < len(neighbors)-1 {
 					s.moveCursor++
 				}
 			} else if isEnter(key) {
-				if ctx.Session != nil && len(neighbors) > 0 {
+				if ctx.Session != nil && len(neighbors) > 0 && !alreadyVoted {
 					roomIdx := neighbors[s.moveCursor]
-					ctx.Session.EnterRoom(roomIdx)
+					if s.gameState.SoloMode {
+						ctx.Session.EnterRoom(roomIdx)
+					} else {
+						ctx.Session.SubmitMoveVote(ctx.Fingerprint, roomIdx)
+					}
 					s.gameState = ctx.Session.GetState()
 					s.moveCursor = 0
 					if s.gameState.Phase == game.PhaseCombat {
@@ -324,17 +334,37 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				return s, s.pollState()
 			}
 			if isKey(key, "tab") || key.Type == tea.KeyTab {
-				if len(s.gameState.Monsters) > 0 {
-					s.targetCursor = (s.targetCursor + 1) % len(s.gameState.Monsters)
+				if key.Type == tea.KeyShiftTab {
+					// Shift+Tab: cycle ally target (for Healer)
+					if len(s.gameState.Players) > 0 {
+						s.allyCursor = (s.allyCursor + 1) % len(s.gameState.Players)
+					}
+				} else {
+					// Tab: cycle enemy target
+					if len(s.gameState.Monsters) > 0 {
+						s.targetCursor = (s.targetCursor + 1) % len(s.gameState.Monsters)
+					}
 				}
 				return s, s.pollState()
 			}
 			if ctx.Session != nil {
+				// Determine current player's class for skill targeting
+				myClass := entity.ClassWarrior
+				for _, p := range s.gameState.Players {
+					if p.Fingerprint == ctx.Fingerprint {
+						myClass = p.Class
+						break
+					}
+				}
 				switch key.String() {
 				case "1":
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionAttack, TargetIdx: s.targetCursor})
 				case "2":
-					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionSkill, TargetIdx: s.targetCursor})
+					skillTarget := s.targetCursor
+					if myClass == entity.ClassHealer {
+						skillTarget = s.allyCursor
+					}
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionSkill, TargetIdx: skillTarget})
 				case "3":
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionItem})
 				case "4":
@@ -350,12 +380,12 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *GameScreen) View(ctx *Context) string {
-	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint)
+	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint)
 }
 
-func renderGame(state game.GameState, width, height int, targetCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string) string {
+func renderGame(state game.GameState, width, height int, targetCursor int, allyCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string) string {
 	mapView := renderMap(state.Floor)
-	hudView := renderHUD(state, targetCursor, moveCursor, fingerprint)
+	hudView := renderHUD(state, targetCursor, allyCursor, moveCursor, fingerprint)
 	logView := renderCombatLog(state.CombatLog)
 
 	if chatting {
@@ -391,7 +421,7 @@ func renderMap(floor *dungeon.Floor) string {
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
-func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerprint string) string {
+func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCursor int, fingerprint string) string {
 	var sb strings.Builder
 	border := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
@@ -418,7 +448,15 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 
 	if state.Phase == game.PhaseCombat {
 		// Two-panel layout: PARTY | ENEMIES
-		partyContent := renderPartyPanel(state.Players, state.SubmittedActions)
+		// Determine if current player is Healer for ally targeting display
+		isHealer := false
+		for _, p := range state.Players {
+			if p.Fingerprint == fingerprint && p.Class == entity.ClassHealer {
+				isHealer = true
+				break
+			}
+		}
+		partyContent := renderPartyPanel(state.Players, state.SubmittedActions, isHealer, allyCursor)
 		enemyContent := renderEnemyPanel(state.Monsters, targetCursor)
 
 		partyPanel := lipgloss.NewStyle().
@@ -440,7 +478,11 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 		sb.WriteString("\n")
 
 		// Action bar
-		sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 [Tab]대상 [/]채팅"))
+		if isHealer {
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 [Tab]적 [Shift+Tab]아군 [/]채팅"))
+		} else {
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 [Tab]대상 [/]채팅"))
+		}
 		sb.WriteString("\n")
 
 		// Timer
@@ -474,10 +516,44 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 			}
 		}
 	} else if state.Phase == game.PhaseExploring {
+		// Count votes per room for display
+		votesPerRoom := make(map[int]int)
+		if state.MoveVotes != nil {
+			for _, room := range state.MoveVotes {
+				votesPerRoom[room]++
+			}
+		}
+		myVoted := false
+		if !state.SoloMode && state.MoveVotes != nil {
+			_, myVoted = state.MoveVotes[fingerprint]
+		}
+
 		if state.Floor != nil && state.Floor.CurrentRoom >= 0 && state.Floor.CurrentRoom < len(state.Floor.Rooms) {
 			current := state.Floor.Rooms[state.Floor.CurrentRoom]
 			if len(current.Neighbors) > 0 {
 				sb.WriteString("\n")
+				// Show vote status in multiplayer
+				if !state.SoloMode {
+					aliveCount := 0
+					votedCount := 0
+					for _, p := range state.Players {
+						if !p.IsDead() {
+							aliveCount++
+							if state.MoveVotes != nil {
+								if _, ok := state.MoveVotes[p.Fingerprint]; ok {
+									votedCount++
+								}
+							}
+						}
+					}
+					voteStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+					if myVoted {
+						sb.WriteString(voteStyle.Render(fmt.Sprintf("투표 완료! 대기 중... (%d/%d)", votedCount, aliveCount)))
+					} else {
+						sb.WriteString(voteStyle.Render(fmt.Sprintf("이동할 방을 선택하세요 (%d/%d 투표)", votedCount, aliveCount)))
+					}
+					sb.WriteString("\n")
+				}
 				selectedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
 				normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 				for i, n := range current.Neighbors {
@@ -493,7 +569,13 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 							marker = "> "
 							style = selectedStyle
 						}
-						sb.WriteString(style.Render(fmt.Sprintf("%s방 %d: %s", marker, n, status)))
+						voteInfo := ""
+						if !state.SoloMode {
+							if count, ok := votesPerRoom[n]; ok {
+								voteInfo = fmt.Sprintf(" [%d표]", count)
+							}
+						}
+						sb.WriteString(style.Render(fmt.Sprintf("%s방 %d: %s%s", marker, n, status, voteInfo)))
 						sb.WriteString("\n")
 					}
 				}
@@ -523,7 +605,11 @@ func renderHUD(state game.GameState, targetCursor int, moveCursor int, fingerpri
 				break
 			}
 		}
-		sb.WriteString("[Up/Down] 선택  [Enter] 이동  [Q] 종료")
+		if !state.SoloMode && myVoted {
+			sb.WriteString("[Q] 종료  — 다른 파티원의 투표를 기다리는 중...")
+		} else {
+			sb.WriteString("[Up/Down] 선택  [Enter] 이동  [Q] 종료")
+		}
 	}
 
 	if state.Phase == game.PhaseCombat {
@@ -599,12 +685,16 @@ func renderHPBar(current, max, width int) string {
 		emptyStyle.Render(strings.Repeat("░", empty))
 }
 
-func renderPartyPanel(players []*entity.Player, submittedActions map[string]string) string {
+func renderPartyPanel(players []*entity.Player, submittedActions map[string]string, showAllyCursor bool, allyCursor int) string {
 	var sb strings.Builder
 	sb.WriteString(styleHeader.Render("  아군") + "\n\n")
 
-	for _, p := range players {
-		nameStr := stylePlayer.Render(fmt.Sprintf("  ♦ %s", p.Name))
+	for i, p := range players {
+		marker := "  ♦"
+		if showAllyCursor && i == allyCursor {
+			marker = " >♦"
+		}
+		nameStr := stylePlayer.Render(fmt.Sprintf("%s %s", marker, p.Name))
 		classStr := styleSystem.Render(fmt.Sprintf(" (%s)", p.Class))
 		status := ""
 		if p.IsDead() {

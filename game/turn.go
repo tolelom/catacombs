@@ -25,6 +25,16 @@ func (s *GameSession) RunTurn() {
 	}
 	s.mu.Unlock()
 
+	// Drain stale actions from previous turn
+draining:
+	for {
+		select {
+		case <-s.actionCh:
+		default:
+			break draining
+		}
+	}
+
 	// Collect actions with timeout
 	turnTimeout := time.Duration(s.cfg.Game.TurnTimeoutSec) * time.Second
 	timer := time.NewTimer(turnTimeout)
