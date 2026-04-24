@@ -14,6 +14,34 @@ func testCfg(t *testing.T) *config.Config {
 	return cfg
 }
 
+func TestAddPlayerDedup(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p1 := entity.NewPlayer("Alice", entity.ClassWarrior)
+	p1.Fingerprint = "fp-alice"
+	s.AddPlayer(p1)
+	// Simulate rejoin: another Player with the same fingerprint
+	p2 := entity.NewPlayer("Alice", entity.ClassMage)
+	p2.Fingerprint = "fp-alice"
+	s.AddPlayer(p2)
+
+	players := s.GetState().Players
+	if len(players) != 1 {
+		t.Fatalf("expected 1 player after dedup, got %d", len(players))
+	}
+	if players[0].Class != entity.ClassWarrior {
+		t.Errorf("first add should win; expected Warrior, got %v", players[0].Class)
+	}
+
+	// Empty-fingerprint players bypass dedup (legacy/test path)
+	anon1 := entity.NewPlayer("Anon", entity.ClassRogue)
+	anon2 := entity.NewPlayer("Anon", entity.ClassHealer)
+	s.AddPlayer(anon1)
+	s.AddPlayer(anon2)
+	if got := len(s.GetState().Players); got != 3 {
+		t.Errorf("expected 3 players total, got %d", got)
+	}
+}
+
 func TestGetStateNoRace(t *testing.T) {
 	s := NewGameSession(testCfg(t))
 	p := entity.NewPlayer("Racer", entity.ClassWarrior)

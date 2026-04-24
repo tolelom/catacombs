@@ -32,20 +32,19 @@ func (s *ClassSelectScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) 
 			if ctx.Lobby != nil {
 				selectedClass := classOptions[s.cursor].class
 				ctx.Lobby.SetPlayerClass(ctx.RoomCode, ctx.Fingerprint, selectedClass.String())
-				room := ctx.Lobby.GetRoom(ctx.RoomCode)
-				if room != nil {
-					if room.Session == nil {
-						room.Session = game.NewGameSession(ctx.Lobby.Cfg())
-						room.Session.HardMode = ctx.HardMode
-						room.Session.ApplyWeeklyMutation()
-					}
-					ctx.Session = room.Session
+				hardMode := ctx.HardMode
+				session := ctx.Lobby.EnsureSession(ctx.RoomCode, func() *game.GameSession {
+					gs := game.NewGameSession(ctx.Lobby.Cfg())
+					gs.HardMode = hardMode
+					gs.ApplyWeeklyMutation()
+					return gs
+				})
+				if session != nil {
+					ctx.Session = session
 					player := entity.NewPlayer(ctx.PlayerName, selectedClass)
 					player.Fingerprint = ctx.Fingerprint
 					ctx.Session.AddPlayer(player)
-					if ctx.Lobby != nil {
-						ctx.Lobby.RegisterSession(ctx.Fingerprint, ctx.RoomCode)
-					}
+					ctx.Lobby.RegisterSession(ctx.Fingerprint, ctx.RoomCode)
 					ws := NewWaitingScreen()
 					return ws, ws.pollWaiting()
 				}

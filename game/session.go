@@ -218,6 +218,15 @@ func (s *GameSession) signalCombat() {
 func (s *GameSession) AddPlayer(p *entity.Player) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Dedup by fingerprint — a player who left the waiting room and rejoined
+	// must not be added twice to the session's player list.
+	if p.Fingerprint != "" {
+		for _, existing := range s.state.Players {
+			if existing.Fingerprint == p.Fingerprint {
+				return
+			}
+		}
+	}
 	if p.Skills == nil {
 		p.Skills = &entity.PlayerSkills{BranchIndex: -1}
 	}

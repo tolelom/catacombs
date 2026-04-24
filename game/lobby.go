@@ -240,6 +240,22 @@ func (l *Lobby) ListRooms() []*LobbyRoom {
 	return result
 }
 
+// EnsureSession returns the room's GameSession, creating one via init if it
+// does not yet exist. The check-and-create is atomic under the lobby lock, so
+// concurrent callers will agree on a single session instance.
+func (l *Lobby) EnsureSession(code string, init func() *GameSession) *GameSession {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	room, ok := l.rooms[code]
+	if !ok {
+		return nil
+	}
+	if room.Session == nil {
+		room.Session = init()
+	}
+	return room.Session
+}
+
 func (l *Lobby) StartRoom(code string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
