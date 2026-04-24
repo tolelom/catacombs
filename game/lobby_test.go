@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/tolelom/catacombs/config"
@@ -40,7 +41,7 @@ func TestJoinRoom(t *testing.T) {
 func TestRoomStatusTransition(t *testing.T) {
 	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
-	l.JoinRoom(code, "Alice", "fp-alice")
+	_ = l.JoinRoom(code, "Alice", "fp-alice")
 	r := l.GetRoom(code)
 	if r.Status != RoomWaiting {
 		t.Errorf("new room should be Waiting, got %d", r.Status)
@@ -60,7 +61,9 @@ func TestJoinRoomFull(t *testing.T) {
 	lobby := NewLobby(testConfig(t))
 	code := lobby.CreateRoom("Test Room")
 	for i := 0; i < 4; i++ {
-		lobby.JoinRoom(code, "player", "fp-player")
+		if err := lobby.JoinRoom(code, fmt.Sprintf("player%d", i), fmt.Sprintf("fp-player%d", i)); err != nil {
+			t.Fatalf("unexpected join error: %v", err)
+		}
 	}
 	err := lobby.JoinRoom(code, "player5", "fp-player5")
 	if err == nil {
@@ -68,10 +71,25 @@ func TestJoinRoomFull(t *testing.T) {
 	}
 }
 
+func TestJoinRoomDuplicateFingerprint(t *testing.T) {
+	lobby := NewLobby(testConfig(t))
+	code := lobby.CreateRoom("Test Room")
+	if err := lobby.JoinRoom(code, "Alice", "fp-alice"); err != nil {
+		t.Fatalf("first join should succeed: %v", err)
+	}
+	if err := lobby.JoinRoom(code, "Alice", "fp-alice"); err == nil {
+		t.Error("duplicate fingerprint should be rejected")
+	}
+	room := lobby.GetRoom(code)
+	if len(room.Players) != 1 {
+		t.Errorf("expected 1 player, got %d", len(room.Players))
+	}
+}
+
 func TestSetPlayerClass(t *testing.T) {
 	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
-	l.JoinRoom(code, "Alice", "fp-alice")
+	_ = l.JoinRoom(code, "Alice", "fp-alice")
 	l.SetPlayerClass(code, "fp-alice", "Warrior")
 	room := l.GetRoom(code)
 	if room.Players[0].Class != "Warrior" {
@@ -82,8 +100,8 @@ func TestSetPlayerClass(t *testing.T) {
 func TestAllReady(t *testing.T) {
 	l := NewLobby(testConfig(t))
 	code := l.CreateRoom("Test")
-	l.JoinRoom(code, "Alice", "fp-alice")
-	l.JoinRoom(code, "Bob", "fp-bob")
+	_ = l.JoinRoom(code, "Alice", "fp-alice")
+	_ = l.JoinRoom(code, "Bob", "fp-bob")
 
 	if l.AllReady(code) {
 		t.Error("no one ready yet, should return false")

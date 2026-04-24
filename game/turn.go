@@ -188,14 +188,21 @@ func (s *GameSession) resolvePlayerActions() {
 					targetIdx = 0
 				}
 				target := s.state.Players[targetIdx]
-				if target.IsDead() {
+				if target.IsOut() {
 					// Find first alive player to heal instead
-					for j, candidate := range s.state.Players {
+					found := false
+					for _, candidate := range s.state.Players {
 						if !candidate.IsOut() {
 							target = candidate
-							targetIdx = j
+							found = true
 							break
 						}
+					}
+					if !found {
+						// No valid target — refund skill use
+						p.SkillUses++
+						s.addLog(fmt.Sprintf("%s 회복 대상을 찾을 수 없습니다!", p.Name))
+						break
 					}
 				}
 				healAmount := 30

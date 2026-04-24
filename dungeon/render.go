@@ -146,10 +146,10 @@ func wallVisible(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) 
 
 // RenderFloor renders the tile map as a colored ASCII string.
 func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
-	theme := GetFloorTheme(floor.Number)
 	if floor == nil || floor.Tiles == nil {
 		return ""
 	}
+	theme := GetFloorTheme(floor.Number)
 
 	owner := roomOwnership(floor)
 

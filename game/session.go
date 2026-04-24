@@ -501,6 +501,9 @@ func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 			aliveCount++
 		}
 	}
+	if aliveCount == 0 {
+		return false
+	}
 	voteCount := 0
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -526,10 +529,13 @@ func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 	bestRoom := -1
 	bestCount := 0
 	for room, count := range tally {
-		if count > bestCount || (count == bestCount && room < bestRoom) {
+		if count > bestCount || (count == bestCount && (bestRoom < 0 || room < bestRoom)) {
 			bestRoom = room
 			bestCount = count
 		}
+	}
+	if bestRoom < 0 {
+		return false
 	}
 
 	// Clear votes

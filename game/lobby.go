@@ -150,11 +150,16 @@ func (l *Lobby) JoinRoom(code, playerName, fingerprint string) error {
 	if !ok {
 		return fmt.Errorf("방 %s을(를) 찾을 수 없습니다", code)
 	}
-	if len(room.Players) >= l.cfg.Game.MaxPlayers {
-		return fmt.Errorf("방 %s이(가) 가득 찼습니다", code)
-	}
 	if room.Status != RoomWaiting {
 		return fmt.Errorf("방 %s이(가) 이미 진행 중입니다", code)
+	}
+	for _, p := range room.Players {
+		if p.Fingerprint == fingerprint {
+			return fmt.Errorf("이미 방 %s에 입장해 있습니다", code)
+		}
+	}
+	if len(room.Players) >= l.cfg.Game.MaxPlayers {
+		return fmt.Errorf("방 %s이(가) 가득 찼습니다", code)
 	}
 	room.Players = append(room.Players, LobbyPlayer{Name: playerName, Fingerprint: fingerprint})
 	slog.Info("player joined", "room", code, "player", playerName)

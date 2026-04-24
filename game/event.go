@@ -153,6 +153,9 @@ func (s *GameSession) spawnBoss() {
 	}
 	if s.state.SoloMode {
 		boss.HP = int(float64(boss.HP) * s.cfg.Combat.SoloHPReduction)
+		if boss.HP < 1 {
+			boss.HP = 1
+		}
 		boss.MaxHP = boss.HP
 		boss.DEF = int(float64(boss.DEF) * s.cfg.Combat.SoloHPReduction)
 	}
