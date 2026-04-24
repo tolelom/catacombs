@@ -17,6 +17,9 @@ func UpdateVisibility(floor *Floor) {
 }
 
 func GetRoomVisibility(floor *Floor, roomIdx int) Visibility {
+	if floor == nil || roomIdx < 0 || roomIdx >= len(floor.Rooms) {
+		return Hidden
+	}
 	if roomIdx == floor.CurrentRoom {
 		return Visible
 	}

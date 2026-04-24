@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -95,11 +97,12 @@ func (s *NicknameScreen) updateNickname(key tea.KeyMsg, ctx *Context) (Screen, t
 		return s, nil
 	}
 	if key.Type == tea.KeyBackspace && len(s.input) > 0 {
-		s.input = s.input[:len(s.input)-1]
-	} else if len(key.Runes) == 1 && len(s.input) < 12 {
-		ch := string(key.Runes)
-		if len(ch) == 1 && ch[0] >= 32 && ch[0] < 127 {
-			s.input += ch
+		_, size := utf8.DecodeLastRuneInString(s.input)
+		s.input = s.input[:len(s.input)-size]
+	} else if len(key.Runes) == 1 && utf8.RuneCountInString(s.input) < 12 {
+		r := key.Runes[0]
+		if unicode.IsPrint(r) {
+			s.input += string(r)
 		}
 	}
 	return s, nil
@@ -250,7 +253,7 @@ func renderNicknamePhase(input string) []string {
 		Padding(0, 2).
 		Render(stylePlayer.Render(display))
 
-	hint := styleSystem.Render(fmt.Sprintf("(%d/12 글자)", len(input)))
+	hint := styleSystem.Render(fmt.Sprintf("(%d/12 글자)", utf8.RuneCountInString(input)))
 	footer := styleAction.Render("[Enter] 확인    [Esc] 취소")
 
 	return []string{title, "", inputBox, hint, "", footer}
