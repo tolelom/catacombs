@@ -10,13 +10,13 @@ func TestRecordCodexEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Record some entries
-	db.RecordCodexEntry("fp1", "monster", "goblin")
-	db.RecordCodexEntry("fp1", "monster", "skeleton")
-	db.RecordCodexEntry("fp1", "item", "health_potion")
-	db.RecordCodexEntry("fp1", "event", "altar")
+	_ = db.RecordCodexEntry("fp1", "monster", "goblin")
+	_ = db.RecordCodexEntry("fp1", "monster", "skeleton")
+	_ = db.RecordCodexEntry("fp1", "item", "health_potion")
+	_ = db.RecordCodexEntry("fp1", "event", "altar")
 
 	codex, err := db.GetCodex("fp1")
 	if err != nil {
@@ -46,7 +46,7 @@ func TestRecordCodexEntry(t *testing.T) {
 	}
 
 	// Duplicate entry should not increase count
-	db.RecordCodexEntry("fp1", "monster", "goblin")
+	_ = db.RecordCodexEntry("fp1", "monster", "goblin")
 	codex2, _ := db.GetCodex("fp1")
 	if len(codex2.Monsters) != 2 {
 		t.Errorf("expected still 2 monsters after duplicate, got %d", len(codex2.Monsters))
@@ -59,7 +59,7 @@ func TestGetCodexEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	codex, err := db.GetCodex("fp_unknown")
 	if err != nil {

@@ -14,7 +14,7 @@ func TestBackup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := db.SaveProfile("fp1", "player1"); err != nil {
 		t.Fatalf("failed to save profile: %v", err)
@@ -40,7 +40,7 @@ func TestBackup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open backup: %v", err)
 	}
-	defer backupDB.Close()
+	defer func() { _ = backupDB.Close() }()
 
 	name, err := backupDB.GetProfile("fp1")
 	if err != nil {
@@ -58,7 +58,7 @@ func TestBackupCreatesDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open db: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	backupDir := filepath.Join(tmpDir, "nested", "backups")
 	_, err = db.Backup(backupDir)

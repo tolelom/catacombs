@@ -10,7 +10,7 @@ func TestEarnTitle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Earn first title - should be newly earned and set as active
 	newlyEarned, err := db.EarnTitle("fp1", "novice")
@@ -68,10 +68,10 @@ func TestSetActiveTitle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
-	db.EarnTitle("fp1", "novice")
-	db.EarnTitle("fp1", "explorer")
+	_, _ = db.EarnTitle("fp1", "novice")
+	_, _ = db.EarnTitle("fp1", "explorer")
 
 	err = db.SetActiveTitle("fp1", "explorer")
 	if err != nil {
@@ -87,7 +87,7 @@ func TestSetActiveTitle(t *testing.T) {
 	}
 
 	// Setting unearned title should be a no-op
-	db.SetActiveTitle("fp1", "champion")
+	_ = db.SetActiveTitle("fp1", "champion")
 	data2, _ := db.GetTitleData("fp1")
 	if data2.ActiveTitle != "explorer" {
 		t.Errorf("active title should remain explorer, got %s", data2.ActiveTitle)
@@ -100,7 +100,7 @@ func TestGetTitleDataEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	data, err := db.GetTitleData("fp_unknown")
 	if err != nil {

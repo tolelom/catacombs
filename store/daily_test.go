@@ -10,11 +10,11 @@ func TestSaveAndGetDaily(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
-	db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp1", PlayerName: "Alice", FloorReached: 10, GoldEarned: 200})
-	db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp2", PlayerName: "Bob", FloorReached: 15, GoldEarned: 100})
-	db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp3", PlayerName: "Charlie", FloorReached: 15, GoldEarned: 300})
+	_ = db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp1", PlayerName: "Alice", FloorReached: 10, GoldEarned: 200})
+	_ = db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp2", PlayerName: "Bob", FloorReached: 15, GoldEarned: 100})
+	_ = db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp3", PlayerName: "Charlie", FloorReached: 15, GoldEarned: 300})
 
 	records, err := db.GetDailyLeaderboard("2026-03-25", 10)
 	if err != nil {
@@ -41,11 +41,11 @@ func TestDailyStreak(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
-	db.SaveDaily(DailyRecord{Date: "2026-03-23", Player: "fp1", PlayerName: "Alice", FloorReached: 5, GoldEarned: 50})
-	db.SaveDaily(DailyRecord{Date: "2026-03-24", Player: "fp1", PlayerName: "Alice", FloorReached: 8, GoldEarned: 100})
-	db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp1", PlayerName: "Alice", FloorReached: 10, GoldEarned: 200})
+	_ = db.SaveDaily(DailyRecord{Date: "2026-03-23", Player: "fp1", PlayerName: "Alice", FloorReached: 5, GoldEarned: 50})
+	_ = db.SaveDaily(DailyRecord{Date: "2026-03-24", Player: "fp1", PlayerName: "Alice", FloorReached: 8, GoldEarned: 100})
+	_ = db.SaveDaily(DailyRecord{Date: "2026-03-25", Player: "fp1", PlayerName: "Alice", FloorReached: 10, GoldEarned: 200})
 
 	streak, err := db.GetStreak("fp1", "2026-03-25")
 	if err != nil {

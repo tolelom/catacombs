@@ -11,7 +11,7 @@ func TestMonsterScaling(t *testing.T) {
 		t.Errorf("Slime floor 1: got HP=%d ATK=%d, want HP=20 ATK=5", slime.HP, slime.ATK)
 	}
 	slimeF3 := NewMonster(MonsterSlime, 3, 1.15)
-	expectedHP := int(math.Round(20 * math.Pow(1.15, 2)))
+	expectedHP := int(math.Round(20 * 1.15 * 1.15))
 	if slimeF3.HP != expectedHP {
 		t.Errorf("Slime floor 3: got HP=%d, want %d", slimeF3.HP, expectedHP)
 	}

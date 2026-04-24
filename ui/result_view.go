@@ -71,11 +71,11 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 		if p.IsDead() {
 			status = styleDamage.Render("사망")
 		}
-		sb.WriteString(fmt.Sprintf("  %s (%s)  %s  골드: %d  아이템: %d  유물: %d\n",
-			stylePlayer.Render(p.Name), p.Class, status, p.Gold, len(p.Inventory), len(p.Relics)))
+		fmt.Fprintf(&sb, "  %s (%s)  %s  골드: %d  아이템: %d  유물: %d\n",
+			stylePlayer.Render(p.Name), p.Class, status, p.Gold, len(p.Inventory), len(p.Relics))
 		totalGold += p.Gold
 	}
-	sb.WriteString(fmt.Sprintf("\n  총 골드: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold))))
+	fmt.Fprintf(&sb, "\n  총 골드: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold)))
 
 	// Rankings
 	if len(rankings) > 0 {
@@ -94,7 +94,7 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 			if len(r.Members) > 1 {
 				party = fmt.Sprintf(" (%s)", strings.Join(r.Members, ", "))
 			}
-			sb.WriteString(fmt.Sprintf("  %s %s  B%d층  점수: %d%s\n", medal, r.Player, r.Floor, r.Score, party))
+			fmt.Fprintf(&sb, "  %s %s  B%d층  점수: %d%s\n", medal, r.Player, r.Floor, r.Score, party)
 		}
 	}
 

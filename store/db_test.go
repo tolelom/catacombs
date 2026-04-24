@@ -11,8 +11,8 @@ func TestPlayerProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		db.Close()
-		os.Remove("test.db")
+		_ = db.Close()
+		_ = os.Remove("test.db")
 	}()
 
 	err = db.SaveProfile("SHA256:abc123", "TestPlayer")
@@ -34,13 +34,13 @@ func TestRanking(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		db.Close()
-		os.Remove("test_rank.db")
+		_ = db.Close()
+		_ = os.Remove("test_rank.db")
 	}()
 
-	db.SaveRun("Alice", 20, 1500, "Warrior", nil)
-	db.SaveRun("Bob", 15, 1000, "Mage", nil)
-	db.SaveRun("Charlie", 20, 2000, "Rogue", nil)
+	_ = db.SaveRun("Alice", 20, 1500, "Warrior", nil)
+	_ = db.SaveRun("Bob", 15, 1000, "Mage", nil)
+	_ = db.SaveRun("Charlie", 20, 2000, "Rogue", nil)
 
 	rankings, err := db.TopRuns(10)
 	if err != nil {
@@ -60,13 +60,13 @@ func TestGetStats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Save some runs
-	db.SaveRun("Alice", 5, 100, "Warrior", nil)
-	db.SaveRun("Alice", 10, 250, "Warrior", nil)
-	db.SaveRun("Alice", 20, 500, "Warrior", nil) // victory (floor >= 20)
-	db.SaveRun("Bob", 3, 50, "", nil)
+	_ = db.SaveRun("Alice", 5, 100, "Warrior", nil)
+	_ = db.SaveRun("Alice", 10, 250, "Warrior", nil)
+	_ = db.SaveRun("Alice", 20, 500, "Warrior", nil) // victory (floor >= 20)
+	_ = db.SaveRun("Bob", 3, 50, "", nil)
 
 	stats, err := db.GetStats("Alice")
 	if err != nil {

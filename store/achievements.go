@@ -26,13 +26,6 @@ var AchievementDefs = []Achievement{
 	{ID: "flee_master", Name: "전략적 후퇴", Description: "전투에서 도주 성공"},
 }
 
-func (d *DB) initAchievements() error {
-	return d.db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(bucketAchievements)
-		return err
-	})
-}
-
 func (d *DB) UnlockAchievement(player, achievementID string) (bool, error) {
 	key := []byte(player + ":" + achievementID)
 	alreadyUnlocked := false

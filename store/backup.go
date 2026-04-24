@@ -24,15 +24,17 @@ func (d *DB) Backup(destDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create backup file: %w", err)
 	}
-	defer f.Close()
 
 	// BoltDB View transaction provides a consistent snapshot
 	err = d.db.View(func(tx *bolt.Tx) error {
 		_, err := tx.WriteTo(f)
 		return err
 	})
+	if closeErr := f.Close(); closeErr != nil && err == nil {
+		err = fmt.Errorf("close backup file: %w", closeErr)
+	}
 	if err != nil {
-		os.Remove(destPath)
+		_ = os.Remove(destPath)
 		return "", fmt.Errorf("backup write: %w", err)
 	}
 

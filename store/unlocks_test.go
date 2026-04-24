@@ -10,7 +10,7 @@ func TestUnlockContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Initially not unlocked
 	if db.IsUnlocked("fp1", "fifth_class") {

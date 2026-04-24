@@ -21,7 +21,7 @@ func testDB(t *testing.T) *store.DB {
 func TestTitleToLobby(t *testing.T) {
 	lobby := game.NewLobby(func() *config.Config { c, _ := config.Load(""); return c }())
 	db := testDB(t)
-	defer func() { db.Close(); os.Remove("test_ui.db") }()
+	defer func() { _ = db.Close(); _ = os.Remove("test_ui.db") }()
 
 	m := NewModel(80, 24, "testfp", lobby, db)
 
@@ -38,7 +38,7 @@ func TestTitleToLobby(t *testing.T) {
 	}
 
 	// Type a name
-	for _, ch := range []rune("Hero") {
+	for _, ch := range "Hero" {
 		result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
 		m2 = result.(Model)
 	}
@@ -58,7 +58,7 @@ func TestTitleToLobby(t *testing.T) {
 func TestLobbyCreateRoom(t *testing.T) {
 	lobby := game.NewLobby(func() *config.Config { c, _ := config.Load(""); return c }())
 	db := testDB(t)
-	defer func() { db.Close(); os.Remove("test_ui.db") }()
+	defer func() { _ = db.Close(); _ = os.Remove("test_ui.db") }()
 
 	m := NewModel(80, 24, "testfp2", lobby, db)
 
@@ -67,7 +67,7 @@ func TestLobbyCreateRoom(t *testing.T) {
 	m2 := result.(Model)
 
 	// Type name and confirm
-	for _, ch := range []rune("Hero") {
+	for _, ch := range "Hero" {
 		result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
 		m2 = result.(Model)
 	}
@@ -89,14 +89,14 @@ func TestLobbyCreateRoom(t *testing.T) {
 func TestClassSelectToGame(t *testing.T) {
 	lobby := game.NewLobby(func() *config.Config { c, _ := config.Load(""); return c }())
 	db := testDB(t)
-	defer func() { db.Close(); os.Remove("test_ui.db") }()
+	defer func() { _ = db.Close(); _ = os.Remove("test_ui.db") }()
 
 	m := NewModel(80, 24, "testfp3", lobby, db)
 
 	// Title -> Nickname -> Lobby
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m2 := result.(Model)
-	for _, ch := range []rune("Hero") {
+	for _, ch := range "Hero" {
 		result, _ = m2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
 		m2 = result.(Model)
 	}

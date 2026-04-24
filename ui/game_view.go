@@ -87,7 +87,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			for _, m := range s.gameState.Monsters {
 				key := "monster:" + m.Name
 				if !s.codexRecorded[key] {
-					ctx.Store.RecordCodexEntry(ctx.Fingerprint, "monster", m.Name)
+					_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "monster", m.Name)
 					s.codexRecorded[key] = true
 				}
 			}
@@ -98,7 +98,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			for _, item := range s.gameState.ShopItems {
 				key := "item:" + item.Name
 				if !s.codexRecorded[key] {
-					ctx.Store.RecordCodexEntry(ctx.Fingerprint, "item", item.Name)
+					_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "item", item.Name)
 					s.codexRecorded[key] = true
 				}
 			}
@@ -108,7 +108,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if ctx.Store != nil && s.gameState.LastEventName != "" {
 			key := "event:" + s.gameState.LastEventName
 			if !s.codexRecorded[key] {
-				ctx.Store.RecordCodexEntry(ctx.Fingerprint, "event", s.gameState.LastEventName)
+				_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "event", s.gameState.LastEventName)
 				s.codexRecorded[key] = true
 			}
 		}
@@ -130,64 +130,64 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 				members = append(members, p.Name)
 			}
-			ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members)
+			_ = ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members)
 			// Check achievements
 			if s.gameState.FloorNum >= 5 {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "first_clear")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "first_clear")
 			}
 			if s.gameState.FloorNum >= 10 {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "floor10")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "floor10")
 			}
 			if s.gameState.Victory {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "floor20")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "floor20")
 			}
 			if s.gameState.SoloMode && s.gameState.FloorNum >= 5 {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "solo_clear")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "solo_clear")
 			}
 			if s.gameState.BossKilled {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "boss_slayer")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "boss_slayer")
 			}
 			if s.gameState.FleeSucceeded {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "flee_master")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "flee_master")
 			}
 			for _, p := range s.gameState.Players {
 				if p.Gold >= 200 {
-					ctx.Store.UnlockAchievement(p.Name, "gold_hoarder")
+					_, _ = ctx.Store.UnlockAchievement(p.Name, "gold_hoarder")
 				}
 				if len(p.Relics) >= 3 {
-					ctx.Store.UnlockAchievement(p.Name, "relic_collector")
+					_, _ = ctx.Store.UnlockAchievement(p.Name, "relic_collector")
 				}
 			}
 			if len(s.gameState.Players) >= 4 {
-				ctx.Store.UnlockAchievement(ctx.PlayerName, "full_party")
+				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "full_party")
 			}
 
 			// Unlock triggers
 			if s.gameState.FloorNum >= 10 {
-				ctx.Store.UnlockContent(ctx.Fingerprint, "fifth_class")
+				_, _ = ctx.Store.UnlockContent(ctx.Fingerprint, "fifth_class")
 			}
 			if len(s.gameState.Players) >= 3 && s.gameState.FloorNum >= 5 {
-				ctx.Store.UnlockContent(ctx.Fingerprint, "hard_mode")
+				_, _ = ctx.Store.UnlockContent(ctx.Fingerprint, "hard_mode")
 			}
 			if s.gameState.Victory {
-				ctx.Store.UnlockContent(ctx.Fingerprint, "mutations")
+				_, _ = ctx.Store.UnlockContent(ctx.Fingerprint, "mutations")
 			}
 
 			// Title triggers
-			ctx.Store.EarnTitle(ctx.Fingerprint, "novice")
+			_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "novice")
 			if s.gameState.FloorNum >= 5 {
-				ctx.Store.EarnTitle(ctx.Fingerprint, "explorer")
+				_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "explorer")
 			}
 			if s.gameState.FloorNum >= 10 {
-				ctx.Store.EarnTitle(ctx.Fingerprint, "veteran")
+				_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "veteran")
 			}
 			if s.gameState.Victory {
-				ctx.Store.EarnTitle(ctx.Fingerprint, "champion")
+				_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "champion")
 			}
 			// Check player gold for gold_king title
 			for _, p := range s.gameState.Players {
 				if p.Fingerprint == ctx.Fingerprint && p.Gold >= 500 {
-					ctx.Store.EarnTitle(ctx.Fingerprint, "gold_king")
+					_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "gold_king")
 				}
 			}
 
@@ -200,7 +200,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						break
 					}
 				}
-				ctx.Store.SaveDaily(store.DailyRecord{
+				_ = ctx.Store.SaveDaily(store.DailyRecord{
 					Date:         ctx.Session.DailyDate,
 					Player:       ctx.Fingerprint,
 					PlayerName:   ctx.PlayerName,
@@ -284,7 +284,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					if isKey(key, "]") {
 						branchIdx = 1
 					}
-					ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx)
+					_ = ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx)
 					s.gameState = ctx.Session.GetState()
 				}
 				return s, nil
@@ -434,14 +434,14 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 		if p.IsDead() {
 			status = " [사망]"
 		}
-		sb.WriteString(fmt.Sprintf("%s (%s) %s %d/%d%s  골드: %d",
-			p.Name, p.Class, hpBar, p.HP, p.MaxHP, status, p.Gold))
+		fmt.Fprintf(&sb, "%s (%s) %s %d/%d%s  골드: %d",
+			p.Name, p.Class, hpBar, p.HP, p.MaxHP, status, p.Gold)
 
 		// Show inventory count
 		itemCount := len(p.Inventory)
 		relicCount := len(p.Relics)
 		if itemCount > 0 || relicCount > 0 {
-			sb.WriteString(fmt.Sprintf("  아이템:%d 유물:%d", itemCount, relicCount))
+			fmt.Fprintf(&sb, "  아이템:%d 유물:%d", itemCount, relicCount)
 		}
 		sb.WriteString("\n")
 	}
@@ -596,10 +596,10 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 					}
 					nextNode := p.Skills.Allocated
 					if p.Skills.BranchIndex >= 0 && p.Skills.BranchIndex != i {
-						sb.WriteString(fmt.Sprintf("    [%s] %s (잠김)\n", key, branch.Name))
+						fmt.Fprintf(&sb, "    [%s] %s (잠김)\n", key, branch.Name)
 					} else if nextNode < 3 {
 						node := branch.Nodes[nextNode]
-						sb.WriteString(fmt.Sprintf("    [%s] %s -> %s\n", key, branch.Name, node.Name))
+						fmt.Fprintf(&sb, "    [%s] %s -> %s\n", key, branch.Name, node.Name)
 					}
 				}
 				break
@@ -703,7 +703,7 @@ func renderPartyPanel(players []*entity.Player, submittedActions map[string]stri
 		sb.WriteString(nameStr + classStr + status + "\n")
 
 		hpBar := renderHPBar(p.HP, p.MaxHP, 16)
-		sb.WriteString(fmt.Sprintf("    %s %d/%d\n", hpBar, p.HP, p.MaxHP))
+		fmt.Fprintf(&sb, "    %s %d/%d\n", hpBar, p.HP, p.MaxHP)
 
 		if len(p.Effects) > 0 {
 			var effects []string
@@ -720,7 +720,7 @@ func renderPartyPanel(players []*entity.Player, submittedActions map[string]stri
 			sb.WriteString("    " + strings.Join(effects, " ") + "\n")
 		}
 
-		sb.WriteString(fmt.Sprintf("    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF()))
+		fmt.Fprintf(&sb, "    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF())
 		sb.WriteString(styleGold.Render(fmt.Sprintf("G:%d", p.Gold)))
 		sb.WriteString("\n")
 
@@ -760,8 +760,8 @@ func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
 		if m.TauntTarget {
 			taunt = styleStatus.Render(fmt.Sprintf(" [도발됨 %d턴]", m.TauntTurns))
 		}
-		sb.WriteString(fmt.Sprintf("  %s[%d] %s %s %d/%d%s\n\n",
-			marker, i, styleEnemy.Render(m.Name), hpBar, m.HP, m.MaxHP, taunt))
+		fmt.Fprintf(&sb, "  %s[%d] %s %s %d/%d%s\n\n",
+			marker, i, styleEnemy.Render(m.Name), hpBar, m.HP, m.MaxHP, taunt)
 	}
 	return sb.String()
 }

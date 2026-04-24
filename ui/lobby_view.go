@@ -109,7 +109,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if isKey(key, "c") {
 			if ctx.Lobby != nil {
 				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 방")
-				ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint)
+				_ = ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint)
 				ctx.RoomCode = code
 				return NewClassSelectScreen(), nil
 			}

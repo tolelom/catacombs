@@ -19,7 +19,7 @@ func TestAdminEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	cfg, _ := config.Load("")
 	cfg.Admin = config.AdminConfig{Username: "admin", Password: "secret"}

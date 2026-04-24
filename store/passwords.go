@@ -42,10 +42,13 @@ func (d *DB) CheckPassword(nickname, password string) (bool, error) {
 // HasPassword checks whether an account with a password exists for the nickname.
 func (d *DB) HasPassword(nickname string) bool {
 	found := false
-	d.db.View(func(tx *bolt.Tx) error {
+	err := d.db.View(func(tx *bolt.Tx) error {
 		v := tx.Bucket(bucketPasswords).Get([]byte(nickname))
 		found = v != nil
 		return nil
 	})
+	if err != nil {
+		return false
+	}
 	return found
 }

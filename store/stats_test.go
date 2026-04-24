@@ -12,7 +12,7 @@ func TestGetTodayRunCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	today := time.Now().Format("2006-01-02")
 
@@ -24,10 +24,10 @@ func TestGetTodayRunCount(t *testing.T) {
 		t.Fatalf("expected 0, got %d", count)
 	}
 
-	db.SaveDaily(DailyRecord{Date: today, Player: "fp1", PlayerName: "A", FloorReached: 10, GoldEarned: 100})
-	db.SaveDaily(DailyRecord{Date: today, Player: "fp2", PlayerName: "B", FloorReached: 15, GoldEarned: 200})
+	_ = db.SaveDaily(DailyRecord{Date: today, Player: "fp1", PlayerName: "A", FloorReached: 10, GoldEarned: 100})
+	_ = db.SaveDaily(DailyRecord{Date: today, Player: "fp2", PlayerName: "B", FloorReached: 15, GoldEarned: 200})
 	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-	db.SaveDaily(DailyRecord{Date: yesterday, Player: "fp3", PlayerName: "C", FloorReached: 5, GoldEarned: 50})
+	_ = db.SaveDaily(DailyRecord{Date: yesterday, Player: "fp3", PlayerName: "C", FloorReached: 5, GoldEarned: 50})
 
 	count, err = db.GetTodayRunCount()
 	if err != nil {
@@ -44,7 +44,7 @@ func TestGetTodayAvgFloor(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	today := time.Now().Format("2006-01-02")
 
@@ -56,8 +56,8 @@ func TestGetTodayAvgFloor(t *testing.T) {
 		t.Fatalf("expected 0, got %f", avg)
 	}
 
-	db.SaveDaily(DailyRecord{Date: today, Player: "fp1", PlayerName: "A", FloorReached: 10, GoldEarned: 100})
-	db.SaveDaily(DailyRecord{Date: today, Player: "fp2", PlayerName: "B", FloorReached: 20, GoldEarned: 200})
+	_ = db.SaveDaily(DailyRecord{Date: today, Player: "fp1", PlayerName: "A", FloorReached: 10, GoldEarned: 100})
+	_ = db.SaveDaily(DailyRecord{Date: today, Player: "fp2", PlayerName: "B", FloorReached: 20, GoldEarned: 200})
 
 	avg, err = db.GetTodayAvgFloor()
 	if err != nil {

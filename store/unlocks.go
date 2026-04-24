@@ -36,12 +36,15 @@ func (d *DB) UnlockContent(fingerprint, unlockID string) (bool, error) {
 func (d *DB) IsUnlocked(fingerprint, unlockID string) bool {
 	key := []byte(fingerprint + ":" + unlockID)
 	unlocked := false
-	d.db.View(func(tx *bolt.Tx) error {
+	err := d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketUnlocks)
 		if b.Get(key) != nil {
 			unlocked = true
 		}
 		return nil
 	})
+	if err != nil {
+		return false
+	}
 	return unlocked
 }

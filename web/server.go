@@ -62,7 +62,7 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 		slog.Error("WebSocket upgrade error", "error", err)
 		return
 	}
-	defer ws.Close()
+	defer func() { _ = ws.Close() }()
 
 	// Connect to local SSH server
 	sshConfig := &ssh.ClientConfig{
@@ -77,17 +77,17 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 	client, err := ssh.Dial("tcp", sshAddr, sshConfig)
 	if err != nil {
 		slog.Error("SSH dial error", "error", err)
-		ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Failed to connect to game server: %v\r\n", err)))
+		_ = ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Failed to connect to game server: %v\r\n", err)))
 		return
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	session, err := client.NewSession()
 	if err != nil {
 		slog.Error("SSH session error", "error", err)
 		return
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Request PTY
 	if err := session.RequestPty("xterm-256color", 24, 80, ssh.TerminalModes{
@@ -157,16 +157,14 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 			case websocket.BinaryMessage:
 				var msg resizeMsg
 				if json.Unmarshal(data, &msg) == nil && msg.Type == "resize" {
-					session.WindowChange(msg.Rows, msg.Cols)
+					_ = session.WindowChange(msg.Rows, msg.Cols)
 				}
 			}
 		}
 	}()
 
 	// Wait for either side to close
-	select {
-	case <-done:
-	}
+	<-done
 
 	// Ensure SSH session ends
 	_ = session.Close()

@@ -42,7 +42,7 @@ func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Han
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(stats)
+		_ = json.NewEncoder(w).Encode(stats)
 	})
 }
 
