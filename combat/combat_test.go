@@ -65,6 +65,40 @@ func TestMonsterAITauntDeadWarrior(t *testing.T) {
 	}
 }
 
+func TestMonsterAISkipsFledPlayers(t *testing.T) {
+	p1 := entity.NewPlayer("Fled", entity.ClassWarrior)
+	p1.Fled = true
+	p2 := entity.NewPlayer("Alive", entity.ClassMage)
+
+	m := &entity.Monster{Name: "Orc", HP: 50, ATK: 10}
+	// Run many iterations to cover the random branch
+	for i := 0; i < 50; i++ {
+		idx, isAoE := MonsterAI(m, []*entity.Player{p1, p2}, 1)
+		if isAoE {
+			continue
+		}
+		if idx == 0 {
+			t.Fatalf("iteration %d: monster targeted fled player at index 0", i)
+		}
+	}
+}
+
+func TestMonsterAITauntSkipsFledWarrior(t *testing.T) {
+	warrior := entity.NewPlayer("Tank", entity.ClassWarrior)
+	warrior.Fled = true
+	mage := entity.NewPlayer("Mage", entity.ClassMage)
+
+	m := &entity.Monster{Name: "Orc", HP: 50, ATK: 10, DEF: 5, TauntTarget: true, TauntTurns: 2}
+	idx, _ := MonsterAI(m, []*entity.Player{warrior, mage}, 1)
+
+	if idx != 1 {
+		t.Errorf("taunt should skip fled warrior and target mage, got idx=%d", idx)
+	}
+	if m.TauntTarget {
+		t.Error("TauntTarget should be cleared when warrior is unavailable (fled)")
+	}
+}
+
 func TestFleeChance(t *testing.T) {
 	successes := 0
 	for i := 0; i < 100; i++ {

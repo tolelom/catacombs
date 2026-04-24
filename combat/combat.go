@@ -88,11 +88,11 @@ func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (tar
 	}
 	if m.TauntTarget {
 		for i, p := range players {
-			if !p.IsDead() && p.Class == entity.ClassWarrior {
+			if !p.IsOut() && p.Class == entity.ClassWarrior {
 				return i, false
 			}
 		}
-		// No living warrior found — clear taunt
+		// No available warrior found — clear taunt
 		m.TauntTarget = false
 		m.TauntTurns = 0
 	}
@@ -100,7 +100,7 @@ func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (tar
 		minHP := int(^uint(0) >> 1)
 		minIdx := -1
 		for i, p := range players {
-			if !p.IsDead() && p.HP < minHP {
+			if !p.IsOut() && p.HP < minHP {
 				minHP = p.HP
 				minIdx = i
 			}
@@ -108,10 +108,10 @@ func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (tar
 		if minIdx >= 0 {
 			return minIdx, false
 		}
-		// Fall through to default targeting if no alive player found
+		// Fall through to default targeting if no available player found
 	}
 	for i, p := range players {
-		if !p.IsDead() {
+		if !p.IsOut() {
 			return i, false
 		}
 	}
