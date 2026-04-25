@@ -25,6 +25,9 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 
 // enterRoomLocked performs room entry logic. Caller must hold s.mu.
 func (s *GameSession) enterRoomLocked(roomIdx int) {
+	if s.state.Floor == nil || roomIdx < 0 || roomIdx >= len(s.state.Floor.Rooms) {
+		return
+	}
 	s.state.Floor.CurrentRoom = roomIdx
 	dungeon.UpdateVisibility(s.state.Floor)
 	room := s.state.Floor.Rooms[roomIdx]
@@ -122,7 +125,7 @@ func (s *GameSession) spawnMonsters() {
 
 	// Reset skill uses for all players at combat start
 	for _, p := range s.state.Players {
-		p.SkillUses = s.cfg.Game.SkillUses
+		p.SkillUses = s.effectiveSkillUses()
 	}
 }
 
@@ -169,7 +172,7 @@ func (s *GameSession) spawnBoss() {
 
 	// Reset skill uses for all players at combat start
 	for _, p := range s.state.Players {
-		p.SkillUses = s.cfg.Game.SkillUses
+		p.SkillUses = s.effectiveSkillUses()
 	}
 }
 
@@ -222,6 +225,7 @@ func (s *GameSession) generateShopItems() {
 		{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
 		{Name: armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
 	}
+	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
 }
 
 func weaponName(floor int) string {
@@ -260,17 +264,17 @@ func (s *GameSession) triggerEvent() {
 	outcome := choice.Resolve(s.state.FloorNum)
 	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
 
-	// Pick a random alive player to apply the outcome
-	var alive []*entity.Player
+	// Pick a random available player to apply the outcome (excludes fled).
+	var available []*entity.Player
 	for _, p := range s.state.Players {
-		if !p.IsDead() {
-			alive = append(alive, p)
+		if !p.IsOut() {
+			available = append(available, p)
 		}
 	}
-	if len(alive) == 0 {
+	if len(available) == 0 {
 		return
 	}
-	target := alive[rand.Intn(len(alive))]
+	target := available[rand.Intn(len(available))]
 
 	if outcome.HPChange > 0 {
 		before := target.HP
@@ -388,6 +392,6 @@ func (s *GameSession) spawnMiniBoss() {
 
 	// Reset skill uses for all players at combat start
 	for _, p := range s.state.Players {
-		p.SkillUses = s.cfg.Game.SkillUses
+		p.SkillUses = s.effectiveSkillUses()
 	}
 }

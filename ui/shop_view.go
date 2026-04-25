@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -19,7 +20,27 @@ func NewShopScreen(state game.GameState) *ShopScreen {
 	return &ShopScreen{gameState: state}
 }
 
+func (s *ShopScreen) pollState() tea.Cmd {
+	return tea.Tick(time.Millisecond*300, func(t time.Time) tea.Msg {
+		return tickMsg{}
+	})
+}
+
 func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
+	if _, ok := msg.(tickMsg); ok {
+		// Another player may have just left the shop and triggered the
+		// transition; pick that up so we follow them out.
+		if ctx.Session != nil {
+			st := ctx.Session.GetState()
+			s.gameState = st
+			if st.Phase != game.PhaseShop {
+				gs := NewGameScreen()
+				gs.gameState = st
+				return gs, nil
+			}
+		}
+		return s, s.pollState()
+	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
 		case "1", "2", "3":
@@ -39,10 +60,13 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 		case "q":
 			if ctx.Session != nil {
-				ctx.Session.LeaveShop()
-				gs := NewGameScreen()
-				gs.gameState = ctx.Session.GetState()
-				return gs, nil
+				if ctx.Session.LeaveShop(ctx.Fingerprint) {
+					gs := NewGameScreen()
+					gs.gameState = ctx.Session.GetState()
+					return gs, nil
+				}
+				s.shopMsg = "다른 플레이어가 상점을 떠날 때까지 대기 중..."
+				s.gameState = ctx.Session.GetState()
 			}
 		}
 	}
@@ -89,7 +113,12 @@ func renderShop(state game.GameState, width, height int, shopMsg string) string 
 	items := ""
 	for i, item := range state.ShopItems {
 		label := itemTypeLabel(item)
-		items += fmt.Sprintf("  [%d] %s %s — %d 골드\n", i+1, item.Name, label, item.Price)
+		soldOut := i < len(state.ShopSold) && state.ShopSold[i]
+		if soldOut {
+			items += fmt.Sprintf("  [%d] %s %s — (품절)\n", i+1, item.Name, label)
+		} else {
+			items += fmt.Sprintf("  [%d] %s %s — %d 골드\n", i+1, item.Name, label, item.Price)
+		}
 	}
 
 	menu := "[1-3] 구매  [Q] 상점 나가기"

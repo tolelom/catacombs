@@ -35,6 +35,7 @@ type LobbyScreen struct {
 	online       int
 	hardMode     bool
 	hardUnlocked bool
+	errMsg       string
 }
 
 func NewLobbyScreen() *LobbyScreen {
@@ -89,7 +90,10 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				if ctx.Lobby != nil {
 					if err := ctx.Lobby.JoinRoom(s.codeInput, ctx.PlayerName, ctx.Fingerprint); err == nil {
 						ctx.RoomCode = s.codeInput
+						s.errMsg = ""
 						return NewClassSelectScreen(), nil
+					} else {
+						s.errMsg = err.Error()
 					}
 				}
 				s.joining = false
@@ -129,7 +133,10 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				r := s.rooms[s.cursor]
 				if err := ctx.Lobby.JoinRoom(r.Code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 					ctx.RoomCode = r.Code
+					s.errMsg = ""
 					return NewClassSelectScreen(), nil
+				} else {
+					s.errMsg = err.Error()
 				}
 			}
 		} else if isKey(key, "d") {
@@ -138,13 +145,15 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 일일 도전")
 				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 					ctx.RoomCode = code
-					room := ctx.Lobby.GetRoom(code)
-					if room != nil {
-						room.Session = game.NewGameSession(ctx.Lobby.Cfg())
-						room.Session.DailyMode = true
-						room.Session.DailyDate = time.Now().Format("2006-01-02")
-						room.Session.ApplyWeeklyMutation()
-						ctx.Session = room.Session
+					session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
+						gs := game.NewGameSession(ctx.Lobby.Cfg())
+						gs.DailyMode = true
+						gs.DailyDate = time.Now().Format("2006-01-02")
+						gs.ApplyWeeklyMutation()
+						return gs
+					})
+					if session != nil {
+						ctx.Session = session
 					}
 					return NewClassSelectScreen(), nil
 				}
@@ -174,6 +183,7 @@ func (s *LobbyScreen) View(ctx *Context) string {
 		online:       s.online,
 		hardMode:     s.hardMode,
 		hardUnlocked: s.hardUnlocked,
+		errMsg:       s.errMsg,
 	}
 	return renderLobby(state, ctx.Width, ctx.Height)
 }
@@ -189,6 +199,7 @@ type lobbyState struct {
 	online       int
 	hardMode     bool
 	hardUnlocked bool
+	errMsg       string
 }
 
 func renderLobby(state lobbyState, width, height int) string {
@@ -241,11 +252,16 @@ func renderLobby(state lobbyState, width, height int) string {
 		roomList += fmt.Sprintf("\n  방 코드 입력: [%s]  (Esc로 취소)\n", inputStr)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left,
+	parts := []string{
 		header,
 		"",
 		roomStyle.Render(roomList),
 		"",
 		menu,
-	)
+	}
+	if state.errMsg != "" {
+		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
+		parts = append(parts, "", errStyle.Render("! "+state.errMsg))
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }

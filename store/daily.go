@@ -18,10 +18,26 @@ type DailyRecord struct {
 	GoldEarned   int    `json:"gold_earned"`
 }
 
+// SaveDaily persists a daily-challenge record, preserving the player's best
+// attempt for the day. A later attempt only overwrites the existing record
+// when it reaches a higher floor, or the same floor with more gold. This
+// matches the leaderboard sort and prevents a worse retry from clobbering
+// a better score earlier in the day.
 func (d *DB) SaveDaily(record DailyRecord) error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketDailyRuns)
 		key := []byte(record.Date + ":" + record.Player)
+		if existing := b.Get(key); existing != nil {
+			var prev DailyRecord
+			if err := json.Unmarshal(existing, &prev); err == nil {
+				if prev.FloorReached > record.FloorReached {
+					return nil
+				}
+				if prev.FloorReached == record.FloorReached && prev.GoldEarned >= record.GoldEarned {
+					return nil
+				}
+			}
+		}
 		data, err := json.Marshal(record)
 		if err != nil {
 			return err

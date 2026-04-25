@@ -64,3 +64,54 @@ func TestDailyStreak(t *testing.T) {
 		t.Errorf("expected streak 0 after gap, got %d", streak2)
 	}
 }
+
+// TestSaveDailyKeepsBest verifies a worse retry on the same date does not
+// overwrite the player's earlier best record.
+func TestSaveDailyKeepsBest(t *testing.T) {
+	dir := t.TempDir()
+	db, err := Open(dir + "/test_daily_best.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	date := "2026-04-25"
+	good := DailyRecord{Date: date, Player: "fp1", PlayerName: "Alice", FloorReached: 12, GoldEarned: 500}
+	worse := DailyRecord{Date: date, Player: "fp1", PlayerName: "Alice", FloorReached: 5, GoldEarned: 100}
+	if err := db.SaveDaily(good); err != nil {
+		t.Fatalf("save good: %v", err)
+	}
+	if err := db.SaveDaily(worse); err != nil {
+		t.Fatalf("save worse: %v", err)
+	}
+	records, err := db.GetDailyLeaderboard(date, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record, got %d", len(records))
+	}
+	if records[0].FloorReached != 12 || records[0].GoldEarned != 500 {
+		t.Errorf("expected best record kept, got floor=%d gold=%d", records[0].FloorReached, records[0].GoldEarned)
+	}
+
+	// A higher floor should overwrite
+	better := DailyRecord{Date: date, Player: "fp1", PlayerName: "Alice", FloorReached: 18, GoldEarned: 100}
+	if err := db.SaveDaily(better); err != nil {
+		t.Fatalf("save better: %v", err)
+	}
+	records, _ = db.GetDailyLeaderboard(date, 10)
+	if records[0].FloorReached != 18 {
+		t.Errorf("expected better record stored, got floor=%d", records[0].FloorReached)
+	}
+
+	// Same floor, more gold should overwrite
+	moreGold := DailyRecord{Date: date, Player: "fp1", PlayerName: "Alice", FloorReached: 18, GoldEarned: 999}
+	if err := db.SaveDaily(moreGold); err != nil {
+		t.Fatalf("save more gold: %v", err)
+	}
+	records, _ = db.GetDailyLeaderboard(date, 10)
+	if records[0].GoldEarned != 999 {
+		t.Errorf("expected gold-tiebreak to overwrite, got gold=%d", records[0].GoldEarned)
+	}
+}

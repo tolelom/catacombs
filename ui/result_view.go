@@ -22,16 +22,10 @@ func NewResultScreen(state game.GameState, rankingSaved bool) *ResultScreen {
 func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
-			if ctx.Lobby != nil && ctx.Fingerprint != "" {
-				ctx.Lobby.UnregisterSession(ctx.Fingerprint)
-			}
-			if ctx.Session != nil {
-				ctx.Session.Stop()
-				ctx.Session = nil
-			}
 			if ctx.Lobby != nil && ctx.RoomCode != "" {
-				ctx.Lobby.RemoveRoom(ctx.RoomCode)
+				ctx.Lobby.LeaveSession(ctx.RoomCode, ctx.Fingerprint)
 			}
+			ctx.Session = nil
 			ctx.RoomCode = ""
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)

@@ -57,6 +57,7 @@ type GameState struct {
 	FleeSucceeded    bool
 	LastEventName    string // name of the most recent random event (for codex)
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
+	ShopSold         []bool          // parallel to ShopItems; true once a non-consumable slot is sold
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -85,6 +86,7 @@ type GameSession struct {
 	done           chan struct{}
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
 	moveVotes      map[string]int       // fingerprint -> voted room index
+	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	HardMode       bool
 	ActiveMutation *Mutation
 	DailyMode      bool
@@ -119,7 +121,28 @@ func NewGameSession(cfg *config.Config) *GameSession {
 func (s *GameSession) ApplyWeeklyMutation() {
 	mut := GetWeeklyMutation()
 	s.ActiveMutation = &mut
-	mut.Apply(&s.cfg.Game)
+}
+
+// effectiveSkillUses returns the per-combat skill use budget, accounting for
+// the active mutation. Reading via this helper avoids mutating shared config.
+func (s *GameSession) effectiveSkillUses() int {
+	if s.hasMutation("no_skills") {
+		return 0
+	}
+	return s.cfg.Game.SkillUses
+}
+
+// effectiveTurnTimeout returns the per-turn timeout in seconds, accounting
+// for the active mutation.
+func (s *GameSession) effectiveTurnTimeout() int {
+	t := s.cfg.Game.TurnTimeoutSec
+	if s.hasMutation("speed_run") {
+		t = t / 2
+		if t < 2 {
+			t = 2
+		}
+	}
+	return t
 }
 
 func (s *GameSession) Stop() {
@@ -213,6 +236,39 @@ func (s *GameSession) signalCombat() {
 	case s.combatSignal <- struct{}{}:
 	default:
 	}
+}
+
+// RemovePlayer removes a player from the session by fingerprint and returns
+// the number of remaining players. Returns -1 if the fingerprint was not found
+// (so callers can distinguish a no-op from a successful drop to zero).
+func (s *GameSession) RemovePlayer(fingerprint string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if fingerprint == "" {
+		return len(s.state.Players)
+	}
+	idx := -1
+	for i, p := range s.state.Players {
+		if p.Fingerprint == fingerprint {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return -1
+	}
+	s.state.Players = append(s.state.Players[:idx], s.state.Players[idx+1:]...)
+	delete(s.lastActivity, fingerprint)
+	if s.moveVotes != nil {
+		delete(s.moveVotes, fingerprint)
+	}
+	if s.state.MoveVotes != nil {
+		delete(s.state.MoveVotes, fingerprint)
+	}
+	if s.state.SubmittedActions != nil {
+		delete(s.state.SubmittedActions, fingerprint)
+	}
+	return len(s.state.Players)
 }
 
 func (s *GameSession) AddPlayer(p *entity.Player) {
@@ -338,6 +394,7 @@ func (s *GameSession) GetState() GameState {
 		GameOver:         s.state.GameOver,
 		Victory:          s.state.Victory,
 		ShopItems:        append([]entity.Item{}, s.state.ShopItems...),
+		ShopSold:         append([]bool{}, s.state.ShopSold...),
 		CombatLog:        logCopy,
 		TurnDeadline:     s.state.TurnDeadline,
 		SubmittedActions: submittedCopy,
@@ -420,7 +477,17 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) erro
 			if p.Skills == nil || p.Skills.Points <= p.Skills.Allocated {
 				return fmt.Errorf("스킬 포인트가 없습니다")
 			}
-			return p.Skills.Allocate(branchIdx, p.Class)
+			before := p.Skills.GetMaxHPBonus(p.Class)
+			if err := p.Skills.Allocate(branchIdx, p.Class); err != nil {
+				return err
+			}
+			// MaxHPBoost nodes raise both MaxHP and current HP by the delta.
+			delta := p.Skills.GetMaxHPBonus(p.Class) - before
+			if delta > 0 {
+				p.MaxHP += delta
+				p.HP += delta
+			}
+			return nil
 		}
 	}
 	return fmt.Errorf("플레이어를 찾을 수 없습니다")
@@ -443,6 +510,9 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) BuyResult {
 	if s.state.Phase != PhaseShop || itemIdx < 0 || itemIdx >= len(s.state.ShopItems) {
 		return BuyFailed
 	}
+	if itemIdx < len(s.state.ShopSold) && s.state.ShopSold[itemIdx] {
+		return BuyFailed
+	}
 	item := s.state.ShopItems[itemIdx]
 	for _, p := range s.state.Players {
 		if p.Fingerprint == playerID {
@@ -454,6 +524,9 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) BuyResult {
 			}
 			p.Gold -= item.Price
 			p.Inventory = append(p.Inventory, item)
+			if item.Type != entity.ItemConsumable && itemIdx < len(s.state.ShopSold) {
+				s.state.ShopSold[itemIdx] = true
+			}
 			return BuyOK
 		}
 	}
@@ -471,12 +544,46 @@ func (s *GameSession) SendChat(playerName, message string) {
 	}
 }
 
-// LeaveShop exits the shop phase
-func (s *GameSession) LeaveShop() {
+// LeaveShop marks the calling player as ready to leave the shop. The phase
+// only flips back to PhaseExploring once every available (non-out) player
+// has pressed leave, so one impatient player can't yank others out mid-browse.
+// Returns true if the call triggered the actual transition.
+func (s *GameSession) LeaveShop(fingerprint string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.state.Phase != PhaseShop {
+		return false
+	}
+	if s.shopLeavers == nil {
+		s.shopLeavers = make(map[string]bool)
+	}
+	if fingerprint != "" {
+		s.shopLeavers[fingerprint] = true
+	}
+	available := 0
+	ready := 0
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		available++
+		if p.Fingerprint != "" && s.shopLeavers[p.Fingerprint] {
+			ready++
+		}
+	}
+	// Solo or empty-fingerprint test runs: act immediately.
+	if available == 0 || (available == 1 && fingerprint == "") {
+		ready = available
+	}
+	if ready < available {
+		return false
+	}
+	s.shopLeavers = nil
 	s.state.Phase = PhaseExploring
-	s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+	if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
+		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+	}
+	return true
 }
 
 // SubmitMoveVote records a player's room choice during exploration.

@@ -115,5 +115,5 @@ func MonsterAI(m *entity.Monster, players []*entity.Player, turnNumber int) (tar
 			return i, false
 		}
 	}
-	return 0, false
+	return -1, false
 }

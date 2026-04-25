@@ -24,6 +24,7 @@ type GameScreen struct {
 	rankingSaved  bool
 	codexRecorded map[string]bool
 	prevPhase     game.GamePhase
+	skillMsg      string
 }
 
 func NewGameScreen() *GameScreen {
@@ -33,16 +34,10 @@ func NewGameScreen() *GameScreen {
 }
 
 func (s *GameScreen) leaveGame(ctx *Context) (Screen, tea.Cmd) {
-	if ctx.Lobby != nil && ctx.Fingerprint != "" {
-		ctx.Lobby.UnregisterSession(ctx.Fingerprint)
-	}
-	if ctx.Session != nil {
-		ctx.Session.Stop()
-		ctx.Session = nil
-	}
 	if ctx.Lobby != nil && ctx.RoomCode != "" {
-		ctx.Lobby.RemoveRoom(ctx.RoomCode)
+		ctx.Lobby.LeaveSession(ctx.RoomCode, ctx.Fingerprint)
 	}
+	ctx.Session = nil
 	ctx.RoomCode = ""
 	ls := NewLobbyScreen()
 	ls.refreshLobby(ctx)
@@ -131,35 +126,39 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				members = append(members, p.Name)
 			}
 			_ = ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members)
-			// Check achievements
+			// Achievements are keyed by fingerprint to match unlocks/titles and
+			// to avoid cross-contamination between players sharing a nickname.
 			if s.gameState.FloorNum >= 5 {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "first_clear")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "first_clear")
 			}
 			if s.gameState.FloorNum >= 10 {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "floor10")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "floor10")
 			}
 			if s.gameState.Victory {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "floor20")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "floor20")
 			}
 			if s.gameState.SoloMode && s.gameState.FloorNum >= 5 {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "solo_clear")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "solo_clear")
 			}
 			if s.gameState.BossKilled {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "boss_slayer")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "boss_slayer")
 			}
 			if s.gameState.FleeSucceeded {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "flee_master")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "flee_master")
 			}
 			for _, p := range s.gameState.Players {
+				if p.Fingerprint == "" {
+					continue
+				}
 				if p.Gold >= 200 {
-					_, _ = ctx.Store.UnlockAchievement(p.Name, "gold_hoarder")
+					_, _ = ctx.Store.UnlockAchievement(p.Fingerprint, "gold_hoarder")
 				}
 				if len(p.Relics) >= 3 {
-					_, _ = ctx.Store.UnlockAchievement(p.Name, "relic_collector")
+					_, _ = ctx.Store.UnlockAchievement(p.Fingerprint, "relic_collector")
 				}
 			}
 			if len(s.gameState.Players) >= 4 {
-				_, _ = ctx.Store.UnlockAchievement(ctx.PlayerName, "full_party")
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "full_party")
 			}
 
 			// Unlock triggers
@@ -214,7 +213,8 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return NewResultScreen(s.gameState, s.rankingSaved), nil
 	}
 	if s.gameState.Phase == game.PhaseShop {
-		return NewShopScreen(s.gameState), nil
+		ss := NewShopScreen(s.gameState)
+		return ss, ss.pollState()
 	}
 
 	switch msg.(type) {
@@ -284,7 +284,11 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					if isKey(key, "]") {
 						branchIdx = 1
 					}
-					_ = ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx)
+					if err := ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx); err != nil {
+						s.skillMsg = err.Error()
+					} else {
+						s.skillMsg = ""
+					}
 					s.gameState = ctx.Session.GetState()
 				}
 				return s, nil
@@ -323,14 +327,14 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				return s.leaveGame(ctx)
 			}
 		case game.PhaseCombat:
-			isPlayerDead := false
+			isPlayerOut := false
 			for _, p := range s.gameState.Players {
-				if p.Fingerprint == ctx.Fingerprint && p.IsDead() {
-					isPlayerDead = true
+				if p.Fingerprint == ctx.Fingerprint && p.IsOut() {
+					isPlayerOut = true
 					break
 				}
 			}
-			if isPlayerDead {
+			if isPlayerOut {
 				return s, s.pollState()
 			}
 			if isKey(key, "tab") || key.Type == tea.KeyTab {
@@ -380,10 +384,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *GameScreen) View(ctx *Context) string {
-	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint)
+	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint, s.skillMsg)
 }
 
-func renderGame(state game.GameState, width, height int, targetCursor int, allyCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string) string {
+func renderGame(state game.GameState, width, height int, targetCursor int, allyCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string, skillMsg string) string {
 	mapView := renderMap(state.Floor)
 	hudView := renderHUD(state, targetCursor, allyCursor, moveCursor, fingerprint)
 	logView := renderCombatLog(state.CombatLog)
@@ -394,11 +398,11 @@ func renderGame(state game.GameState, width, height int, targetCursor int, allyC
 		return lipgloss.JoinVertical(lipgloss.Left, mapView, hudView, logView, chatView)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left,
-		mapView,
-		hudView,
-		logView,
-	)
+	parts := []string{mapView, hudView, logView}
+	if skillMsg != "" {
+		parts = append(parts, styleDamage.Render("  ! "+skillMsg))
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
 }
 
 func renderMap(floor *dungeon.Floor) string {
@@ -433,6 +437,8 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 		status := ""
 		if p.IsDead() {
 			status = " [사망]"
+		} else if p.Fled {
+			status = " [도주]"
 		}
 		fmt.Fprintf(&sb, "%s (%s) %s %d/%d%s  골드: %d",
 			p.Name, p.Class, hpBar, p.HP, p.MaxHP, status, p.Gold)
@@ -699,6 +705,8 @@ func renderPartyPanel(players []*entity.Player, submittedActions map[string]stri
 		status := ""
 		if p.IsDead() {
 			status = styleDamage.Render(" [사망]")
+		} else if p.Fled {
+			status = styleFlee.Render(" [도주]")
 		}
 		sb.WriteString(nameStr + classStr + status + "\n")
 

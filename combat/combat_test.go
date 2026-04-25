@@ -83,6 +83,19 @@ func TestMonsterAISkipsFledPlayers(t *testing.T) {
 	}
 }
 
+func TestMonsterAINoAvailableTargets(t *testing.T) {
+	p := entity.NewPlayer("Fled", entity.ClassMage)
+	p.Fled = true
+	m := &entity.Monster{Name: "Slime", HP: 10, ATK: 1}
+	idx, isAoE := MonsterAI(m, []*entity.Player{p}, 1)
+	if isAoE {
+		t.Error("AoE should be false when no targets available")
+	}
+	if idx != -1 {
+		t.Errorf("expected -1 (no target) when all players are out, got %d", idx)
+	}
+}
+
 func TestMonsterAITauntSkipsFledWarrior(t *testing.T) {
 	warrior := entity.NewPlayer("Tank", entity.ClassWarrior)
 	warrior.Fled = true

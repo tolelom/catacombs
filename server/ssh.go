@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 
@@ -32,13 +34,13 @@ func NewServer(addr string, lobby *game.Lobby, db *store.DB) (*ssh.Server, error
 				fingerprint := ""
 				if s.PublicKey() != nil {
 					fingerprint = gossh.FingerprintSHA256(s.PublicKey())
+				} else {
+					// Web bridge connections don't carry a public key. Mint a
+					// per-connection identifier so lobby/session bookkeeping
+					// (dedup, activeSessions, RegisterSession) doesn't collide
+					// across simultaneous web players.
+					fingerprint = "anon:" + randomToken(8)
 				}
-
-				defer func() {
-					if r := recover(); r != nil {
-						slog.Error("session panic recovered", "error", r, "fingerprint", fingerprint)
-					}
-				}()
 
 				slog.Info("new SSH session", "fingerprint", fingerprint, "width", pty.Window.Width, "height", pty.Window.Height)
 				m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db)
@@ -60,4 +62,14 @@ func Start(addr string, lobby *game.Lobby, db *store.DB) error {
 	}
 	slog.Info("starting SSH server", "addr", addr)
 	return s.ListenAndServe()
+}
+
+func randomToken(n int) string {
+	buf := make([]byte, n)
+	if _, err := rand.Read(buf); err != nil {
+		// Fall back to a non-empty constant; collisions remain possible but
+		// only when the OS RNG fails, which is itself a critical condition.
+		return "fallback"
+	}
+	return hex.EncodeToString(buf)
 }

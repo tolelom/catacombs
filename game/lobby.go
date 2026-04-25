@@ -240,6 +240,37 @@ func (l *Lobby) ListRooms() []*LobbyRoom {
 	return result
 }
 
+// LeaveSession removes a single player from the room's session and returns
+// the number of players still remaining. The room and session are kept alive
+// while at least one player is left. When the last player leaves, the session
+// is stopped and the room removed atomically.
+func (l *Lobby) LeaveSession(code, fingerprint string) int {
+	l.mu.Lock()
+	room, ok := l.rooms[code]
+	if !ok || room.Session == nil {
+		delete(l.activeSessions, fingerprint)
+		l.mu.Unlock()
+		return 0
+	}
+	delete(l.activeSessions, fingerprint)
+	session := room.Session
+	l.mu.Unlock()
+
+	remaining := session.RemovePlayer(fingerprint)
+	if remaining > 0 {
+		return remaining
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	// Re-check under lock: another goroutine may have repopulated the room.
+	if cur, ok := l.rooms[code]; ok && cur.Session == session {
+		session.Stop()
+		delete(l.rooms, code)
+	}
+	return 0
+}
+
 // EnsureSession returns the room's GameSession, creating one via init if it
 // does not yet exist. The check-and-create is atomic under the lobby lock, so
 // concurrent callers will agree on a single session instance.

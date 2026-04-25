@@ -5,7 +5,14 @@ import (
 	"testing"
 
 	"github.com/tolelom/catacombs/config"
+	"github.com/tolelom/catacombs/entity"
 )
+
+func newPlayerWithFP(name, fp string) *entity.Player {
+	p := entity.NewPlayer(name, entity.ClassWarrior)
+	p.Fingerprint = fp
+	return p
+}
 
 func testConfig(t *testing.T) *config.Config {
 	t.Helper()
@@ -123,5 +130,49 @@ func TestAllReadyEmptyRoom(t *testing.T) {
 	code := l.CreateRoom("Test")
 	if l.AllReady(code) {
 		t.Error("empty room should not be all ready")
+	}
+}
+
+// TestLeaveSessionKeepsRoomForRemainingPlayers verifies that one player's
+// quit does not terminate the shared session for the rest of the party.
+// Regression for: leaveGame previously called Stop+RemoveRoom unilaterally.
+func TestLeaveSessionKeepsRoomForRemainingPlayers(t *testing.T) {
+	cfg := testConfig(t)
+	l := NewLobby(cfg)
+	code := l.CreateRoom("Test")
+
+	session := l.EnsureSession(code, func() *GameSession { return NewGameSession(cfg) })
+	if session == nil {
+		t.Fatal("EnsureSession returned nil")
+	}
+	a := newPlayerWithFP("A", "fp-a")
+	b := newPlayerWithFP("B", "fp-b")
+	session.AddPlayer(a)
+	session.AddPlayer(b)
+
+	remaining := l.LeaveSession(code, "fp-a")
+	if remaining != 1 {
+		t.Errorf("expected 1 remaining after A leaves, got %d", remaining)
+	}
+	if l.GetRoom(code) == nil {
+		t.Error("room should still exist while one player remains")
+	}
+	select {
+	case <-session.done:
+		t.Error("session was stopped while a player remained")
+	default:
+	}
+
+	remaining = l.LeaveSession(code, "fp-b")
+	if remaining != 0 {
+		t.Errorf("expected 0 remaining after last player leaves, got %d", remaining)
+	}
+	if l.GetRoom(code) != nil {
+		t.Error("room should be removed once last player leaves")
+	}
+	select {
+	case <-session.done:
+	default:
+		t.Error("session should be stopped after last player leaves")
 	}
 }

@@ -27,7 +27,7 @@ func (s *AchievementsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd)
 func (s *AchievementsScreen) View(ctx *Context) string {
 	var achievements []store.Achievement
 	if ctx.Store != nil {
-		achievements, _ = ctx.Store.GetAchievements(ctx.PlayerName)
+		achievements, _ = ctx.Store.GetAchievements(ctx.Fingerprint)
 	}
 	return renderAchievements(ctx.PlayerName, achievements, ctx.Width, ctx.Height)
 }

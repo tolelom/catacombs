@@ -1,6 +1,7 @@
 package web
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -51,5 +52,9 @@ func checkAuth(r *http.Request, cfg config.AdminConfig) bool {
 	if !ok {
 		return false
 	}
-	return username == cfg.Username && password == cfg.Password
+	// Constant-time compare to defeat timing-side-channel guesses against
+	// the admin credential.
+	uOK := subtle.ConstantTimeCompare([]byte(username), []byte(cfg.Username)) == 1
+	pOK := subtle.ConstantTimeCompare([]byte(password), []byte(cfg.Password)) == 1
+	return uOK && pOK
 }

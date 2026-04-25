@@ -183,3 +183,135 @@ func TestSendChat(t *testing.T) {
 		t.Errorf("expected chat log, got %v", st.CombatLog)
 	}
 }
+
+func TestRemovePlayer(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	b := entity.NewPlayer("B", entity.ClassMage)
+	b.Fingerprint = "fp-b"
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+
+	if got := s.RemovePlayer("fp-a"); got != 1 {
+		t.Errorf("expected 1 remaining after dropping A, got %d", got)
+	}
+	players := s.GetState().Players
+	if len(players) != 1 || players[0].Fingerprint != "fp-b" {
+		t.Errorf("unexpected player list after remove: %+v", players)
+	}
+	if got := s.RemovePlayer("fp-b"); got != 0 {
+		t.Errorf("expected 0 remaining after dropping B, got %d", got)
+	}
+	if got := s.RemovePlayer("fp-missing"); got != -1 {
+		t.Errorf("expected -1 for unknown fingerprint, got %d", got)
+	}
+}
+
+func TestBuyItemRejectsSoldNonConsumable(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("Buyer", entity.ClassWarrior)
+	p.Fingerprint = "fp-buyer"
+	p.Gold = 10000
+	s.AddPlayer(p)
+
+	s.mu.Lock()
+	s.state.Phase = PhaseShop
+	s.state.ShopItems = []entity.Item{
+		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: 30, Price: 10},
+		{Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 5, Price: 50},
+	}
+	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
+	s.mu.Unlock()
+
+	if r := s.BuyItem("fp-buyer", 1); r != BuyOK {
+		t.Fatalf("first weapon buy should succeed, got %d", r)
+	}
+	if r := s.BuyItem("fp-buyer", 1); r != BuyFailed {
+		t.Errorf("second weapon buy should fail (sold), got %d", r)
+	}
+	// Consumable can be bought again
+	if r := s.BuyItem("fp-buyer", 0); r != BuyOK {
+		t.Errorf("first potion buy should succeed, got %d", r)
+	}
+	if r := s.BuyItem("fp-buyer", 0); r != BuyOK {
+		t.Errorf("second potion buy should succeed (consumable restocks), got %d", r)
+	}
+}
+
+func TestLeaveShopWaitsForAllPlayers(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	b := entity.NewPlayer("B", entity.ClassMage)
+	b.Fingerprint = "fp-b"
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+	s.mu.Lock()
+	s.state.Phase = PhaseShop
+	s.state.Floor = nil
+	s.mu.Unlock()
+
+	if s.LeaveShop("fp-a") {
+		t.Error("LeaveShop should not transition while other players are still browsing")
+	}
+	if s.GetState().Phase != PhaseShop {
+		t.Errorf("phase should remain PhaseShop, got %v", s.GetState().Phase)
+	}
+	if !s.LeaveShop("fp-b") {
+		t.Error("LeaveShop should transition once everyone is ready")
+	}
+	if s.GetState().Phase != PhaseExploring {
+		t.Errorf("phase should be PhaseExploring after all leave, got %v", s.GetState().Phase)
+	}
+}
+
+func TestLeaveShopIgnoresFledPlayers(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	b := entity.NewPlayer("B", entity.ClassMage)
+	b.Fingerprint = "fp-b"
+	b.Fled = true
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+	s.mu.Lock()
+	s.state.Phase = PhaseShop
+	s.state.Floor = nil
+	s.mu.Unlock()
+
+	// Only A is available; A's leave should be sufficient.
+	if !s.LeaveShop("fp-a") {
+		t.Error("LeaveShop should transition when only A is available (B is fled)")
+	}
+}
+
+func TestAllocateSkillPointAppliesMaxHPBoost(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("W", entity.ClassWarrior)
+	p.Fingerprint = "fp-w"
+	s.AddPlayer(p)
+
+	// Tank branch order: Iron Skin (DEF), Fortitude (MaxHP+20), Bastion (DEF)
+	s.mu.Lock()
+	for _, pl := range s.state.Players {
+		pl.Skills.Points = 3
+	}
+	beforeMax := s.state.Players[0].MaxHP
+	beforeHP := s.state.Players[0].HP
+	s.mu.Unlock()
+
+	if err := s.AllocateSkillPoint("fp-w", 0); err != nil {
+		t.Fatalf("allocate 1 failed: %v", err)
+	}
+	if err := s.AllocateSkillPoint("fp-w", 0); err != nil {
+		t.Fatalf("allocate 2 failed: %v", err)
+	}
+	st := s.GetState()
+	if got := st.Players[0].MaxHP; got != beforeMax+20 {
+		t.Errorf("expected MaxHP +20 from Fortitude, got %d (was %d)", got, beforeMax)
+	}
+	if got := st.Players[0].HP; got != beforeHP+20 {
+		t.Errorf("expected HP +20 from Fortitude, got %d (was %d)", got, beforeHP)
+	}
+}

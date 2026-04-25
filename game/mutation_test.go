@@ -2,8 +2,6 @@ package game
 
 import (
 	"testing"
-
-	"github.com/tolelom/catacombs/config"
 )
 
 func TestGetWeeklyMutation(t *testing.T) {
@@ -13,9 +11,6 @@ func TestGetWeeklyMutation(t *testing.T) {
 	}
 	if m.Name == "" {
 		t.Error("expected non-empty mutation Name")
-	}
-	if m.Apply == nil {
-		t.Error("expected non-nil Apply function")
 	}
 	// Verify it returns one of the known mutations
 	found := false
@@ -30,39 +25,49 @@ func TestGetWeeklyMutation(t *testing.T) {
 	}
 }
 
-func TestMutationApplyNoSkills(t *testing.T) {
-	cfg := config.GameConfig{SkillUses: 3}
-	// Find the no_skills mutation
-	var m Mutation
-	for _, mut := range Mutations {
-		if mut.ID == "no_skills" {
-			m = mut
-			break
-		}
-	}
-	if m.ID == "" {
-		t.Fatal("no_skills mutation not found")
-	}
-	m.Apply(&cfg)
-	if cfg.SkillUses != 0 {
-		t.Errorf("expected SkillUses=0 after no_skills mutation, got %d", cfg.SkillUses)
+func TestEffectiveSkillUsesNoSkills(t *testing.T) {
+	cfg := testCfg(t)
+	cfg.Game.SkillUses = 3
+	s := NewGameSession(cfg)
+	s.ActiveMutation = &Mutation{ID: "no_skills"}
+	if got := s.effectiveSkillUses(); got != 0 {
+		t.Errorf("expected effectiveSkillUses=0 under no_skills, got %d", got)
 	}
 }
 
-func TestMutationApplySpeedRun(t *testing.T) {
-	cfg := config.GameConfig{TurnTimeoutSec: 10}
-	var m Mutation
-	for _, mut := range Mutations {
-		if mut.ID == "speed_run" {
-			m = mut
-			break
-		}
+func TestEffectiveSkillUsesUnaffectedByOtherMutations(t *testing.T) {
+	cfg := testCfg(t)
+	cfg.Game.SkillUses = 3
+	s := NewGameSession(cfg)
+	s.ActiveMutation = &Mutation{ID: "glass_cannon"}
+	if got := s.effectiveSkillUses(); got != 3 {
+		t.Errorf("expected effectiveSkillUses=3 under unrelated mutation, got %d", got)
 	}
-	if m.ID == "" {
-		t.Fatal("speed_run mutation not found")
+}
+
+func TestEffectiveTurnTimeoutSpeedRun(t *testing.T) {
+	cfg := testCfg(t)
+	cfg.Game.TurnTimeoutSec = 10
+	s := NewGameSession(cfg)
+	s.ActiveMutation = &Mutation{ID: "speed_run"}
+	if got := s.effectiveTurnTimeout(); got != 5 {
+		t.Errorf("expected effectiveTurnTimeout=5 under speed_run, got %d", got)
 	}
-	m.Apply(&cfg)
-	if cfg.TurnTimeoutSec != 5 {
-		t.Errorf("expected TurnTimeoutSec=5 after speed_run mutation, got %d", cfg.TurnTimeoutSec)
+}
+
+func TestMutationDoesNotMutateSharedConfig(t *testing.T) {
+	cfg := testCfg(t)
+	cfg.Game.SkillUses = 3
+	cfg.Game.TurnTimeoutSec = 10
+	s := NewGameSession(cfg)
+	s.ActiveMutation = &Mutation{ID: "no_skills"}
+	_ = s.effectiveSkillUses()
+	if cfg.Game.SkillUses != 3 {
+		t.Errorf("shared cfg.SkillUses was mutated: got %d, want 3", cfg.Game.SkillUses)
+	}
+	s.ActiveMutation = &Mutation{ID: "speed_run"}
+	_ = s.effectiveTurnTimeout()
+	if cfg.Game.TurnTimeoutSec != 10 {
+		t.Errorf("shared cfg.TurnTimeoutSec was mutated: got %d, want 10", cfg.Game.TurnTimeoutSec)
 	}
 }

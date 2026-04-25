@@ -36,7 +36,7 @@ draining:
 	}
 
 	// Collect actions with timeout
-	turnTimeout := time.Duration(s.cfg.Game.TurnTimeoutSec) * time.Second
+	turnTimeout := time.Duration(s.effectiveTurnTimeout()) * time.Second
 	timer := time.NewTimer(turnTimeout)
 	s.mu.Lock()
 	s.state.TurnDeadline = time.Now().Add(turnTimeout)
@@ -147,10 +147,17 @@ func (s *GameSession) resolvePlayerActions() {
 
 		switch action.Type {
 		case ActionAttack:
+			multiplier := 1.0
+			if p.Skills != nil {
+				if pct := p.Skills.GetCritChance(p.Class); pct > 0 && rand.Intn(100) < pct {
+					multiplier = 2.0
+					s.addLog(fmt.Sprintf("%s 치명타!", p.Name))
+				}
+			}
 			intents = append(intents, combat.AttackIntent{
 				PlayerATK:  p.EffectiveATK(),
 				TargetIdx:  action.TargetIdx,
-				Multiplier: 1.0,
+				Multiplier: multiplier,
 				IsAoE:      false,
 			})
 			intentOwners = append(intentOwners, p.Name)
@@ -208,6 +215,7 @@ func (s *GameSession) resolvePlayerActions() {
 				healAmount := 30
 				if p.Skills != nil {
 					healAmount += p.Skills.GetSkillPower(p.Class) / 2
+					healAmount += p.Skills.GetHealBoost(p.Class)
 				}
 				if s.HardMode {
 					healAmount = int(float64(healAmount) * s.cfg.Difficulty.HardModeHealMult)
@@ -228,6 +236,9 @@ func (s *GameSession) resolvePlayerActions() {
 				if item.Type == entity.ItemConsumable {
 					before := p.HP
 					healAmt := item.Bonus
+					if p.Skills != nil {
+						healAmt += p.Skills.GetHealBoost(p.Class)
+					}
 					if s.HardMode {
 						healAmt = int(float64(healAmt) * s.cfg.Difficulty.HardModeHealMult)
 					}
