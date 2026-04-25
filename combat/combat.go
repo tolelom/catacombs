@@ -74,6 +74,13 @@ func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.M
 				continue
 			}
 			m := monsters[intent.TargetIdx]
+			// Skip if the target died earlier in the same turn — otherwise
+			// chip damage on a corpse fires Life Siphon healing and bloats
+			// the combat log with phantom hits.
+			if m.IsDead() {
+				results[i] = AttackResult{TargetIdx: -1}
+				continue
+			}
 			dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier)
 			coopApplied := false
 			if targetCount[intent.TargetIdx] >= 2 && targetOrder[intent.TargetIdx] != i {

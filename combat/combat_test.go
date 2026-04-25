@@ -31,6 +31,27 @@ func TestCoopBonus(t *testing.T) {
 	}
 }
 
+func TestResolveAttacksSkipsCorpse(t *testing.T) {
+	// Two attackers target the same monster. The first kill drops it to 0 HP;
+	// the second must NOT register damage on the corpse (regression: chip
+	// damage on a dead monster used to fire Life Siphon and inflate logs).
+	target := &entity.Monster{Name: "Slime", HP: 5, MaxHP: 5, ATK: 1, DEF: 0}
+	attackers := []AttackIntent{
+		{PlayerATK: 100, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},
+		{PlayerATK: 100, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},
+	}
+	results := ResolveAttacks(nil, attackers, []*entity.Monster{target}, 0.10)
+	if results[0].Damage <= 0 {
+		t.Fatalf("first attacker should land damage, got %d", results[0].Damage)
+	}
+	if !target.IsDead() {
+		t.Fatalf("monster should be dead after first hit, HP=%d", target.HP)
+	}
+	if results[1].TargetIdx != -1 || results[1].Damage != 0 {
+		t.Errorf("second attacker on corpse should produce no result, got %+v", results[1])
+	}
+}
+
 func TestAoENoCoopBonus(t *testing.T) {
 	attackers := []AttackIntent{
 		{PlayerATK: 12, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},

@@ -548,9 +548,11 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 			sb.WriteString("\n")
 		}
 
-		// Skill description for first alive player only
+		// Skill description for first available player (skips dead and fled —
+		// fled players can't use skills this combat, so their SkillUses count
+		// would mislead).
 		for _, p := range state.Players {
-			if !p.IsDead() {
+			if !p.IsOut() {
 				var skillDesc string
 				switch p.Class {
 				case entity.ClassWarrior:
@@ -590,7 +592,10 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 					aliveCount := 0
 					votedCount := 0
 					for _, p := range state.Players {
-						if !p.IsDead() {
+						// Match SubmitMoveVote's consensus rule (!IsOut) so the
+						// counter doesn't show "2/3" while the move actually
+						// fires at 2/2 because a fled player isn't required.
+						if !p.IsOut() {
 							aliveCount++
 							if state.MoveVotes != nil {
 								if _, ok := state.MoveVotes[p.Fingerprint]; ok {

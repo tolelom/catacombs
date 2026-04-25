@@ -272,7 +272,7 @@ func (s *GameSession) resolvePlayerActions() {
 	// Check if all alive players have fled
 	allFled := true
 	for _, p := range s.state.Players {
-		if !p.IsDead() && !p.Fled {
+		if !p.IsOut() {
 			allFled = false
 			break
 		}
