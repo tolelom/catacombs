@@ -82,28 +82,33 @@ docker restart server-caddy-1    # only needed if Caddyfile changed
 
 | Package | Responsibility |
 |---------|---------------|
-| `main.go` | Entry point: initializes BoltDB (`./data/catacombs.db`), starts SSH server (:2222) and HTTP server (:8080) |
-| `game/` | Lobby (room management, player tracking, reconnection), GameSession (turn-based state), turn execution (5s action timeout), room events (combat/shop/treasure) |
-| `ui/` | Bubble Tea state machine with 8 screen states (nickname → lobby → class select → game → shop → result → leaderboard → achievements). `model.go` is the central state machine (~19K lines) |
-| `dungeon/` | BSP tree procedural generation (60x20 maps), ASCII rendering with floor themes, field-of-view |
-| `entity/` | Player (4 classes: Warrior/Mage/Healer/Rogue), Monster (8 types + 4 bosses with floor scaling), Items/Relics |
-| `combat/` | Damage calculation, monster AI targeting, cooperative damage bonus |
-| `store/` | BoltDB persistence: profiles, rankings, achievements (10 unlockable) |
-| `server/` | Wish SSH server with fingerprint-based auth |
-| `web/` | HTTP + WebSocket bridge to SSH, embedded xterm.js frontend |
+| `main.go` | Entry point: initializes BoltDB (`./data/catacombs.db`), starts SSH server (:2222) and HTTP server (:8080), runs the backup scheduler, calls `Lobby.StopAllSessions` on graceful shutdown |
+| `game/` | `Lobby` (room management, player tracking, reconnection, `EnsureSession` / `LeaveSession` / `StopAllSessions`), `GameSession` (turn-based state, per-session deterministic `*rand.Rand`), turn execution with `cfg.Game.TurnTimeoutSec` action timeout, room events (combat/shop/treasure/event), weekly `Mutation` consulted at runtime via `effectiveSkillUses` / `effectiveTurnTimeout` (no shared-config mutation) |
+| `ui/` | Bubble Tea state machine. Screens (each in its own file): `title` → `nickname` → `lobby` → `class_view` → `waiting` → `game_view` → `shop_view` → `result_view`, plus `help`, `stats`, `leaderboard`, `achievements`, `codex`. `model.go` is the thin top-level dispatcher (~170 lines). `Context` carries shared deps (Lobby, Store, Session, Fingerprint, PlayerName, RoomCode, HardMode) |
+| `dungeon/` | BSP tree procedural generation (60×20 maps), ASCII rendering with floor themes, room visibility / corridor flood-fill. `GenerateFloor` accepts the session RNG for daily-challenge determinism |
+| `entity/` | `Player` (4 classes: Warrior/Mage/Healer/Rogue), `Monster` (4 regular + 4 mini-bosses + 4 bosses; `BaseName()` strips elite prefixes for codex), Items, Relics, `PlayerSkills` tree (2 branches × 3 nodes per class) |
+| `combat/` | `CalcDamage`, `MonsterAI`, `ResolveAttacks`, `AttemptFlee`, `Combos`. All RNG-consuming entry points take a leading `*rand.Rand` (nil falls back to a process-global) so daily runs stay deterministic |
+| `store/` | BoltDB persistence: profiles, rankings, achievements (10 IDs), unlocks, titles, codex, daily records, passwords. `Backup` snapshots and `PruneBackups(dir, keep)` rotates them |
+| `server/` | Wish SSH server. Public-key clients hash to `SHA256:...` fingerprint; the web bridge has no key, so the middleware mints a per-connection `anon:<random hex>` so lobby bookkeeping doesn't collide |
+| `web/` | HTTP + WebSocket bridge to local SSH (`/ws`), embedded xterm.js frontend, `/admin` JSON stats endpoint with constant-time Basic Auth |
 
 ## Key Patterns
 
-- **Concurrent session management**: Mutex-protected game state for multi-player synchronization (up to 4 players per room)
-- **Turn-based action collection**: 5-second timeout window; players who don't submit default to "Wait"
-- **SSH fingerprint reconnection**: Players reconnect to active sessions via `Lobby.activeSessions` fingerprint mapping
-- **Dual access**: SSH server (native PTY) and HTTP/WebSocket (xterm.js) share the same Lobby and DB instances
-- **Combat log reveal**: Logs shown incrementally via `PendingLogs` → `CombatLog` system
+- **Concurrent session management**: `GameSession.mu` protects all state; UI snapshots via `GetState()` (deep copy). `Lobby.mu` separately protects the room map; never call into a session under the lobby lock
+- **Turn-based action collection**: `cfg.Game.TurnTimeoutSec` window; absent submissions default to `ActionWait`; out (dead/fled) players are skipped. `RunTurn` drains stale actions before the new collection window
+- **Per-player leave**: `Lobby.LeaveSession(code, fingerprint)` removes one player from the session; the room and combat loop only tear down when the last player leaves
+- **Deterministic daily**: `GameSession.rng` is reseeded from `DailySeed(date) + floor` in DailyMode. Don't introduce calls to package-level `rand` in content paths — route through `s.rng`
+- **Reconnect by fingerprint**: `Lobby.activeSessions` maps fingerprint → room code. `Title.Update` checks it on Enter; reconnects land directly in the running session
+- **Dual access**: SSH server (native PTY) and HTTP/WebSocket (xterm.js → SSH bridge) share the same Lobby and DB instances
+- **Combat log reveal**: Logs shown incrementally via `PendingLogs` → `CombatLog` (one per UI tick)
+- **Cooperative-leave shop**: `LeaveShop(fingerprint)` only flips the phase once every available player has signaled; the UI polls so non-leavers follow the transition
+- **Achievement keying**: achievements / unlocks / titles / codex / daily records are keyed by **fingerprint**. Rankings and stats are keyed by **player name**
 
 ## Game Balance Constants
 
-- 20 floors with bosses at 5, 10, 15, 20
-- Monster scaling: 1.15x power per floor above minimum
-- Solo mode halves enemy stats
-- Cooperative bonus: +10% damage when 2+ players target same enemy
-- Inventory limit: 10 items, 3 skill uses per combat
+- 20 floors with mini-bosses at 4/9/14/19 and bosses at 5/10/15/20
+- Monster scaling: 1.15× power per floor above minimum (regular monsters only; bosses use base stats)
+- Solo mode halves enemy HP and DEF
+- Cooperative bonus: +10% damage on the second-or-later attacker against the same target
+- Inventory limit: 10 items per player; 3 skill uses per combat (mutated to 0 by the `no_skills` weekly mutation)
+- Boss drops grant a random relic (7 types: HealOnKill / ATKBoost / DEFBoost / GoldBoost / PoisonImmunity / BurnResist / LifeSteal)

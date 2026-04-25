@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -274,6 +275,152 @@ func TestAnyPlayerDiedSticky(t *testing.T) {
 	s.mu.Unlock()
 	if !s.GetState().AnyPlayerDied {
 		t.Error("AnyPlayerDied flag should be persisted via GetState")
+	}
+}
+
+// TestDailyCrossSessionDeterminism verifies that two independently-created
+// sessions with the same daily date produce the same monsters and shop items
+// across multiple floors. Regression: previously only the dungeon layout was
+// seeded; spawn/combat/event used package-level rand and diverged.
+func TestDailyCrossSessionDeterminism(t *testing.T) {
+	cfg := testCfg(t)
+	const date = "2026-04-25"
+
+	collect := func() []string {
+		s := NewGameSession(cfg)
+		s.DailyMode = true
+		s.DailyDate = date
+		p := entity.NewPlayer("Daily", entity.ClassWarrior)
+		p.Fingerprint = "fp"
+		s.AddPlayer(p)
+		var seq []string
+		for floor := 1; floor <= 3; floor++ {
+			s.mu.Lock()
+			s.state.FloorNum = floor
+			s.mu.Unlock()
+			s.StartFloor()
+			s.mu.Lock()
+			s.spawnMonsters()
+			for _, m := range s.state.Monsters {
+				seq = append(seq, fmt.Sprintf("F%d:%s/HP=%d/ATK=%d", floor, m.Name, m.HP, m.ATK))
+			}
+			s.generateShopItems()
+			for _, it := range s.state.ShopItems {
+				seq = append(seq, fmt.Sprintf("F%d:shop:%s/B=%d/P=%d", floor, it.Name, it.Bonus, it.Price))
+			}
+			s.mu.Unlock()
+		}
+		return seq
+	}
+
+	a := collect()
+	b := collect()
+	if len(a) != len(b) {
+		t.Fatalf("sequence length differs: %d vs %d", len(a), len(b))
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			t.Errorf("step %d differs: %q vs %q", i, a[i], b[i])
+		}
+	}
+}
+
+// TestMultiplayerFlowEndToEnd exercises the full lobby-to-game-to-quit path
+// for a 2-player party. It pins the session-lifetime fixes from prior
+// rounds (LeaveSession keeping the session alive for the survivor; the
+// last leaver tearing down room + session).
+func TestMultiplayerFlowEndToEnd(t *testing.T) {
+	cfg := testCfg(t)
+	l := NewLobby(cfg)
+	code := l.CreateRoom("E2E")
+	if err := l.JoinRoom(code, "A", "fp-a"); err != nil {
+		t.Fatalf("join A: %v", err)
+	}
+	if err := l.JoinRoom(code, "B", "fp-b"); err != nil {
+		t.Fatalf("join B: %v", err)
+	}
+	session := l.EnsureSession(code, func() *GameSession { return NewGameSession(cfg) })
+	if session == nil {
+		t.Fatal("EnsureSession returned nil")
+	}
+	session.AddPlayer(newPlayerWithFP("A", "fp-a"))
+	session.AddPlayer(newPlayerWithFP("B", "fp-b"))
+	session.StartGame()
+	defer session.Stop()
+
+	if got := session.GetState().StartingPartySize; got != 2 {
+		t.Errorf("StartingPartySize: got %d, want 2", got)
+	}
+
+	// A leaves mid-run.
+	if rem := l.LeaveSession(code, "fp-a"); rem != 1 {
+		t.Errorf("after A leaves: remaining=%d, want 1", rem)
+	}
+	if l.GetRoom(code) == nil {
+		t.Fatal("room should persist while B is still playing")
+	}
+
+	// GameOver flag is captured by AnyPlayerDied if anyone died — we didn't
+	// kill anyone, so the survivor flag stays false.
+	if session.GetState().AnyPlayerDied {
+		t.Error("AnyPlayerDied should be false in a clean run")
+	}
+
+	// B leaves; this should tear everything down.
+	if rem := l.LeaveSession(code, "fp-b"); rem != 0 {
+		t.Errorf("after B leaves: remaining=%d, want 0", rem)
+	}
+	if l.GetRoom(code) != nil {
+		t.Error("room should be removed after last player leaves")
+	}
+	select {
+	case <-session.done:
+	default:
+		t.Error("session should be stopped after last player leaves")
+	}
+}
+
+// TestStopAllSessionsDuringShutdown simulates the graceful-shutdown path:
+// active sessions across multiple rooms must all see their done channel
+// closed when main calls Lobby.StopAllSessions.
+func TestStopAllSessionsDuringShutdown(t *testing.T) {
+	cfg := testCfg(t)
+	l := NewLobby(cfg)
+	codes := []string{l.CreateRoom("R1"), l.CreateRoom("R2"), l.CreateRoom("R3")}
+	sessions := make([]*GameSession, len(codes))
+	for i, c := range codes {
+		sessions[i] = l.EnsureSession(c, func() *GameSession { return NewGameSession(cfg) })
+		sessions[i].AddPlayer(newPlayerWithFP("P", "fp-"+c))
+		sessions[i].StartGame()
+	}
+
+	l.StopAllSessions()
+	for i, s := range sessions {
+		select {
+		case <-s.done:
+		default:
+			t.Errorf("session %d (%s) was not stopped", i, codes[i])
+		}
+	}
+}
+
+// BenchmarkGetState measures the per-call cost of the deep-copy snapshot.
+// GetState runs on every UI tick (~5 Hz combat, slower elsewhere) for every
+// connected client, so its allocation profile dominates idle CPU.
+func BenchmarkGetState(b *testing.B) {
+	s := NewGameSession(testCfg(&testing.T{}))
+	for _, name := range []string{"A", "B", "C", "D"} {
+		p := entity.NewPlayer(name, entity.ClassWarrior)
+		p.Fingerprint = "fp-" + name
+		for i := 0; i < 5; i++ {
+			p.Inventory = append(p.Inventory, entity.Item{Name: "Iron Sword", Type: entity.ItemWeapon, Bonus: 5})
+		}
+		s.AddPlayer(p)
+	}
+	s.StartFloor()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = s.GetState()
 	}
 }
 

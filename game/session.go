@@ -336,28 +336,49 @@ func (s *GameSession) GetState() GameState {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Deep copy players
-	players := make([]*entity.Player, len(s.state.Players))
-	for i, p := range s.state.Players {
-		cp := *p
-		cp.Inventory = make([]entity.Item, len(p.Inventory))
-		copy(cp.Inventory, p.Inventory)
-		cp.Relics = make([]entity.Relic, len(p.Relics))
-		copy(cp.Relics, p.Relics)
-		cp.Effects = make([]entity.ActiveEffect, len(p.Effects))
-		copy(cp.Effects, p.Effects)
-		if p.Skills != nil {
-			skillsCopy := *p.Skills
-			cp.Skills = &skillsCopy
+	// Deep copy players. Skip allocating zero-length slices (most players
+	// have no Effects between combats, fresh players have no Inventory or
+	// Relics). At ~5 Hz polling per client these allocations dominate idle
+	// CPU otherwise.
+	var players []*entity.Player
+	if n := len(s.state.Players); n > 0 {
+		players = make([]*entity.Player, n)
+		for i, p := range s.state.Players {
+			cp := *p
+			if len(p.Inventory) > 0 {
+				cp.Inventory = make([]entity.Item, len(p.Inventory))
+				copy(cp.Inventory, p.Inventory)
+			} else {
+				cp.Inventory = nil
+			}
+			if len(p.Relics) > 0 {
+				cp.Relics = make([]entity.Relic, len(p.Relics))
+				copy(cp.Relics, p.Relics)
+			} else {
+				cp.Relics = nil
+			}
+			if len(p.Effects) > 0 {
+				cp.Effects = make([]entity.ActiveEffect, len(p.Effects))
+				copy(cp.Effects, p.Effects)
+			} else {
+				cp.Effects = nil
+			}
+			if p.Skills != nil {
+				skillsCopy := *p.Skills
+				cp.Skills = &skillsCopy
+			}
+			players[i] = &cp
 		}
-		players[i] = &cp
 	}
 
 	// Deep copy monsters
-	monsters := make([]*entity.Monster, len(s.state.Monsters))
-	for i, m := range s.state.Monsters {
-		cm := *m
-		monsters[i] = &cm
+	var monsters []*entity.Monster
+	if n := len(s.state.Monsters); n > 0 {
+		monsters = make([]*entity.Monster, n)
+		for i, m := range s.state.Monsters {
+			cm := *m
+			monsters[i] = &cm
+		}
 	}
 
 	// Deep copy floor
@@ -367,35 +388,60 @@ func (s *GameSession) GetState() GameState {
 		fc.Rooms = make([]*dungeon.Room, len(s.state.Floor.Rooms))
 		for i, r := range s.state.Floor.Rooms {
 			rc := *r
-			rc.Neighbors = make([]int, len(r.Neighbors))
-			copy(rc.Neighbors, r.Neighbors)
+			if len(r.Neighbors) > 0 {
+				rc.Neighbors = make([]int, len(r.Neighbors))
+				copy(rc.Neighbors, r.Neighbors)
+			} else {
+				rc.Neighbors = nil
+			}
 			fc.Rooms[i] = &rc
 		}
 		floorCopy = &fc
 	}
 
-	// Copy combat log
-	logCopy := make([]string, len(s.state.CombatLog))
-	copy(logCopy, s.state.CombatLog)
+	// Copy combat log only when non-empty.
+	var logCopy []string
+	if n := len(s.state.CombatLog); n > 0 {
+		logCopy = make([]string, n)
+		copy(logCopy, s.state.CombatLog)
+	}
 
-	// Copy submitted actions
-	submittedCopy := make(map[string]string, len(s.state.SubmittedActions))
-	for k, v := range s.state.SubmittedActions {
-		submittedCopy[k] = v
+	// Copy submitted actions only when non-empty.
+	var submittedCopy map[string]string
+	if n := len(s.state.SubmittedActions); n > 0 {
+		submittedCopy = make(map[string]string, n)
+		for k, v := range s.state.SubmittedActions {
+			submittedCopy[k] = v
+		}
 	}
 
 	// Copy move votes
 	var moveVotesCopy map[string]int
-	if s.state.MoveVotes != nil {
-		moveVotesCopy = make(map[string]int, len(s.state.MoveVotes))
+	if n := len(s.state.MoveVotes); n > 0 {
+		moveVotesCopy = make(map[string]int, n)
 		for k, v := range s.state.MoveVotes {
 			moveVotesCopy[k] = v
 		}
 	}
 
 	// Copy pending logs
-	pendingCopy := make([]string, len(s.state.PendingLogs))
-	copy(pendingCopy, s.state.PendingLogs)
+	var pendingCopy []string
+	if n := len(s.state.PendingLogs); n > 0 {
+		pendingCopy = make([]string, n)
+		copy(pendingCopy, s.state.PendingLogs)
+	}
+
+	// Copy shop wares
+	var shopItemsCopy []entity.Item
+	if n := len(s.state.ShopItems); n > 0 {
+		shopItemsCopy = make([]entity.Item, n)
+		copy(shopItemsCopy, s.state.ShopItems)
+	}
+	var shopSoldCopy []bool
+	if n := len(s.state.ShopSold); n > 0 {
+		shopSoldCopy = make([]bool, n)
+		copy(shopSoldCopy, s.state.ShopSold)
+	}
 
 	return GameState{
 		Floor:            floorCopy,
@@ -408,8 +454,8 @@ func (s *GameSession) GetState() GameState {
 		SoloMode:         s.state.SoloMode,
 		GameOver:         s.state.GameOver,
 		Victory:          s.state.Victory,
-		ShopItems:        append([]entity.Item{}, s.state.ShopItems...),
-		ShopSold:         append([]bool{}, s.state.ShopSold...),
+		ShopItems:        shopItemsCopy,
+		ShopSold:         shopSoldCopy,
 		CombatLog:        logCopy,
 		TurnDeadline:     s.state.TurnDeadline,
 		SubmittedActions: submittedCopy,
