@@ -242,8 +242,14 @@ func (s *GameSession) combatLoop() {
 		if phase == PhaseCombat {
 			s.RunTurn()
 		} else {
+			// Wake periodically so the inactivity sweep above runs even
+			// during PhaseShop / PhaseExploring. Otherwise a disconnected
+			// player can deadlock the shop-leave consensus or move-vote
+			// (both require every alive fingerprint to participate) until
+			// the next combat — which never arrives without the move.
 			select {
 			case <-s.combatSignal:
+			case <-time.After(10 * time.Second):
 			case <-s.done:
 				return
 			}
