@@ -40,10 +40,20 @@ func (s *LeaderboardScreen) View(ctx *Context) string {
 		byGold, _ = ctx.Store.TopRunsByGold(10)
 		daily, _ = ctx.Store.GetDailyLeaderboard(time.Now().Format("2006-01-02"), 20)
 	}
-	return renderLeaderboard(byFloor, byGold, daily, s.tab, ctx.Width, ctx.Height)
+	return renderLeaderboard(byFloor, byGold, daily, s.tab, ctx.Width, ctx.Height, ctx.PlayerName, ctx.Fingerprint)
 }
 
-func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRecord, tab, width, height int) string {
+// markIfMine wraps a leaderboard line with a highlight when the row belongs
+// to the calling user, using the provided id (player name for ranking
+// records, fingerprint for daily records) to match.
+func markIfMine(line, rowID, myID string) string {
+	if myID != "" && rowID == myID {
+		return stylePlayer.Render(line + "  ←")
+	}
+	return line
+}
+
+func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRecord, tab, width, height int, playerName, fingerprint string) string {
 	title := styleHeader.Render("── 리더보드 ──")
 
 	// Tab header
@@ -75,9 +85,10 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 			if len(r.Members) > 1 {
 				party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
 			}
-			content += fmt.Sprintf("  %s %s%s  B%d  %s%s\n",
+			line := fmt.Sprintf("  %s %s%s  B%d  %s%s",
 				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
 				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
+			content += markIfMine(line, r.Player, playerName) + "\n"
 		}
 	case 1: // By Gold
 		content += styleCoop.Render("  골드 순위") + "\n"
@@ -94,9 +105,10 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 			if len(r.Members) > 1 {
 				party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
 			}
-			content += fmt.Sprintf("  %s %s%s  B%d  %s%s\n",
+			line := fmt.Sprintf("  %s %s%s  B%d  %s%s",
 				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
 				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
+			content += markIfMine(line, r.Player, playerName) + "\n"
 		}
 	case 2: // Daily
 		content += styleCoop.Render(fmt.Sprintf("  일일 도전 — %s", time.Now().Format("2006-01-02"))) + "\n"
@@ -108,9 +120,11 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 				break
 			}
 			medal := fmt.Sprintf("  %d.", i+1)
-			content += fmt.Sprintf("  %s %s  B%d  %s\n",
+			line := fmt.Sprintf("  %s %s  B%d  %s",
 				medal, stylePlayer.Render(r.PlayerName),
 				r.FloorReached, styleGold.Render(fmt.Sprintf("%dg", r.GoldEarned)))
+			// Daily records are keyed by fingerprint, not name.
+			content += markIfMine(line, r.Player, fingerprint) + "\n"
 		}
 	}
 

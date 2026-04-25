@@ -132,6 +132,26 @@ func TestClassSelectToGame(t *testing.T) {
 	}
 }
 
+// TestFindPlayerRankAndMissing verifies the result-screen rank lookup:
+// returns the 1-indexed position in the top-N or 0 when the player isn't
+// listed.
+func TestFindPlayerRankAndMissing(t *testing.T) {
+	rankings := []store.RunRecord{
+		{Player: "Top",    Floor: 20},
+		{Player: "Second", Floor: 18},
+		{Player: "Me",     Floor: 12},
+	}
+	if got := findPlayerRank(rankings, "Me"); got != 3 {
+		t.Errorf("expected rank 3 for Me, got %d", got)
+	}
+	if got := findPlayerRank(rankings, "Nobody"); got != 0 {
+		t.Errorf("expected 0 (not listed) for Nobody, got %d", got)
+	}
+	if got := findPlayerRank(nil, "Me"); got != 0 {
+		t.Errorf("expected 0 on empty rankings, got %d", got)
+	}
+}
+
 // TestRenderHelpDynamic verifies that the help screen pulls live numbers
 // from the active config rather than hardcoding "10초" / "3회" etc., so
 // admin overrides in config.yaml stay in sync with what users read.

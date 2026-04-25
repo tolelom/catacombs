@@ -42,10 +42,21 @@ func (s *ResultScreen) View(ctx *Context) string {
 	if ctx.Store != nil {
 		rankings, _ = ctx.Store.TopRuns(10)
 	}
-	return renderResult(s.gameState, rankings)
+	return renderResult(s.gameState, rankings, ctx.PlayerName)
 }
 
-func renderResult(state game.GameState, rankings []store.RunRecord) string {
+// findPlayerRank returns the 1-indexed position of the player's best run in
+// the supplied ranking slice, or 0 if they don't appear in the top N.
+func findPlayerRank(rankings []store.RunRecord, playerName string) int {
+	for i, r := range rankings {
+		if r.Player == playerName {
+			return i + 1
+		}
+	}
+	return 0
+}
+
+func renderResult(state game.GameState, rankings []store.RunRecord, playerName string) string {
 	var sb strings.Builder
 
 	// Title
@@ -74,6 +85,7 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 	// Rankings
 	if len(rankings) > 0 {
 		sb.WriteString("\n" + styleHeader.Render("── 최고 기록 ──") + "\n\n")
+		myRank := findPlayerRank(rankings, playerName)
 		for i, r := range rankings {
 			medal := "  "
 			switch i {
@@ -88,7 +100,18 @@ func renderResult(state game.GameState, rankings []store.RunRecord) string {
 			if len(r.Members) > 1 {
 				party = fmt.Sprintf(" (%s)", strings.Join(r.Members, ", "))
 			}
-			fmt.Fprintf(&sb, "  %s %s  B%d층  점수: %d%s\n", medal, r.Player, r.Floor, r.Score, party)
+			line := fmt.Sprintf("  %s %s  B%d층  점수: %d%s", medal, r.Player, r.Floor, r.Score, party)
+			// Highlight the current player's row so they can find themselves.
+			if i+1 == myRank {
+				line = stylePlayer.Render(line + "  ←")
+			}
+			sb.WriteString(line + "\n")
+		}
+		if myRank > 0 {
+			fmt.Fprintf(&sb, "\n  당신의 순위: %s\n",
+				styleGold.Render(fmt.Sprintf("%d위", myRank)))
+		} else {
+			sb.WriteString(styleSystem.Render("\n  이번 기록은 상위 10위 밖입니다.\n"))
 		}
 	}
 

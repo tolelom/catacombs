@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -49,7 +50,20 @@ func renderAchievements(playerName string, achievements []store.Achievement, wid
 		content += styleSystem.Render("    "+a.Description) + "\n"
 	}
 
-	progress := fmt.Sprintf("\n  %s", styleGold.Render(fmt.Sprintf("%d/%d 해금", unlocked, len(achievements))))
+	// Visual progress bar so users see at-a-glance how close they are to
+	// 100% completion. 20-cell width matches HUD HP bars.
+	const barWidth = 20
+	filled := 0
+	if len(achievements) > 0 {
+		filled = unlocked * barWidth / len(achievements)
+		if unlocked > 0 && filled == 0 {
+			filled = 1 // always show some fill when at least one is unlocked
+		}
+	}
+	bar := lipgloss.NewStyle().Foreground(colorYellow).Render(strings.Repeat("█", filled)) +
+		lipgloss.NewStyle().Foreground(colorGray).Render(strings.Repeat("░", barWidth-filled))
+	progress := fmt.Sprintf("\n  %s  %s", bar,
+		styleGold.Render(fmt.Sprintf("%d/%d 해금", unlocked, len(achievements))))
 
 	footer := styleSystem.Render("\n[A] 뒤로")
 
