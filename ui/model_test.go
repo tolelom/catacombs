@@ -173,10 +173,9 @@ func TestRenderHelpDynamic(t *testing.T) {
 	}
 }
 
-// TestIsWebUserRecognizesAnonPrefixes is a regression for the web bridge
-// fingerprint format change: server/ssh.go mints "anon:<rand>" but the
-// password flow used to only check for "anon-". When the prefixes drifted
-// apart, web users skipped the password screen entirely.
+// TestIsWebUserRecognizesAnonPrefixes pins the web/SSH discrimination so
+// the password flow always runs for anonymous (web) connections and never
+// for real SSH key holders.
 func TestIsWebUserRecognizesAnonPrefixes(t *testing.T) {
 	cases := []struct {
 		fp   string
@@ -184,8 +183,7 @@ func TestIsWebUserRecognizesAnonPrefixes(t *testing.T) {
 		desc string
 	}{
 		{"", true, "empty fingerprint"},
-		{"anon-1234567890", true, "legacy anon- prefix"},
-		{"anon:abcdef0123456789", true, "current anon: prefix"},
+		{"anon:abcdef0123456789", true, "anon: prefix"},
 		{"SHA256:abcdef", false, "real SSH fingerprint"},
 		{"SHA256:web:nick", false, "deterministic web login fingerprint"},
 	}

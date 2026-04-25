@@ -20,7 +20,11 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
 			if ctx.Fingerprint == "" {
-				ctx.Fingerprint = fmt.Sprintf("anon-%d", time.Now().UnixNano())
+				// Defensive only — server/ssh.go always supplies a real
+				// SHA256:... or anon:<rand> fingerprint in production. Match
+				// the production "anon:" prefix so downstream isWebUser() and
+				// lobby bookkeeping see one consistent shape.
+				ctx.Fingerprint = fmt.Sprintf("anon:%d", time.Now().UnixNano())
 			}
 			if ctx.Store != nil {
 				name, err := ctx.Store.GetProfile(ctx.Fingerprint)

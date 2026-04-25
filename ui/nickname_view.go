@@ -36,13 +36,12 @@ func NewNicknameScreen() *NicknameScreen {
 }
 
 // isWebUser returns true when the player connected via the web bridge
-// (no real SSH fingerprint). The bridge mints an "anon:" token in
-// server/ssh.go; older code paths used "anon-<timestamp>" — both are
-// treated as anonymous so the password-login flow always runs for web
-// players.
+// (no real SSH fingerprint). The bridge mints an "anon:<rand>" token
+// in server/ssh.go; the title screen uses the same shape as a defensive
+// fallback. Anything that isn't a real SHA256: key needs the password
+// flow so progress can be saved.
 func isWebUser(ctx *Context) bool {
 	return ctx.Fingerprint == "" ||
-		strings.HasPrefix(ctx.Fingerprint, "anon-") ||
 		strings.HasPrefix(ctx.Fingerprint, "anon:")
 }
 
