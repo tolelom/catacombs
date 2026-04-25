@@ -175,6 +175,75 @@ func TestBuyItemInventoryFull(t *testing.T) {
 	}
 }
 
+// TestDailyModeDeterministic regresses the daily-challenge determinism bug:
+// previously the dungeon layout was seeded but spawnMonsters/triggerEvent and
+// combat used package-level rand, so two players running the same daily on
+// the same date faced different monsters, item rolls, and event outcomes.
+func TestDailyModeDeterministic(t *testing.T) {
+	cfg := testCfg(t)
+	const date = "2026-04-25"
+
+	runOnce := func() (monsterNames []string, itemBonuses []int, shopBonuses []int) {
+		s := NewGameSession(cfg)
+		s.DailyMode = true
+		s.DailyDate = date
+		p := entity.NewPlayer("Daily", entity.ClassWarrior)
+		p.Fingerprint = "fp-daily"
+		s.AddPlayer(p)
+		s.StartFloor()
+
+		// Force the same content path on each run.
+		s.mu.Lock()
+		s.spawnMonsters()
+		for _, m := range s.state.Monsters {
+			monsterNames = append(monsterNames, m.Name)
+			itemBonuses = append(itemBonuses, m.HP, m.ATK, m.DEF)
+		}
+		s.generateShopItems()
+		for _, it := range s.state.ShopItems {
+			shopBonuses = append(shopBonuses, it.Bonus, it.Price)
+		}
+		s.mu.Unlock()
+		return
+	}
+
+	a, b, c := runOnce()
+	d, e, f := runOnce()
+	if !equalStrings(a, d) {
+		t.Errorf("monster names differ across runs: %v vs %v", a, d)
+	}
+	if !equalInts(b, e) {
+		t.Errorf("monster stats differ across runs: %v vs %v", b, e)
+	}
+	if !equalInts(c, f) {
+		t.Errorf("shop bonuses differ across runs: %v vs %v", c, f)
+	}
+}
+
+func equalStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func equalInts(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestSendChat(t *testing.T) {
 	s := NewGameSession(testCfg(t))
 	s.SendChat("Alice", "hello")

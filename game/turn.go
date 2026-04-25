@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/tolelom/catacombs/combat"
@@ -149,7 +148,7 @@ func (s *GameSession) resolvePlayerActions() {
 		case ActionAttack:
 			multiplier := 1.0
 			if p.Skills != nil {
-				if pct := p.Skills.GetCritChance(p.Class); pct > 0 && rand.Intn(100) < pct {
+				if pct := p.Skills.GetCritChance(p.Class); pct > 0 && s.rng.Intn(100) < pct {
 					multiplier = 2.0
 					s.addLog(fmt.Sprintf("%s 치명타!", p.Name))
 				}
@@ -253,7 +252,7 @@ func (s *GameSession) resolvePlayerActions() {
 				s.addLog(fmt.Sprintf("%s 사용할 아이템이 없습니다!", p.Name))
 			}
 		case ActionFlee:
-			if combat.AttemptFlee(s.cfg.Combat.FleeChance) {
+			if combat.AttemptFlee(s.rng, s.cfg.Combat.FleeChance) {
 				s.addLog(fmt.Sprintf("%s 전투에서 도주했습니다!", p.Name))
 				s.state.FleeSucceeded = true
 				if s.state.SoloMode {
@@ -329,7 +328,7 @@ func (s *GameSession) resolvePlayerActions() {
 	}
 
 	if len(intents) > 0 && len(s.state.Monsters) > 0 {
-		results := combat.ResolveAttacks(intents, s.state.Monsters, s.cfg.Game.CoopBonus)
+		results := combat.ResolveAttacks(s.rng, intents, s.state.Monsters, s.cfg.Game.CoopBonus)
 		for i, r := range results {
 			owner := intentOwners[i]
 			if r.IsAoE {
@@ -441,12 +440,8 @@ func (s *GameSession) advanceFloor() {
 		p.Skills.Points++
 	}
 	s.state.FloorNum++
-	if s.DailyMode {
-		seed := DailySeed(s.DailyDate) + int64(s.state.FloorNum)
-		s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(seed)))
-	} else {
-		s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))
-	}
+	s.reseedForFloor()
+	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, s.rng)
 	s.state.Phase = PhaseExploring
 	s.state.CombatTurn = 0
 	s.addLog(fmt.Sprintf("B%d층으로 내려갑니다...", s.state.FloorNum))
@@ -471,7 +466,7 @@ func (s *GameSession) grantBossRelic() {
 	}
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
-			r := relics[rand.Intn(len(relics))]
+			r := relics[s.rng.Intn(len(relics))]
 			p.Relics = append(p.Relics, r)
 			s.addLog(fmt.Sprintf("%s 유물 획득: %s", p.Name, r.Name))
 		}
@@ -486,11 +481,11 @@ func (s *GameSession) resolveMonsterActions() {
 		if m.IsDead() {
 			continue
 		}
-		targetIdx, isAoE := combat.MonsterAI(m, s.state.Players, s.state.CombatTurn)
+		targetIdx, isAoE := combat.MonsterAI(s.rng, m, s.state.Players, s.state.CombatTurn)
 		if isAoE {
 			for _, p := range s.state.Players {
 				if !p.IsOut() {
-					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 0.5)
+					dmg := combat.CalcDamage(s.rng, m.ATK, p.EffectiveDEF(), 0.5)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s 광역 공격으로 %s에게 %d 피해", m.Name, p.Name, dmg))
 					if p.IsDead() {
@@ -535,7 +530,7 @@ func (s *GameSession) resolveMonsterActions() {
 			if targetIdx >= 0 && targetIdx < len(s.state.Players) {
 				p := s.state.Players[targetIdx]
 				if !p.IsOut() {
-					dmg := combat.CalcDamage(m.ATK, p.EffectiveDEF(), 1.0)
+					dmg := combat.CalcDamage(s.rng, m.ATK, p.EffectiveDEF(), 1.0)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s이(가) %s을(를) 공격하여 %d 피해", m.Name, p.Name, dmg))
 					if m.IsElite {

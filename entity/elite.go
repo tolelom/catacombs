@@ -1,6 +1,8 @@
 package entity
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 type ElitePrefixType int
 
@@ -32,8 +34,11 @@ func (p ElitePrefixType) String() string {
 	return ElitePrefixDefs[p].Name
 }
 
-func RandomPrefix() ElitePrefixType {
-	return ElitePrefixType(rand.Intn(5))
+func RandomPrefix(rng *rand.Rand) ElitePrefixType {
+	if rng == nil {
+		return ElitePrefixType(rand.Intn(5))
+	}
+	return ElitePrefixType(rng.Intn(5))
 }
 
 func ApplyPrefix(m *Monster, prefix ElitePrefixType) {

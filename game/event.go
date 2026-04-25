@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/tolelom/catacombs/dungeon"
@@ -75,7 +74,7 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 }
 
 func (s *GameSession) spawnMonsters() {
-	count := 1 + rand.Intn(5)
+	count := 1 + s.rng.Intn(5)
 	floor := s.state.FloorNum
 	s.state.Monsters = make([]*entity.Monster, count)
 
@@ -101,7 +100,7 @@ func (s *GameSession) spawnMonsters() {
 	}
 
 	for i := 0; i < count; i++ {
-		mt := valid[rand.Intn(len(valid))]
+		mt := valid[s.rng.Intn(len(valid))]
 		m := entity.NewMonster(mt, floor, s.cfg.Combat.MonsterScaling)
 		if s.state.SoloMode {
 			m.HP = int(float64(m.HP) * s.cfg.Combat.SoloHPReduction)
@@ -111,8 +110,8 @@ func (s *GameSession) spawnMonsters() {
 			m.MaxHP = m.HP
 			m.DEF = int(float64(m.DEF) * s.cfg.Combat.SoloHPReduction)
 		}
-		if s.hasMutation("elite_flood") || rand.Float64() < 0.20 {
-			entity.ApplyPrefix(m, entity.RandomPrefix())
+		if s.hasMutation("elite_flood") || s.rng.Float64() < 0.20 {
+			entity.ApplyPrefix(m, entity.RandomPrefix(s.rng))
 		}
 		if s.HardMode {
 			mult := s.cfg.Difficulty.HardModeMonsterMult
@@ -183,15 +182,15 @@ func (s *GameSession) grantTreasure() {
 			s.addLog(fmt.Sprintf("%s의 인벤토리가 가득 찼습니다!", p.Name))
 			continue
 		}
-		if rand.Float64() < 0.5 {
-			bonus := 3 + rand.Intn(6) + floor/3
+		if s.rng.Float64() < 0.5 {
+			bonus := 3 + s.rng.Intn(6) + floor/3
 			item := entity.Item{
 				Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus,
 			}
 			p.Inventory = append(p.Inventory, item)
 			s.addLog(fmt.Sprintf("%s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
 		} else {
-			bonus := 2 + rand.Intn(4) + floor/4
+			bonus := 2 + s.rng.Intn(4) + floor/4
 			item := entity.Item{
 				Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus,
 			}
@@ -204,9 +203,9 @@ func (s *GameSession) grantTreasure() {
 func (s *GameSession) generateShopItems() {
 	floor := s.state.FloorNum
 	// Weapon bonus scales: base 3-8 + floor/3
-	weaponBonus := 3 + rand.Intn(6) + floor/3
+	weaponBonus := 3 + s.rng.Intn(6) + floor/3
 	// Armor bonus scales: base 2-5 + floor/4
-	armorBonus := 2 + rand.Intn(4) + floor/4
+	armorBonus := 2 + s.rng.Intn(4) + floor/4
 	// Prices scale with power
 	weaponPrice := 40 + weaponBonus*5
 	armorPrice := 30 + armorBonus*5
@@ -255,13 +254,13 @@ func armorName(floor int) string {
 }
 
 func (s *GameSession) triggerEvent() {
-	event := PickRandomEvent()
+	event := PickRandomEvent(s.rng)
 	s.state.LastEventName = event.Name
 	s.addLog(fmt.Sprintf("이벤트: %s — %s", event.Name, event.Description))
 
 	// Auto-resolve with a random choice
-	choice := event.Choices[rand.Intn(len(event.Choices))]
-	outcome := choice.Resolve(s.state.FloorNum)
+	choice := event.Choices[s.rng.Intn(len(event.Choices))]
+	outcome := choice.Resolve(s.state.FloorNum, s.rng)
 	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
 
 	// Pick a random available player to apply the outcome (excludes fled).
@@ -274,7 +273,7 @@ func (s *GameSession) triggerEvent() {
 	if len(available) == 0 {
 		return
 	}
-	target := available[rand.Intn(len(available))]
+	target := available[s.rng.Intn(len(available))]
 
 	if outcome.HPChange > 0 {
 		before := target.HP
@@ -300,13 +299,13 @@ func (s *GameSession) triggerEvent() {
 	if outcome.ItemDrop {
 		if len(target.Inventory) < s.cfg.Game.InventoryLimit {
 			floor := s.state.FloorNum
-			if rand.Float64() < 0.5 {
-				bonus := 3 + rand.Intn(6) + floor/3
+			if s.rng.Float64() < 0.5 {
+				bonus := 3 + s.rng.Intn(6) + floor/3
 				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
 				target.Inventory = append(target.Inventory, item)
 				s.addLog(fmt.Sprintf("  %s %s 발견 (ATK+%d)", target.Name, item.Name, item.Bonus))
 			} else {
-				bonus := 2 + rand.Intn(4) + floor/4
+				bonus := 2 + s.rng.Intn(4) + floor/4
 				item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
 				target.Inventory = append(target.Inventory, item)
 				s.addLog(fmt.Sprintf("  %s %s 발견 (DEF+%d)", target.Name, item.Name, item.Bonus))
@@ -327,15 +326,15 @@ func (s *GameSession) grantSecretTreasure() {
 				s.addLog(fmt.Sprintf("%s의 인벤토리가 가득 찼습니다!", p.Name))
 				break
 			}
-			if rand.Float64() < 0.5 {
-				bonus := 3 + rand.Intn(6) + floor/3
+			if s.rng.Float64() < 0.5 {
+				bonus := 3 + s.rng.Intn(6) + floor/3
 				item := entity.Item{
 					Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus,
 				}
 				p.Inventory = append(p.Inventory, item)
 				s.addLog(fmt.Sprintf("%s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
 			} else {
-				bonus := 2 + rand.Intn(4) + floor/4
+				bonus := 2 + s.rng.Intn(4) + floor/4
 				item := entity.Item{
 					Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus,
 				}

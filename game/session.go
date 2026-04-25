@@ -87,6 +87,7 @@ type GameSession struct {
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
+	rng            *rand.Rand           // session-scoped RNG; deterministic for daily runs
 	HardMode       bool
 	ActiveMutation *Mutation
 	DailyMode      bool
@@ -114,7 +115,22 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		combatSignal: make(chan struct{}, 1),
 		done:         make(chan struct{}),
 		lastActivity: make(map[string]time.Time),
+		rng:          rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
+}
+
+// reseedForFloor refreshes the session RNG when entering a new floor. In
+// DailyMode the seed is derived from (date + floor) so two players running
+// the same daily on the same date face identical monster spawns, item rolls,
+// and event outcomes. Outside DailyMode we fold in the floor number so each
+// floor still gets fresh randomness rather than reusing the prior floor's
+// stream. Callers must hold s.mu.
+func (s *GameSession) reseedForFloor() {
+	if s.DailyMode {
+		s.rng = rand.New(rand.NewSource(DailySeed(s.DailyDate) + int64(s.state.FloorNum)))
+		return
+	}
+	s.rng = rand.New(rand.NewSource(time.Now().UnixNano() + int64(s.state.FloorNum)))
 }
 
 // ApplyWeeklyMutation sets the current week's mutation on this session.
@@ -300,12 +316,8 @@ func (s *GameSession) AddPlayer(p *entity.Player) {
 func (s *GameSession) StartFloor() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.DailyMode {
-		seed := DailySeed(s.DailyDate) + int64(s.state.FloorNum)
-		s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(seed)))
-	} else {
-		s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, rand.New(rand.NewSource(time.Now().UnixNano())))
-	}
+	s.reseedForFloor()
+	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, s.rng)
 	s.state.Phase = PhaseExploring
 	s.state.TurnNum = 0
 

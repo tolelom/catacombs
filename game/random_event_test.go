@@ -1,6 +1,11 @@
 package game
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+)
+
+func testRng() *rand.Rand { return rand.New(rand.NewSource(42)) }
 
 func TestGetRandomEvents(t *testing.T) {
 	events := GetRandomEvents()
@@ -35,7 +40,7 @@ func TestResolveChoice(t *testing.T) {
 		t.Fatal("altar event not found")
 	}
 	// The third choice (index 2) is "Walk away" — should have no HP/gold change
-	outcome := altar.Choices[2].Resolve(5)
+	outcome := altar.Choices[2].Resolve(5, testRng())
 	if outcome.HPChange != 0 || outcome.GoldChange != 0 {
 		t.Errorf("Walk away should have no changes, got HP=%d Gold=%d", outcome.HPChange, outcome.GoldChange)
 	}
@@ -51,7 +56,7 @@ func TestResolveChoice(t *testing.T) {
 	if fountain.Name == "" {
 		t.Fatal("fountain event not found")
 	}
-	drinkOutcome := fountain.Choices[0].Resolve(10)
+	drinkOutcome := fountain.Choices[0].Resolve(10, testRng())
 	if drinkOutcome.HPChange <= 0 {
 		t.Errorf("Drinking from fountain should heal, got HP=%d", drinkOutcome.HPChange)
 	}
@@ -67,7 +72,7 @@ func TestResolveChoice(t *testing.T) {
 	if shrine.Name == "" {
 		t.Fatal("shrine event not found")
 	}
-	prayOutcome := shrine.Choices[0].Resolve(5)
+	prayOutcome := shrine.Choices[0].Resolve(5, testRng())
 	if prayOutcome.HPChange <= 0 {
 		t.Errorf("Praying at shrine should heal, got HP=%d", prayOutcome.HPChange)
 	}
@@ -83,14 +88,14 @@ func TestResolveChoice(t *testing.T) {
 	if chest.Name == "" {
 		t.Fatal("chest event not found")
 	}
-	smashOutcome := chest.Choices[1].Resolve(5)
+	smashOutcome := chest.Choices[1].Resolve(5, testRng())
 	if !smashOutcome.ItemDrop {
 		t.Error("Smashing chest should always give an item drop")
 	}
 }
 
 func TestPickRandomEvent(t *testing.T) {
-	event := PickRandomEvent()
+	event := PickRandomEvent(testRng())
 	if event.Name == "" {
 		t.Error("PickRandomEvent should return a valid event")
 	}

@@ -7,14 +7,14 @@ import (
 )
 
 func TestCalcDamage(t *testing.T) {
-	dmg := CalcDamage(12, 1, 1.0)
+	dmg := CalcDamage(nil, 12, 1, 1.0)
 	if dmg < 9 || dmg > 13 {
 		t.Errorf("Damage out of expected range: got %d, want 9~13", dmg)
 	}
 }
 
 func TestCalcDamageMinimum(t *testing.T) {
-	dmg := CalcDamage(1, 100, 1.0)
+	dmg := CalcDamage(nil, 1, 100, 1.0)
 	if dmg != 1 {
 		t.Errorf("Minimum damage: got %d, want 1", dmg)
 	}
@@ -25,7 +25,7 @@ func TestCoopBonus(t *testing.T) {
 		{PlayerATK: 12, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},
 		{PlayerATK: 15, TargetIdx: 0, Multiplier: 1.0, IsAoE: false},
 	}
-	results := ResolveAttacks(attackers, []*entity.Monster{entity.NewMonster(entity.MonsterSlime, 1, 1.15)}, 0.10)
+	results := ResolveAttacks(nil, attackers, []*entity.Monster{entity.NewMonster(entity.MonsterSlime, 1, 1.15)}, 0.10)
 	if !results[1].CoopApplied {
 		t.Error("Second attacker should get co-op bonus")
 	}
@@ -40,7 +40,7 @@ func TestAoENoCoopBonus(t *testing.T) {
 		entity.NewMonster(entity.MonsterSlime, 1, 1.15),
 		entity.NewMonster(entity.MonsterSlime, 1, 1.15),
 	}
-	results := ResolveAttacks(attackers, monsters, 0.10)
+	results := ResolveAttacks(nil, attackers, monsters, 0.10)
 	if results[0].CoopApplied {
 		t.Error("AoE should not trigger co-op bonus")
 	}
@@ -52,7 +52,7 @@ func TestMonsterAITauntDeadWarrior(t *testing.T) {
 	mage := entity.NewPlayer("Mage", entity.ClassMage)
 
 	m := &entity.Monster{Name: "Orc", HP: 50, ATK: 10, DEF: 5, TauntTarget: true, TauntTurns: 2}
-	idx, isAoE := MonsterAI(m, []*entity.Player{warrior, mage}, 1)
+	idx, isAoE := MonsterAI(nil, m, []*entity.Player{warrior, mage}, 1)
 
 	if isAoE {
 		t.Error("should not AoE")
@@ -73,7 +73,7 @@ func TestMonsterAISkipsFledPlayers(t *testing.T) {
 	m := &entity.Monster{Name: "Orc", HP: 50, ATK: 10}
 	// Run many iterations to cover the random branch
 	for i := 0; i < 50; i++ {
-		idx, isAoE := MonsterAI(m, []*entity.Player{p1, p2}, 1)
+		idx, isAoE := MonsterAI(nil, m, []*entity.Player{p1, p2}, 1)
 		if isAoE {
 			continue
 		}
@@ -87,7 +87,7 @@ func TestMonsterAINoAvailableTargets(t *testing.T) {
 	p := entity.NewPlayer("Fled", entity.ClassMage)
 	p.Fled = true
 	m := &entity.Monster{Name: "Slime", HP: 10, ATK: 1}
-	idx, isAoE := MonsterAI(m, []*entity.Player{p}, 1)
+	idx, isAoE := MonsterAI(nil, m, []*entity.Player{p}, 1)
 	if isAoE {
 		t.Error("AoE should be false when no targets available")
 	}
@@ -102,7 +102,7 @@ func TestMonsterAITauntSkipsFledWarrior(t *testing.T) {
 	mage := entity.NewPlayer("Mage", entity.ClassMage)
 
 	m := &entity.Monster{Name: "Orc", HP: 50, ATK: 10, DEF: 5, TauntTarget: true, TauntTurns: 2}
-	idx, _ := MonsterAI(m, []*entity.Player{warrior, mage}, 1)
+	idx, _ := MonsterAI(nil, m, []*entity.Player{warrior, mage}, 1)
 
 	if idx != 1 {
 		t.Errorf("taunt should skip fled warrior and target mage, got idx=%d", idx)
@@ -115,7 +115,7 @@ func TestMonsterAITauntSkipsFledWarrior(t *testing.T) {
 func TestFleeChance(t *testing.T) {
 	successes := 0
 	for i := 0; i < 100; i++ {
-		if AttemptFlee(0.50) {
+		if AttemptFlee(nil, 0.50) {
 			successes++
 		}
 	}
@@ -129,17 +129,17 @@ func TestMonsterAIBossAoE(t *testing.T) {
 	players := []*entity.Player{entity.NewPlayer("P1", entity.ClassWarrior)}
 
 	// Turn 0 should NOT AoE
-	_, isAoE := MonsterAI(boss, players, 0)
+	_, isAoE := MonsterAI(nil, boss, players, 0)
 	if isAoE {
 		t.Error("boss should not AoE on turn 0")
 	}
 	// Turn 3 should AoE
-	_, isAoE = MonsterAI(boss, players, 3)
+	_, isAoE = MonsterAI(nil, boss, players, 3)
 	if !isAoE {
 		t.Error("boss should AoE on turn 3")
 	}
 	// Turn 6 should AoE
-	_, isAoE = MonsterAI(boss, players, 6)
+	_, isAoE = MonsterAI(nil, boss, players, 6)
 	if !isAoE {
 		t.Error("boss should AoE on turn 6")
 	}
@@ -154,7 +154,7 @@ func TestMonsterAILowestHP(t *testing.T) {
 	targetedLow := 0
 	for i := 0; i < 100; i++ {
 		m := &entity.Monster{Name: "Orc", HP: 50}
-		idx, _ := MonsterAI(m, []*entity.Player{p1, p2}, 1)
+		idx, _ := MonsterAI(nil, m, []*entity.Player{p1, p2}, 1)
 		if idx == 1 {
 			targetedLow++
 		}
@@ -169,7 +169,7 @@ func TestCalcDamageWithMultiplier(t *testing.T) {
 	// AoE multiplier 0.8: ATK=20, DEF=5, mult=0.8 → base = 20*0.8 - 5 = 11
 	// Range: 11 * 0.85 to 11 * 1.15 = ~9.35 to ~12.65
 	for i := 0; i < 50; i++ {
-		dmg := CalcDamage(20, 5, 0.8)
+		dmg := CalcDamage(nil, 20, 5, 0.8)
 		if dmg < 9 || dmg > 13 {
 			t.Errorf("AoE damage %d out of expected range 9-13", dmg)
 		}
@@ -178,7 +178,7 @@ func TestCalcDamageWithMultiplier(t *testing.T) {
 
 func TestCalcDamageHighDEF(t *testing.T) {
 	// When DEF > ATK*mult, should deal minimum 1 damage
-	dmg := CalcDamage(5, 100, 1.0)
+	dmg := CalcDamage(nil, 5, 100, 1.0)
 	if dmg != 1 {
 		t.Errorf("expected minimum damage 1, got %d", dmg)
 	}

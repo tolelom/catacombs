@@ -63,7 +63,7 @@ func TestApplyPrefixVampiric(t *testing.T) {
 func TestRandomPrefix(t *testing.T) {
 	seen := make(map[ElitePrefixType]bool)
 	for i := 0; i < 200; i++ {
-		p := RandomPrefix()
+		p := RandomPrefix(nil)
 		if p < 0 || p > 4 {
 			t.Fatalf("RandomPrefix returned out-of-range value: %d", p)
 		}
