@@ -18,6 +18,14 @@ import (
 
 // NewServer creates the SSH server but does not start it.
 // The caller is responsible for calling ListenAndServe() and Shutdown().
+//
+// Auth policy: by design the server accepts any public key and any password.
+// Catacombs uses SSH purely as a transport for an interactive TUI; the
+// server treats the public-key fingerprint as a stable, self-asserted
+// player identity. Web bridge clients have no key and instead authenticate
+// via nickname+password through the in-game NicknameScreen flow. Treat
+// the public TCP port as untrusted — anyone can open a session and reach
+// the lobby.
 func NewServer(addr string, lobby *game.Lobby, db *store.DB) (*ssh.Server, error) {
 	s, err := wish.NewServer(
 		wish.WithAddress(addr),

@@ -137,10 +137,15 @@ func (s *NicknameScreen) updatePasswordLogin(key tea.KeyMsg, ctx *Context) (Scre
 	return s, nil
 }
 
+// minPasswordLen is the floor for new web account passwords. Web users do
+// not have an SSH key tying them to a fingerprint, so the password is the
+// only barrier to nickname squatting once an account exists.
+const minPasswordLen = 6
+
 func (s *NicknameScreen) updatePasswordCreate(key tea.KeyMsg, ctx *Context) (Screen, tea.Cmd) {
 	if isEnter(key) {
-		if len(s.password) < 4 {
-			s.error = "비밀번호는 4자 이상이어야 합니다"
+		if len(s.password) < minPasswordLen {
+			s.error = fmt.Sprintf("비밀번호는 %d자 이상이어야 합니다", minPasswordLen)
 			return s, nil
 		}
 		s.phase = phasePasswordConfirm

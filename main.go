@@ -36,6 +36,13 @@ func main() {
 		}
 	}
 
+	// Loud warning when running with the shipped default admin credential.
+	// /admin gives access to runtime stats — fine on a private box, a
+	// liability if the deployment is exposed without a Caddy IP allowlist.
+	if cfg.Admin.Username == "admin" && cfg.Admin.Password == "catacombs" {
+		slog.Warn("admin endpoint is using the shipped default credential; override admin.username and admin.password in config.yaml before exposing the HTTP port to the internet")
+	}
+
 	db, err := store.Open("data/catacombs.db")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
