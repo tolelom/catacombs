@@ -244,6 +244,39 @@ func equalInts(a, b []int) bool {
 	return true
 }
 
+// TestStartGameCapturesPartySize ensures full_party achievement input is
+// frozen at game start, so an inactivity-removed teammate mid-run cannot
+// cost the surviving party the achievement.
+func TestStartGameCapturesPartySize(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	for _, name := range []string{"A", "B", "C", "D"} {
+		p := entity.NewPlayer(name, entity.ClassWarrior)
+		p.Fingerprint = "fp-" + name
+		s.AddPlayer(p)
+	}
+	s.StartGame()
+	defer s.Stop()
+	if got := s.GetState().StartingPartySize; got != 4 {
+		t.Errorf("StartingPartySize: got %d, want 4", got)
+	}
+}
+
+// TestAnyPlayerDiedSticky regresses the no_death achievement: once a
+// player has died this run, the flag must stay true regardless of revival
+// on the next floor.
+func TestAnyPlayerDiedSticky(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	if s.GetState().AnyPlayerDied {
+		t.Error("fresh session should report AnyPlayerDied=false")
+	}
+	s.mu.Lock()
+	s.state.AnyPlayerDied = true
+	s.mu.Unlock()
+	if !s.GetState().AnyPlayerDied {
+		t.Error("AnyPlayerDied flag should be persisted via GetState")
+	}
+}
+
 func TestSendChat(t *testing.T) {
 	s := NewGameSession(testCfg(t))
 	s.SendChat("Alice", "hello")

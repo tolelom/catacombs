@@ -115,6 +115,7 @@ func (s *GameSession) resolvePlayerActions() {
 
 			if p.IsDead() {
 				s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+				s.state.AnyPlayerDied = true
 			}
 		}
 	}
@@ -490,6 +491,7 @@ func (s *GameSession) resolveMonsterActions() {
 					s.addLog(fmt.Sprintf("%s 광역 공격으로 %s에게 %d 피해", m.Name, p.Name, dmg))
 					if p.IsDead() {
 						s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+						s.state.AnyPlayerDied = true
 					}
 				}
 			}
@@ -546,6 +548,7 @@ func (s *GameSession) resolveMonsterActions() {
 					}
 					if p.IsDead() {
 						s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+						s.state.AnyPlayerDied = true
 					}
 				}
 			}

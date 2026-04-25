@@ -55,6 +55,8 @@ type GameState struct {
 	TurnResolving    bool              // true while logs are being replayed
 	BossKilled       bool
 	FleeSucceeded    bool
+	AnyPlayerDied    bool // true once any player has died this run; powers the no_death achievement
+	StartingPartySize int // number of players at StartGame; powers the full_party achievement
 	LastEventName    string // name of the most recent random event (for codex)
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
 	ShopSold         []bool          // parallel to ShopItems; true once a non-consumable slot is sold
@@ -179,6 +181,7 @@ func (s *GameSession) StartGame() {
 	}
 	s.started = true
 	s.state.SoloMode = len(s.state.Players) == 1
+	s.state.StartingPartySize = len(s.state.Players)
 	now := time.Now()
 	for _, p := range s.state.Players {
 		s.lastActivity[p.Fingerprint] = now
@@ -414,6 +417,8 @@ func (s *GameSession) GetState() GameState {
 		TurnResolving:    s.state.TurnResolving,
 		BossKilled:       s.state.BossKilled,
 		FleeSucceeded:    s.state.FleeSucceeded,
+		AnyPlayerDied:    s.state.AnyPlayerDied,
+		StartingPartySize: s.state.StartingPartySize,
 		LastEventName:    s.state.LastEventName,
 		MoveVotes:        moveVotesCopy,
 	}

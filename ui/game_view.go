@@ -173,6 +173,11 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if s.gameState.FleeSucceeded {
 				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "flee_master")
 			}
+			// no_death awards a survival run on victory; if anyone died at any
+			// point this run, the flag is sticky and disqualifies the party.
+			if s.gameState.Victory && !s.gameState.AnyPlayerDied {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "no_death")
+			}
 			for _, p := range s.gameState.Players {
 				if p.Fingerprint == "" {
 					continue
@@ -184,7 +189,9 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					_, _ = ctx.Store.UnlockAchievement(p.Fingerprint, "relic_collector")
 				}
 			}
-			if len(s.gameState.Players) >= 4 {
+			// full_party uses the starting party size so an inactivity-removed
+			// member mid-run doesn't cost the achievement.
+			if s.gameState.StartingPartySize >= 4 {
 				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "full_party")
 			}
 
