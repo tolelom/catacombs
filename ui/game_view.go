@@ -217,6 +217,14 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if s.gameState.Victory {
 				_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "champion")
 			}
+			if s.gameState.Victory && !s.gameState.AnyPlayerDied {
+				_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "survivor")
+			}
+			// team_player rewards five completed multiplayer runs. SaveRun
+			// above just persisted the current run, so the count includes it.
+			if mp, err := ctx.Store.CountMultiplayerRuns(ctx.PlayerName); err == nil && mp >= 5 {
+				_, _ = ctx.Store.EarnTitle(ctx.Fingerprint, "team_player")
+			}
 			// Check player gold for gold_king title
 			for _, p := range s.gameState.Players {
 				if p.Fingerprint == ctx.Fingerprint && p.Gold >= 500 {

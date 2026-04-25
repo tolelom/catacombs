@@ -91,3 +91,34 @@ func TestGetStats(t *testing.T) {
 		t.Errorf("Bob should have 1 run, got %d", bobStats.TotalRuns)
 	}
 }
+
+// TestCountMultiplayerRuns regresses the team_player title trigger:
+// only runs where the player has at least one party member should count.
+func TestCountMultiplayerRuns(t *testing.T) {
+	dir := t.TempDir()
+	db, err := Open(dir + "/test_mp.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// Solo runs — should not count
+	_ = db.SaveRun("Alice", 5, 100, "Warrior", nil)
+	_ = db.SaveRun("Alice", 10, 200, "Warrior", []string{"Alice"})
+
+	// Multiplayer runs — should count
+	_ = db.SaveRun("Alice", 12, 250, "Warrior", []string{"Alice", "Bob"})
+	_ = db.SaveRun("Alice", 8, 150, "Warrior", []string{"Alice", "Bob", "Charlie"})
+	_ = db.SaveRun("Alice", 15, 300, "Warrior", []string{"Alice", "Bob"})
+
+	// Other players' multiplayer runs — should not count toward Alice
+	_ = db.SaveRun("Bob", 12, 250, "Mage", []string{"Alice", "Bob"})
+
+	got, err := db.CountMultiplayerRuns("Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 3 {
+		t.Errorf("expected 3 multiplayer runs for Alice, got %d", got)
+	}
+}

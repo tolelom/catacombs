@@ -128,6 +128,32 @@ type PlayerStats struct {
 	Victories  int
 }
 
+// CountMultiplayerRuns returns the number of runs in the ranking bucket
+// where the named player participated alongside at least one other party
+// member. Used by the team_player title trigger; scanning the bucket is
+// cheap relative to game-over latency since rankings are bounded.
+func (d *DB) CountMultiplayerRuns(player string) (int, error) {
+	count := 0
+	err := d.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucketRankings)
+		if b == nil {
+			return nil
+		}
+		return b.ForEach(func(k, v []byte) error {
+			var r RunRecord
+			if json.Unmarshal(v, &r) != nil {
+				return nil
+			}
+			if r.Player != player || len(r.Members) < 2 {
+				return nil
+			}
+			count++
+			return nil
+		})
+	})
+	return count, err
+}
+
 func (d *DB) GetStats(player string) (PlayerStats, error) {
 	var stats PlayerStats
 	err := d.db.View(func(tx *bolt.Tx) error {
