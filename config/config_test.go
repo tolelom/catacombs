@@ -48,6 +48,71 @@ func TestLoadDefaults(t *testing.T) {
 	}
 }
 
+// TestLoadNormalizesZeroValues guards against a YAML supplying zero or
+// negative critical fields that would put the game in an unrunnable state
+// (TurnTimeoutSec=0 → instant turn timeout, MaxPlayers=0 → JoinRoom always
+// rejects, MaxFloors=0 → immediate victory at floor 1).
+func TestLoadNormalizesZeroValues(t *testing.T) {
+	content := []byte(`
+server:
+  ssh_port: 0
+  http_port: -1
+game:
+  turn_timeout_sec: 0
+  max_players: 0
+  max_floors: 0
+  inventory_limit: 0
+combat:
+  monster_scaling: 0
+  solo_hp_reduction: 0
+difficulty:
+  hard_mode_monster_mult: 0
+  hard_mode_shop_mult: 0
+  hard_mode_heal_mult: 0
+`)
+	f, err := os.CreateTemp("", "config-zero-*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Remove(f.Name()) }()
+	if _, err := f.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := defaults()
+	if cfg.Server.SSHPort != d.Server.SSHPort {
+		t.Errorf("zero SSHPort should normalize to default %d, got %d", d.Server.SSHPort, cfg.Server.SSHPort)
+	}
+	if cfg.Server.HTTPPort != d.Server.HTTPPort {
+		t.Errorf("negative HTTPPort should normalize to default %d, got %d", d.Server.HTTPPort, cfg.Server.HTTPPort)
+	}
+	if cfg.Game.TurnTimeoutSec != d.Game.TurnTimeoutSec {
+		t.Errorf("zero TurnTimeoutSec should normalize, got %d", cfg.Game.TurnTimeoutSec)
+	}
+	if cfg.Game.MaxPlayers != d.Game.MaxPlayers {
+		t.Errorf("zero MaxPlayers should normalize, got %d", cfg.Game.MaxPlayers)
+	}
+	if cfg.Game.MaxFloors != d.Game.MaxFloors {
+		t.Errorf("zero MaxFloors should normalize, got %d", cfg.Game.MaxFloors)
+	}
+	if cfg.Game.InventoryLimit != d.Game.InventoryLimit {
+		t.Errorf("zero InventoryLimit should normalize, got %d", cfg.Game.InventoryLimit)
+	}
+	if cfg.Combat.MonsterScaling != d.Combat.MonsterScaling {
+		t.Errorf("zero MonsterScaling should normalize, got %f", cfg.Combat.MonsterScaling)
+	}
+	if cfg.Difficulty.HardModeMonsterMult != d.Difficulty.HardModeMonsterMult {
+		t.Errorf("zero HardModeMonsterMult should normalize, got %f", cfg.Difficulty.HardModeMonsterMult)
+	}
+}
+
 func TestLoadFromFile(t *testing.T) {
 	content := []byte(`
 server:

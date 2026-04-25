@@ -80,9 +80,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		// Record codex entries for monsters when entering combat
 		if ctx.Store != nil && s.gameState.Phase == game.PhaseCombat {
 			for _, m := range s.gameState.Monsters {
-				key := "monster:" + m.Name
+				name := m.BaseName()
+				key := "monster:" + name
 				if !s.codexRecorded[key] {
-					_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "monster", m.Name)
+					_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "monster", name)
 					s.codexRecorded[key] = true
 				}
 			}
@@ -95,6 +96,22 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				if !s.codexRecorded[key] {
 					_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "item", item.Name)
 					s.codexRecorded[key] = true
+				}
+			}
+		}
+
+		// Record codex entries for relics (boss drops; never enter inventory)
+		if ctx.Store != nil {
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint != ctx.Fingerprint {
+					continue
+				}
+				for _, r := range p.Relics {
+					key := "item:" + r.Name
+					if !s.codexRecorded[key] {
+						_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "item", r.Name)
+						s.codexRecorded[key] = true
+					}
 				}
 			}
 		}

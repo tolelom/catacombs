@@ -133,6 +133,64 @@ func TestAllReadyEmptyRoom(t *testing.T) {
 	}
 }
 
+// TestLeaveSessionRemovesGhostFromWaitingRoom regresses the ghost-player
+// bug: a player who picked a class and then Esc'd out of the waiting room
+// would remain in session.state.Players, so when the rest of the party
+// readied up StartGame would carry the absent player into the run.
+func TestLeaveSessionRemovesGhostFromWaitingRoom(t *testing.T) {
+	cfg := testConfig(t)
+	l := NewLobby(cfg)
+	code := l.CreateRoom("Pre-game")
+
+	// Two players join the lobby, pick classes, get added to the session.
+	if err := l.JoinRoom(code, "A", "fp-a"); err != nil {
+		t.Fatalf("join A: %v", err)
+	}
+	if err := l.JoinRoom(code, "B", "fp-b"); err != nil {
+		t.Fatalf("join B: %v", err)
+	}
+	session := l.EnsureSession(code, func() *GameSession { return NewGameSession(cfg) })
+	session.AddPlayer(newPlayerWithFP("A", "fp-a"))
+	session.AddPlayer(newPlayerWithFP("B", "fp-b"))
+	l.RegisterSession("fp-a", code)
+	l.RegisterSession("fp-b", code)
+
+	// A backs out of the waiting room.
+	l.LeaveRoom(code, "fp-a")
+	l.LeaveSession(code, "fp-a")
+
+	players := session.GetState().Players
+	if len(players) != 1 || players[0].Fingerprint != "fp-b" {
+		t.Errorf("session should hold only B, got %+v", players)
+	}
+	if _, sess := l.GetActiveSession("fp-a"); sess != nil {
+		t.Error("activeSessions should no longer contain fp-a")
+	}
+}
+
+// TestStopAllSessionsHaltsCombatLoops verifies graceful shutdown closes the
+// done channel of every active session so combatLoop goroutines can exit.
+func TestStopAllSessionsHaltsCombatLoops(t *testing.T) {
+	cfg := testConfig(t)
+	l := NewLobby(cfg)
+	codeA := l.CreateRoom("A")
+	codeB := l.CreateRoom("B")
+	sessA := l.EnsureSession(codeA, func() *GameSession { return NewGameSession(cfg) })
+	sessB := l.EnsureSession(codeB, func() *GameSession { return NewGameSession(cfg) })
+	if sessA == nil || sessB == nil {
+		t.Fatal("EnsureSession returned nil")
+	}
+
+	l.StopAllSessions()
+	for name, s := range map[string]*GameSession{"A": sessA, "B": sessB} {
+		select {
+		case <-s.done:
+		default:
+			t.Errorf("session %s should have been stopped", name)
+		}
+	}
+}
+
 // TestLeaveSessionKeepsRoomForRemainingPlayers verifies that one player's
 // quit does not terminate the shared session for the rest of the party.
 // Regression for: leaveGame previously called Stop+RemoveRoom unilaterally.

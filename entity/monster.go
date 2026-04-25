@@ -108,3 +108,13 @@ func (m *Monster) TickTaunt() {
 		}
 	}
 }
+
+// BaseName returns the unprefixed monster name (without elite affixes), so
+// the codex can record one entry per monster type instead of a separate
+// entry for every elite variant.
+func (m *Monster) BaseName() string {
+	if def, ok := monsterDefs[m.Type]; ok {
+		return def.Name
+	}
+	return m.Name
+}

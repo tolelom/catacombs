@@ -9,31 +9,40 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// Total known entries for completion calculation
-const (
-	totalMonsters = 16 // 8 regular + 4 bosses + 4 mini-bosses
-	totalItems    = 15 // weapons + armor + potions + relics
-	totalEvents   = 8  // random events from game/random_event.go
-)
-
-// All known entry names for display
+// Canonical entry names match what the game actually records. Monsters use
+// entity.Monster.BaseName, items match Item.Name and Relic.Name as written
+// in event.go/turn.go, and events use RandomEvent.Name from random_event.go.
 var allMonsters = []string{
-	"Goblin", "Skeleton", "Bat", "Slime", "Zombie", "Spider", "Rat", "Ghost",
-	"Dragon", "Lich", "Demon Lord", "Hydra",
-	"Troll", "Wraith", "Golem", "Minotaur",
+	// Regular
+	"Slime", "Skeleton", "Orc", "Dark Knight",
+	// Mini-bosses (floors 4/9/14/19)
+	"Guardian's Herald", "Warden's Shadow", "Overlord's Lieutenant", "Archlich's Harbinger",
+	// Bosses (floors 5/10/15/20)
+	"Guardian", "Warden", "Overlord", "Archlich",
 }
 
 var allItems = []string{
-	"Iron Sword", "Steel Axe", "Magic Staff", "Shadow Dagger", "Holy Mace",
-	"Leather Armor", "Chain Mail", "Plate Armor",
-	"Health Potion", "Mana Potion", "Strength Potion",
-	"Shield Relic", "Amulet of Life", "Ring of Power", "Boots of Speed",
+	// Weapons by tier
+	"Iron Sword", "Bronze Sword", "Steel Sword", "Mythril Blade",
+	// Armor by tier
+	"Iron Shield", "Bronze Shield", "Steel Shield", "Mythril Shield",
+	// Consumable
+	"HP Potion",
+	// Relics (boss drops)
+	"Vampiric Ring", "Power Amulet", "Iron Ward", "Gold Charm",
+	"Antidote Charm", "Flame Guard", "Life Siphon",
 }
 
 var allEvents = []string{
 	"altar", "fountain", "merchant", "trap_room",
 	"shrine", "chest", "ghost", "mushroom",
 }
+
+var (
+	totalMonsters = len(allMonsters)
+	totalItems    = len(allItems)
+	totalEvents   = len(allEvents)
+)
 
 // CodexScreen displays the player's codex with discovered entries.
 type CodexScreen struct {

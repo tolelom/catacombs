@@ -302,6 +302,23 @@ func (l *Lobby) RemoveRoom(code string) {
 	delete(l.rooms, code)
 }
 
+// StopAllSessions terminates every active session's combat loop. Used during
+// graceful shutdown so combatLoop goroutines exit before the process ends
+// rather than being killed mid-tick.
+func (l *Lobby) StopAllSessions() {
+	l.mu.Lock()
+	sessions := make([]*GameSession, 0, len(l.rooms))
+	for _, r := range l.rooms {
+		if r.Session != nil {
+			sessions = append(sessions, r.Session)
+		}
+	}
+	l.mu.Unlock()
+	for _, s := range sessions {
+		s.Stop()
+	}
+}
+
 func generateCode() string {
 	const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 	b := make([]byte, 4)

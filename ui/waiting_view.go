@@ -58,11 +58,15 @@ func (s *WaitingScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 			}
 		} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
-			// Leave room — unready and go back to lobby
+			// Leave room — unready, drop from lobby roster, and pull our
+			// fingerprint out of the session so an in-flight StartGame
+			// doesn't carry a ghost player into the run.
 			if ctx.Lobby != nil {
 				ctx.Lobby.SetPlayerReady(ctx.RoomCode, ctx.Fingerprint, false)
 				ctx.Lobby.LeaveRoom(ctx.RoomCode, ctx.Fingerprint)
+				ctx.Lobby.LeaveSession(ctx.RoomCode, ctx.Fingerprint)
 			}
+			ctx.Session = nil
 			ctx.RoomCode = ""
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)

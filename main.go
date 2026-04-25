@@ -103,6 +103,9 @@ func main() {
 		slog.Error("SSH server shutdown error", "error", err)
 	}
 
+	// Halt all in-flight game sessions so their combatLoop goroutines exit.
+	lobby.StopAllSessions()
+
 	// Final backup before exit
 	if path, err := db.Backup(cfg.Backup.Dir); err != nil {
 		slog.Error("final backup failed", "error", err)
@@ -129,6 +132,11 @@ func backupScheduler(db *store.DB, cfg config.BackupConfig, done chan struct{}) 
 				slog.Error("scheduled backup failed", "error", err)
 			} else {
 				slog.Info("scheduled backup completed", "path", path)
+			}
+			if pruned, err := store.PruneBackups(cfg.Dir, 24); err != nil {
+				slog.Warn("backup prune failed", "error", err)
+			} else if pruned > 0 {
+				slog.Info("backup prune completed", "deleted", pruned)
 			}
 		}
 	}

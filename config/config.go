@@ -86,5 +86,53 @@ func Load(path string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
+	cfg.normalize()
 	return &cfg, nil
+}
+
+// normalize replaces zero/negative values with defaults. Without this guard
+// a YAML file that omits or zeroes a critical field — TurnTimeoutSec, MaxPlayers,
+// MaxFloors, InventoryLimit — would put the game into an unrunnable state
+// (turn timer firing instantly, JoinRoom always rejecting, immediate victory
+// on floor 1, etc.). We only touch fields whose zero value is unsafe; flags
+// like SkillUses=0 are legitimate (the no_skills mutation produces it via
+// effectiveSkillUses).
+func (c *Config) normalize() {
+	d := defaults()
+	if c.Server.SSHPort <= 0 {
+		c.Server.SSHPort = d.Server.SSHPort
+	}
+	if c.Server.HTTPPort <= 0 {
+		c.Server.HTTPPort = d.Server.HTTPPort
+	}
+	if c.Game.TurnTimeoutSec <= 0 {
+		c.Game.TurnTimeoutSec = d.Game.TurnTimeoutSec
+	}
+	if c.Game.MaxPlayers <= 0 {
+		c.Game.MaxPlayers = d.Game.MaxPlayers
+	}
+	if c.Game.MaxFloors <= 0 {
+		c.Game.MaxFloors = d.Game.MaxFloors
+	}
+	if c.Game.InventoryLimit <= 0 {
+		c.Game.InventoryLimit = d.Game.InventoryLimit
+	}
+	if c.Game.SkillUses < 0 {
+		c.Game.SkillUses = d.Game.SkillUses
+	}
+	if c.Combat.MonsterScaling <= 0 {
+		c.Combat.MonsterScaling = d.Combat.MonsterScaling
+	}
+	if c.Combat.SoloHPReduction <= 0 {
+		c.Combat.SoloHPReduction = d.Combat.SoloHPReduction
+	}
+	if c.Difficulty.HardModeMonsterMult <= 0 {
+		c.Difficulty.HardModeMonsterMult = d.Difficulty.HardModeMonsterMult
+	}
+	if c.Difficulty.HardModeShopMult <= 0 {
+		c.Difficulty.HardModeShopMult = d.Difficulty.HardModeShopMult
+	}
+	if c.Difficulty.HardModeHealMult <= 0 {
+		c.Difficulty.HardModeHealMult = d.Difficulty.HardModeHealMult
+	}
 }

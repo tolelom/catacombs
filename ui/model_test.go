@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -128,6 +129,51 @@ func TestClassSelectToGame(t *testing.T) {
 	}
 	if m5.session() == nil {
 		t.Error("session should be set")
+	}
+}
+
+// TestRenderHelpDynamic verifies that the help screen pulls live numbers
+// from the active config rather than hardcoding "10초" / "3회" etc., so
+// admin overrides in config.yaml stay in sync with what users read.
+func TestRenderHelpDynamic(t *testing.T) {
+	cfg, _ := config.Load("")
+	cfg.Game.TurnTimeoutSec = 7
+	cfg.Game.SkillUses = 5
+	cfg.Game.MaxPlayers = 6
+	out := renderHelp(80, 24, cfg)
+	for _, want := range []string{"턴당 7초", "5회 사용", "최대 6명"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected help output to contain %q", want)
+		}
+	}
+	// Nil cfg should still produce something sensible (defaults).
+	out = renderHelp(80, 24, nil)
+	if !strings.Contains(out, "턴당 10초") {
+		t.Error("nil cfg should fall back to default 10초")
+	}
+}
+
+// TestIsWebUserRecognizesAnonPrefixes is a regression for the web bridge
+// fingerprint format change: server/ssh.go mints "anon:<rand>" but the
+// password flow used to only check for "anon-". When the prefixes drifted
+// apart, web users skipped the password screen entirely.
+func TestIsWebUserRecognizesAnonPrefixes(t *testing.T) {
+	cases := []struct {
+		fp   string
+		want bool
+		desc string
+	}{
+		{"", true, "empty fingerprint"},
+		{"anon-1234567890", true, "legacy anon- prefix"},
+		{"anon:abcdef0123456789", true, "current anon: prefix"},
+		{"SHA256:abcdef", false, "real SSH fingerprint"},
+		{"SHA256:web:nick", false, "deterministic web login fingerprint"},
+	}
+	for _, tc := range cases {
+		ctx := &Context{Fingerprint: tc.fp}
+		if got := isWebUser(ctx); got != tc.want {
+			t.Errorf("%s (fp=%q): got %v, want %v", tc.desc, tc.fp, got, tc.want)
+		}
 	}
 }
 

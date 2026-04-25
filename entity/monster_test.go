@@ -90,3 +90,22 @@ func TestMonsterAtMinFloor(t *testing.T) {
 		t.Errorf("Slime at min floor should be base stats, got HP=%d ATK=%d DEF=%d", m.HP, m.ATK, m.DEF)
 	}
 }
+
+// TestBaseNameStripsElitePrefix is a regression for the codex display bug:
+// monsters were recorded with their elite-prefixed display name, so the codex
+// could never match its hardcoded entry list.
+func TestBaseNameStripsElitePrefix(t *testing.T) {
+	m := NewMonster(MonsterSlime, 1, 1.15)
+	ApplyPrefix(m, PrefixVenomous)
+	if m.Name != "Venomous Slime" {
+		t.Fatalf("expected display name to include prefix, got %q", m.Name)
+	}
+	if base := m.BaseName(); base != "Slime" {
+		t.Errorf("BaseName should strip prefix; got %q, want %q", base, "Slime")
+	}
+
+	plain := NewMonster(MonsterOrc, 6, 1.15)
+	if base := plain.BaseName(); base != "Orc" {
+		t.Errorf("BaseName for non-elite should match definition; got %q", base)
+	}
+}

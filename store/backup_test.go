@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBackup(t *testing.T) {
@@ -48,6 +49,70 @@ func TestBackup(t *testing.T) {
 	}
 	if name != "player1" {
 		t.Fatalf("expected player1, got %s", name)
+	}
+}
+
+// TestPruneBackupsKeepsNewest verifies that PruneBackups removes only the
+// oldest catacombs-*.db files past the keep limit. Without this the
+// backup dir would grow unboundedly across a long deployment.
+func TestPruneBackupsKeepsNewest(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create 5 fake backup files with staggered modification times.
+	names := []string{
+		"catacombs-20260101-000000.db",
+		"catacombs-20260102-000000.db",
+		"catacombs-20260103-000000.db",
+		"catacombs-20260104-000000.db",
+		"catacombs-20260105-000000.db",
+	}
+	base := time.Now().Add(-5 * time.Hour)
+	for i, n := range names {
+		full := filepath.Join(dir, n)
+		if err := os.WriteFile(full, []byte("dummy"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chtimes(full, base.Add(time.Duration(i)*time.Hour), base.Add(time.Duration(i)*time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Add an unrelated file that should NOT be pruned.
+	other := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(other, []byte("keep me"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	deleted, err := PruneBackups(dir, 2)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if deleted != 3 {
+		t.Errorf("expected 3 deleted, got %d", deleted)
+	}
+
+	// The two newest backups and the unrelated file should remain.
+	survivors, _ := os.ReadDir(dir)
+	got := make(map[string]bool, len(survivors))
+	for _, s := range survivors {
+		got[s.Name()] = true
+	}
+	for _, want := range []string{"catacombs-20260104-000000.db", "catacombs-20260105-000000.db", "notes.txt"} {
+		if !got[want] {
+			t.Errorf("expected %q to survive, missing", want)
+		}
+	}
+	if got["catacombs-20260101-000000.db"] {
+		t.Error("oldest backup should have been deleted")
+	}
+}
+
+func TestPruneBackupsMissingDir(t *testing.T) {
+	deleted, err := PruneBackups(filepath.Join(t.TempDir(), "nonexistent"), 5)
+	if err != nil {
+		t.Fatalf("missing dir should not error, got %v", err)
+	}
+	if deleted != 0 {
+		t.Errorf("expected 0 deleted on missing dir, got %d", deleted)
 	}
 }
 
