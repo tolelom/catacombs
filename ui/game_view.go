@@ -100,11 +100,21 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 		}
 
-		// Record codex entries for relics (boss drops; never enter inventory)
+		// Record codex entries for inventory items and relics. Treasure rooms
+		// and events drop weapons/armor straight into Inventory, so the
+		// shop-only loop above never sees them. Relics (boss drops) live in
+		// p.Relics and likewise bypass the shop list.
 		if ctx.Store != nil {
 			for _, p := range s.gameState.Players {
 				if p.Fingerprint != ctx.Fingerprint {
 					continue
+				}
+				for _, it := range p.Inventory {
+					key := "item:" + it.Name
+					if !s.codexRecorded[key] {
+						_ = ctx.Store.RecordCodexEntry(ctx.Fingerprint, "item", it.Name)
+						s.codexRecorded[key] = true
+					}
 				}
 				for _, r := range p.Relics {
 					key := "item:" + r.Name

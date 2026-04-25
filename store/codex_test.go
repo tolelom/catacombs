@@ -53,6 +53,29 @@ func TestRecordCodexEntry(t *testing.T) {
 	}
 }
 
+// TestRecordCodexEntryAccumulatesItems verifies that recording the same
+// item name from different sources (shop, treasure-room, event drop) is
+// idempotent and that distinct items accumulate. The UI path now also
+// records inventory + relics so treasure drops aren't invisible to the
+// codex; this test pins the underlying store contract.
+func TestRecordCodexEntryAccumulatesItems(t *testing.T) {
+	dir := t.TempDir()
+	db, err := Open(dir + "/test_codex_accumulate.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	_ = db.RecordCodexEntry("fp1", "item", "Iron Sword")
+	_ = db.RecordCodexEntry("fp1", "item", "Iron Sword") // dup
+	_ = db.RecordCodexEntry("fp1", "item", "HP Potion")
+	_ = db.RecordCodexEntry("fp1", "item", "Vampiric Ring")
+	codex, _ := db.GetCodex("fp1")
+	if got := len(codex.Items); got != 3 {
+		t.Errorf("expected 3 unique items recorded, got %d (%v)", got, codex.Items)
+	}
+}
+
 func TestGetCodexEmpty(t *testing.T) {
 	dir := t.TempDir()
 	db, err := Open(dir + "/test_codex_empty.db")
