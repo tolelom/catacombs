@@ -8,12 +8,18 @@ const (
 	Visible
 )
 
+// UpdateVisibility marks the floor's current room as visited. Callers can
+// pass a freshly-generated floor where CurrentRoom may be -1 or out of
+// range; in that case this is a no-op.
 func UpdateVisibility(floor *Floor) {
-	for i, room := range floor.Rooms {
-		if i == floor.CurrentRoom {
-			room.Visited = true
-		}
+	if floor == nil {
+		return
 	}
+	idx := floor.CurrentRoom
+	if idx < 0 || idx >= len(floor.Rooms) {
+		return
+	}
+	floor.Rooms[idx].Visited = true
 }
 
 func GetRoomVisibility(floor *Floor, roomIdx int) Visibility {

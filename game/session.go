@@ -60,6 +60,7 @@ type GameState struct {
 	LastEventName    string // name of the most recent random event (for codex)
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
 	ShopSold         []bool          // parallel to ShopItems; true once a non-consumable slot is sold
+	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -424,6 +425,15 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
+	// Mirror shopLeavers for the UI's "N/M ready to leave" display.
+	var shopLeaversCopy map[string]bool
+	if n := len(s.shopLeavers); n > 0 {
+		shopLeaversCopy = make(map[string]bool, n)
+		for k, v := range s.shopLeavers {
+			shopLeaversCopy[k] = v
+		}
+	}
+
 	// Copy pending logs
 	var pendingCopy []string
 	if n := len(s.state.PendingLogs); n > 0 {
@@ -467,6 +477,7 @@ func (s *GameSession) GetState() GameState {
 		StartingPartySize: s.state.StartingPartySize,
 		LastEventName:    s.state.LastEventName,
 		MoveVotes:        moveVotesCopy,
+		ShopLeavers:      shopLeaversCopy,
 	}
 }
 

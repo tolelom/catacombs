@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -152,7 +153,9 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 				members = append(members, p.Name)
 			}
-			_ = ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members)
+			if err := ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members); err != nil {
+				slog.Error("save run failed", "error", err, "player", ctx.PlayerName, "floor", s.gameState.FloorNum)
+			}
 			// Achievements are keyed by fingerprint to match unlocks/titles and
 			// to avoid cross-contamination between players sharing a nickname.
 			if s.gameState.FloorNum >= 5 {
@@ -241,13 +244,15 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						break
 					}
 				}
-				_ = ctx.Store.SaveDaily(store.DailyRecord{
+				if err := ctx.Store.SaveDaily(store.DailyRecord{
 					Date:         ctx.Session.DailyDate,
 					Player:       ctx.Fingerprint,
 					PlayerName:   ctx.PlayerName,
 					FloorReached: s.gameState.FloorNum,
 					GoldEarned:   playerGold,
-				})
+				}); err != nil {
+					slog.Error("save daily failed", "error", err, "date", ctx.Session.DailyDate, "fp", ctx.Fingerprint)
+				}
 			}
 
 			s.rankingSaved = true

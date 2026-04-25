@@ -65,8 +65,18 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					gs.gameState = ctx.Session.GetState()
 					return gs, nil
 				}
-				s.shopMsg = "다른 플레이어가 상점을 떠날 때까지 대기 중..."
 				s.gameState = ctx.Session.GetState()
+				ready, total := 0, 0
+				for _, p := range s.gameState.Players {
+					if p.IsOut() {
+						continue
+					}
+					total++
+					if s.gameState.ShopLeavers[p.Fingerprint] {
+						ready++
+					}
+				}
+				s.shopMsg = fmt.Sprintf("상점 떠나는 중 %d/%d — 모두 [Q] 누를 때까지 대기", ready, total)
 			}
 		}
 	}

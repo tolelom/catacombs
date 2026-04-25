@@ -43,13 +43,15 @@ var monsterDefs = map[MonsterType]monsterBase{
 
 type BossPattern int
 
+// All bosses already AoE every third turn via combat.MonsterAI; the patterns
+// below are the optional follow-up effect that fires after that AoE.
 const (
 	PatternNone    BossPattern = iota
-	PatternAoE                 // every 3 turns AoE
-	PatternPoison              // applies poison
-	PatternBurn                // applies burn to random player
-	PatternHeal                // heals self
-	PatternFreeze              // applies freeze to all players
+	_                          // (reserved; was PatternAoE — redundant with the built-in third-turn AoE)
+	PatternPoison              // applies poison to all players after AoE
+	PatternBurn                // applies burn to all players after AoE
+	PatternHeal                // heals self for 10% MaxHP after AoE
+	PatternFreeze              // applies freeze to all players after AoE
 )
 
 type Monster struct {

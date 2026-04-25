@@ -515,6 +515,35 @@ func TestLeaveShopWaitsForAllPlayers(t *testing.T) {
 	}
 }
 
+// TestLeaveShopExposesLeaversForUI verifies the shop ready-counter is
+// visible to the UI via GetState so the polling client can render
+// "N/M ready to leave".
+func TestLeaveShopExposesLeaversForUI(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	for _, fp := range []string{"fp-a", "fp-b", "fp-c"} {
+		p := entity.NewPlayer(fp, entity.ClassWarrior)
+		p.Fingerprint = fp
+		s.AddPlayer(p)
+	}
+	s.mu.Lock()
+	s.state.Phase = PhaseShop
+	s.state.Floor = nil
+	s.mu.Unlock()
+
+	if got := s.GetState().ShopLeavers; got != nil {
+		t.Errorf("ShopLeavers should be nil before any q, got %v", got)
+	}
+	s.LeaveShop("fp-a")
+	leavers := s.GetState().ShopLeavers
+	if !leavers["fp-a"] || leavers["fp-b"] {
+		t.Errorf("expected only fp-a to be a leaver, got %v", leavers)
+	}
+	s.LeaveShop("fp-b")
+	if l := s.GetState().ShopLeavers; !l["fp-a"] || !l["fp-b"] || l["fp-c"] {
+		t.Errorf("expected fp-a + fp-b leavers, got %v", l)
+	}
+}
+
 func TestLeaveShopIgnoresFledPlayers(t *testing.T) {
 	s := NewGameSession(testCfg(t))
 	a := entity.NewPlayer("A", entity.ClassWarrior)
