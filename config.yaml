@@ -45,11 +45,11 @@ backup:
 
 difficulty:
   # Monster stat multiplier in hard mode
-  hard_mode_monster_mult: 1.5
+  hard_mode_monster_mult: 1.35
   # Shop price multiplier in hard mode
-  hard_mode_shop_mult: 2.0
+  hard_mode_shop_mult: 1.75
   # Healing effectiveness multiplier in hard mode
-  hard_mode_heal_mult: 0.5
+  hard_mode_heal_mult: 0.6
 
 admin:
   # Basic auth credentials for /admin endpoint
