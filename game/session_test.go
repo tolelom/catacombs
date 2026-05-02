@@ -593,3 +593,54 @@ func TestAllocateSkillPointAppliesMaxHPBoost(t *testing.T) {
 		t.Errorf("expected HP +20 from Fortitude, got %d (was %d)", got, beforeHP)
 	}
 }
+
+// TestRunTurnUnblocksOnPlayerLeave regresses the mid-turn-quit stall:
+// previously RunTurn captured aliveCount once and then waited on actionCh
+// for an action that the leaver would never send, freezing the party for
+// the full TurnTimeoutSec. RemovePlayer now wakes playerLeftCh and the
+// collect loop re-evaluates the alive set.
+func TestRunTurnUnblocksOnPlayerLeave(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("Alice", entity.ClassWarrior)
+	p.Fingerprint = "fp-alice"
+	s.AddPlayer(p)
+	s.StartFloor()
+
+	done := make(chan struct{})
+	go func() {
+		s.RunTurn()
+		close(done)
+	}()
+
+	// Drop the only player mid-turn before any action arrives.
+	time.Sleep(50 * time.Millisecond)
+	if rem := s.RemovePlayer("fp-alice"); rem != 0 {
+		t.Fatalf("expected 0 players remaining, got %d", rem)
+	}
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("RunTurn did not unblock within 2s after RemovePlayer")
+	}
+}
+
+func TestRemovePlayerClearsShopLeavers(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("Alice", entity.ClassWarrior)
+	p.Fingerprint = "fp-alice"
+	s.AddPlayer(p)
+
+	s.mu.Lock()
+	s.shopLeavers = map[string]bool{"fp-alice": true}
+	s.mu.Unlock()
+
+	s.RemovePlayer("fp-alice")
+
+	s.mu.Lock()
+	_, exists := s.shopLeavers["fp-alice"]
+	s.mu.Unlock()
+	if exists {
+		t.Error("RemovePlayer should clear the leaving player's shopLeavers entry")
+	}
+}

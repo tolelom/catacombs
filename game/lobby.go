@@ -247,12 +247,16 @@ func (l *Lobby) ListRooms() []*LobbyRoom {
 func (l *Lobby) LeaveSession(code, fingerprint string) int {
 	l.mu.Lock()
 	room, ok := l.rooms[code]
-	if !ok || room.Session == nil {
+	// Only clear the reconnect mapping if it actually points at this room.
+	// A stale LeaveSession from a delayed UI cmd must not wipe a mapping
+	// that the player already moved to a different room.
+	if l.activeSessions[fingerprint] == code {
 		delete(l.activeSessions, fingerprint)
+	}
+	if !ok || room.Session == nil {
 		l.mu.Unlock()
 		return 0
 	}
-	delete(l.activeSessions, fingerprint)
 	session := room.Session
 	l.mu.Unlock()
 

@@ -16,19 +16,14 @@ func (s *GameSession) RunTurn() {
 	s.clearLog()
 	s.actions = make(map[string]PlayerAction)
 	s.state.SubmittedActions = make(map[string]string)
-	aliveCount := 0
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			aliveCount++
-		}
-	}
 	s.mu.Unlock()
 
-	// Drain stale actions from previous turn
+	// Drain stale actions and leave-signals from previous turn
 draining:
 	for {
 		select {
 		case <-s.actionCh:
+		case <-s.playerLeftCh:
 		default:
 			break draining
 		}
@@ -40,16 +35,33 @@ draining:
 	s.mu.Lock()
 	s.state.TurnDeadline = time.Now().Add(turnTimeout)
 	s.mu.Unlock()
-	collected := 0
 
 collecting:
-	for collected < aliveCount {
+	for {
+		// Recompute the alive set every iteration so a mid-turn quit
+		// (RemovePlayer drops the leaver from s.actions and pokes
+		// playerLeftCh) shrinks the expected count instead of stalling
+		// the party until the timeout fires.
+		s.mu.Lock()
+		aliveCount := 0
+		for _, p := range s.state.Players {
+			if !p.IsOut() {
+				aliveCount++
+			}
+		}
+		collected := len(s.actions)
+		s.mu.Unlock()
+		if collected >= aliveCount {
+			break collecting
+		}
+
 		select {
 		case msg := <-s.actionCh:
 			s.mu.Lock()
 			s.actions[msg.PlayerID] = msg.Action
 			s.mu.Unlock()
-			collected++
+		case <-s.playerLeftCh:
+			// loop re-evaluates aliveCount on next iteration
 		case <-timer.C:
 			break collecting
 		case <-s.done:

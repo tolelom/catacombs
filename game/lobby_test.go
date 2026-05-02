@@ -234,3 +234,23 @@ func TestLeaveSessionKeepsRoomForRemainingPlayers(t *testing.T) {
 		t.Error("session should be stopped after last player leaves")
 	}
 }
+
+// TestLeaveSessionPreservesUnrelatedActiveSession guards against a stale
+// LeaveSession (e.g., a delayed UI cmd from the prior room) wiping the
+// reconnect mapping for a room the player has since moved to.
+func TestLeaveSessionPreservesUnrelatedActiveSession(t *testing.T) {
+	l := NewLobby(testConfig(t))
+	codeA := l.CreateRoom("RoomA")
+	codeB := l.CreateRoom("RoomB")
+	l.RegisterSession("fp-alice", codeA)
+
+	// Stale leave for room B must not touch the mapping for room A.
+	l.LeaveSession(codeB, "fp-alice")
+
+	l.mu.RLock()
+	gotCode := l.activeSessions["fp-alice"]
+	l.mu.RUnlock()
+	if gotCode != codeA {
+		t.Errorf("expected reconnect mapping to %q, got %q", codeA, gotCode)
+	}
+}

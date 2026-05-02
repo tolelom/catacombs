@@ -86,6 +86,7 @@ type GameSession struct {
 	actions        map[string]PlayerAction // playerName -> action
 	actionCh       chan playerActionMsg
 	combatSignal   chan struct{}
+	playerLeftCh   chan struct{} // wakes RunTurn's collect loop on mid-turn quit
 	done           chan struct{}
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
 	moveVotes      map[string]int       // fingerprint -> voted room index
@@ -116,6 +117,7 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		actions:      make(map[string]PlayerAction),
 		actionCh:     make(chan playerActionMsg, 4),
 		combatSignal: make(chan struct{}, 1),
+		playerLeftCh: make(chan struct{}, 4),
 		done:         make(chan struct{}),
 		lastActivity: make(map[string]time.Time),
 		rng:          rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -288,11 +290,23 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 	if s.moveVotes != nil {
 		delete(s.moveVotes, fingerprint)
 	}
+	if s.shopLeavers != nil {
+		delete(s.shopLeavers, fingerprint)
+	}
 	if s.state.MoveVotes != nil {
 		delete(s.state.MoveVotes, fingerprint)
 	}
 	if s.state.SubmittedActions != nil {
 		delete(s.state.SubmittedActions, fingerprint)
+	}
+	if s.actions != nil {
+		delete(s.actions, fingerprint)
+	}
+	// Wake RunTurn's collect loop in case it's blocked waiting for this
+	// player's never-arriving action.
+	select {
+	case s.playerLeftCh <- struct{}{}:
+	default:
 	}
 	return len(s.state.Players)
 }

@@ -61,12 +61,13 @@ type Player struct {
 func NewPlayer(name string, class Class) *Player {
 	stats := classBaseStats[class]
 	return &Player{
-		Name:  name,
-		Class: class,
-		HP:    stats.HP,
-		MaxHP: stats.HP,
-		ATK:   stats.ATK,
-		DEF:   stats.DEF,
+		Name:   name,
+		Class:  class,
+		HP:     stats.HP,
+		MaxHP:  stats.HP,
+		ATK:    stats.ATK,
+		DEF:    stats.DEF,
+		Skills: NewPlayerSkills(),
 	}
 }
 
@@ -81,7 +82,11 @@ func (p *Player) TakeDamage(dmg int) {
 func (p *Player) Heal(amount int) {
 	for _, e := range p.Effects {
 		if e.Type == StatusCurse {
-			amount = amount * (100 - e.Value) / 100
+			reduction := 100 - e.Value
+			if reduction < 0 {
+				reduction = 0
+			}
+			amount = amount * reduction / 100
 			break
 		}
 	}

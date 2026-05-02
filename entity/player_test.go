@@ -239,3 +239,17 @@ func TestFreezeTickMessage(t *testing.T) {
 		t.Error("expected freeze to be removed after 1 tick")
 	}
 }
+
+// TestHealCurseOver100ClampsToZero guards against a future curse with
+// Value > 100 silently turning Heal into damage that bypasses TakeDamage's
+// death detection. The (100 - Value) factor is clamped to >= 0.
+func TestHealCurseOver100ClampsToZero(t *testing.T) {
+	p := NewPlayer("Test", ClassWarrior)
+	p.HP = 50
+	p.Effects = append(p.Effects, ActiveEffect{Type: StatusCurse, Value: 150, Duration: 3})
+
+	p.Heal(20)
+	if p.HP != 50 {
+		t.Errorf("Heal under Value>100 curse should not damage; HP=%d, want 50", p.HP)
+	}
+}

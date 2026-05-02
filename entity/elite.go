@@ -34,9 +34,14 @@ func (p ElitePrefixType) String() string {
 	return ElitePrefixDefs[p].Name
 }
 
+// defaultEliteRng is a fixed-seed fallback for RandomPrefix when callers
+// (mostly tests) pass nil. Production paths thread the per-session RNG
+// through to keep daily challenges deterministic.
+var defaultEliteRng = rand.New(rand.NewSource(1))
+
 func RandomPrefix(rng *rand.Rand) ElitePrefixType {
 	if rng == nil {
-		return ElitePrefixType(rand.Intn(5))
+		rng = defaultEliteRng
 	}
 	return ElitePrefixType(rng.Intn(5))
 }
