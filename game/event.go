@@ -298,23 +298,20 @@ func (s *GameSession) spawnBoss() {
 }
 
 // applyPoisonNextCombatIfPending applies the Venomous Edge combo's effect at
-// combat start: every spawned monster takes 15% MaxHP damage immediately.
+// combat start: every spawned monster gets a 3-turn poison stack.
 // Caller holds s.mu.
 func (s *GameSession) applyPoisonNextCombatIfPending() {
 	if !s.poisonNextCombat {
 		return
 	}
 	for _, m := range s.state.Monsters {
-		dmg := m.MaxHP * 15 / 100
-		if dmg < 1 {
-			dmg = 1
+		poisonValue := m.MaxHP * 5 / 100
+		if poisonValue < 2 {
+			poisonValue = 2
 		}
-		m.HP -= dmg
-		if m.HP < 1 {
-			m.HP = 1
-		}
+		m.AddEffect(entity.ActiveEffect{Type: entity.StatusPoison, Duration: 3, Value: poisonValue})
 	}
-	s.addLog("독칼: 모든 적이 즉시 독 피해를 받았습니다 (-15% MaxHP)")
+	s.addLog("독칼: 모든 적이 3턴간 독에 중독!")
 	s.poisonNextCombat = false
 }
 

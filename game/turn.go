@@ -144,6 +144,15 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 	}
 
+	// Tick monster status effects (poison/burn/bleed) before player actions.
+	for _, m := range s.state.Monsters {
+		if !m.IsDead() {
+			for _, msg := range m.TickEffects() {
+				s.addLog(msg)
+			}
+		}
+	}
+
 	var intents []combat.AttackIntent
 	var intentOwners []string // track who owns each intent
 

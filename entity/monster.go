@@ -1,6 +1,9 @@
 package entity
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 type MonsterType int
 
@@ -69,6 +72,65 @@ type Monster struct {
 	Phase             int  // 1 = base; 2 = enraged (boss < 50% HP)
 	PhaseTransitioned bool // true once Phase 2 effects have been applied
 	Vulnerable        bool // 1-turn flag for B15 phase 2 (1.5x dmg taken)
+	Effects           []ActiveEffect
+}
+
+// AddEffect refreshes an existing effect of the same type or appends a new one.
+func (m *Monster) AddEffect(e ActiveEffect) {
+	for i, existing := range m.Effects {
+		if existing.Type == e.Type {
+			m.Effects[i] = e
+			return
+		}
+	}
+	m.Effects = append(m.Effects, e)
+}
+
+// HasEffect reports whether the given status effect is active on the monster.
+func (m *Monster) HasEffect(t StatusEffect) bool {
+	for _, e := range m.Effects {
+		if e.Type == t {
+			return true
+		}
+	}
+	return false
+}
+
+// TickEffects advances per-turn status effects on the monster, applying
+// damage and decrementing duration. Returns log messages.
+func (m *Monster) TickEffects() []string {
+	var msgs []string
+	remaining := m.Effects[:0]
+	for i := 0; i < len(m.Effects); i++ {
+		e := &m.Effects[i]
+		switch e.Type {
+		case StatusPoison:
+			m.HP -= e.Value
+			if m.HP < 0 {
+				m.HP = 0
+			}
+			msgs = append(msgs, fmt.Sprintf("%s 독 피해 %d", m.Name, e.Value))
+		case StatusBurn:
+			m.HP -= e.Value
+			if m.HP < 0 {
+				m.HP = 0
+			}
+			msgs = append(msgs, fmt.Sprintf("%s 화상 피해 %d", m.Name, e.Value))
+		case StatusBleed:
+			m.HP -= e.Value
+			if m.HP < 0 {
+				m.HP = 0
+			}
+			msgs = append(msgs, fmt.Sprintf("%s 출혈 피해 %d", m.Name, e.Value))
+			e.Value++
+		}
+		e.Duration--
+		if e.Duration > 0 {
+			remaining = append(remaining, *e)
+		}
+	}
+	m.Effects = remaining
+	return msgs
 }
 
 // CheckPhaseTransition returns true if a boss/mini-boss should enter phase 2
