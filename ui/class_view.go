@@ -43,6 +43,7 @@ func (s *ClassSelectScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) 
 					ctx.Session = session
 					player := entity.NewPlayer(ctx.PlayerName, selectedClass)
 					player.Fingerprint = ctx.Fingerprint
+					applyPermaUpgrades(ctx, player)
 					ctx.Session.AddPlayer(player)
 					ctx.Lobby.RegisterSession(ctx.Fingerprint, ctx.RoomCode)
 					ws := NewWaitingScreen()

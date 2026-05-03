@@ -156,6 +156,15 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if err := ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members); err != nil {
 				slog.Error("save run failed", "error", err, "player", ctx.PlayerName, "floor", s.gameState.FloorNum)
 			}
+			// Award souls = 10% of personal gold (rounded down). Persistent meta currency.
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint == ctx.Fingerprint {
+					if soulGain := int64(p.Gold / 10); soulGain > 0 {
+						_ = ctx.Store.AddSouls(ctx.Fingerprint, soulGain)
+					}
+					break
+				}
+			}
 			// Achievements are keyed by fingerprint to match unlocks/titles and
 			// to avoid cross-contamination between players sharing a nickname.
 			if s.gameState.FloorNum >= 5 {

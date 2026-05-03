@@ -161,6 +161,8 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		} else if isKey(key, "h") && s.hardUnlocked {
 			s.hardMode = !s.hardMode
 			ctx.HardMode = s.hardMode
+		} else if isKey(key, "s") {
+			return NewSoulsScreen(), nil
 		} else if isKey(key, "q") {
 			if ctx.Lobby != nil {
 				ctx.Lobby.PlayerOffline(ctx.Fingerprint)
@@ -212,7 +214,7 @@ func renderLobby(state lobbyState, width, height int) string {
 		Padding(0, 1)
 
 	header := headerStyle.Render(fmt.Sprintf("── 로비 ── %d명 접속중 ──", state.online))
-	menu := "[C] 방 만들기  [J] 코드로 참가  [D] 일일 도전  [Up/Down] 선택  [Enter] 참가  [Q] 뒤로"
+	menu := "[C] 방 만들기  [J] 코드로 참가  [D] 일일 도전  [S] 영혼의 제단  [Up/Down] 선택  [Enter] 참가  [Q] 뒤로"
 	if state.hardUnlocked {
 		hardStatus := "OFF"
 		if state.hardMode {

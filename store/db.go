@@ -55,6 +55,12 @@ func Open(path string) (*DB, error) {
 		if _, err := tx.CreateBucketIfNotExists(bucketPasswords); err != nil {
 			return err
 		}
+		if _, err := tx.CreateBucketIfNotExists(bucketSouls); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketUpgrades); err != nil {
+			return err
+		}
 		return nil
 	})
 	return &DB{db: db}, err
