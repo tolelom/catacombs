@@ -63,6 +63,9 @@ func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.M
 			for _, m := range monsters {
 				if !m.IsDead() {
 					dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier)
+					if m.Vulnerable {
+						dmg = int(math.Round(float64(dmg) * 1.5))
+					}
 					m.TakeDamage(dmg)
 					totalDmg += dmg
 				}
@@ -87,6 +90,9 @@ func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.M
 				dmg = int(math.Round(float64(dmg) * (1.0 + coopBonus)))
 				coopApplied = true
 			}
+			if m.Vulnerable {
+				dmg = int(math.Round(float64(dmg) * 1.5))
+			}
 			m.TakeDamage(dmg)
 			results[i] = AttackResult{
 				TargetIdx:   intent.TargetIdx,
@@ -104,8 +110,13 @@ func AttemptFlee(rng *rand.Rand, fleeChance float64) bool {
 
 func MonsterAI(rng *rand.Rand, m *entity.Monster, players []*entity.Player, turnNumber int) (targetIdx int, isAoE bool) {
 	r := rngOrDefault(rng)
-	if (m.IsBoss || m.IsMiniBoss) && turnNumber > 0 && turnNumber%3 == 0 {
-		return -1, true // AoE every 3 turns for all bosses and mini-bosses
+	// Phase 2 bosses AoE every 2 turns; base bosses + mini-bosses every 3.
+	aoeFreq := 3
+	if m.IsBoss && m.Phase >= 2 {
+		aoeFreq = 2
+	}
+	if (m.IsBoss || m.IsMiniBoss) && turnNumber > 0 && turnNumber%aoeFreq == 0 {
+		return -1, true
 	}
 	if m.TauntTarget {
 		for i, p := range players {

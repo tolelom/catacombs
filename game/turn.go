@@ -406,6 +406,9 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 	}
 
+	// Boss phase transitions (HP fell below 50% this turn)
+	s.checkBossPhaseTransitions()
+
 	// Award gold only for monsters that JUST died this turn
 	for i, m := range s.state.Monsters {
 		if m.IsDead() && aliveBeforeTurn[i] {
@@ -701,6 +704,53 @@ func (s *GameSession) mergeCoopReduction(in map[string]float64) {
 	for fp, mult := range in {
 		if cur := s.coopDamageReduction[fp]; mult > cur {
 			s.coopDamageReduction[fp] = mult
+		}
+	}
+}
+
+// checkBossPhaseTransitions runs after damage to detect bosses entering
+// Phase 2 (HP < 50% MaxHP) and applies their unique enrage effects.
+// Caller holds s.mu.
+func (s *GameSession) checkBossPhaseTransitions() {
+	floor := s.state.FloorNum
+	for _, m := range s.state.Monsters {
+		if !m.CheckPhaseTransition() {
+			continue
+		}
+		s.addLog(fmt.Sprintf("⚡ %s 광폭화! Phase 2 진입!", m.Name))
+		switch floor {
+		case 5:
+			// B5 Guardian: berserk — ATK +50%, no more healing pattern
+			m.ATK = int(float64(m.ATK) * 1.5)
+			if m.Pattern == entity.PatternHeal {
+				m.Pattern = entity.PatternNone
+			}
+			s.addLog(fmt.Sprintf("  %s ATK +50%%!", m.Name))
+		case 10:
+			// B10 Warden: split — summon 2 slimes scaled to floor
+			scaling := s.cfg.Combat.MonsterScaling
+			for i := 0; i < 2; i++ {
+				summon := entity.NewMonster(entity.MonsterSlime, floor, scaling)
+				summon.HP = summon.MaxHP * 2 // tougher summons
+				summon.MaxHP = summon.HP
+				s.state.Monsters = append(s.state.Monsters, summon)
+			}
+			s.addLog(fmt.Sprintf("  %s이(가) 슬라임 2마리를 소환!", m.Name))
+		case 15:
+			// B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
+			m.Vulnerable = true
+			s.addLog(fmt.Sprintf("  %s의 약점이 노출됩니다! (받는 피해 1.5배)", m.Name))
+		case 20:
+			// B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
+			m.ATK = int(float64(m.ATK) * 1.3)
+			m.DEF = int(float64(m.DEF) * 1.2)
+			for _, p := range s.state.Players {
+				if !p.IsOut() {
+					p.AddEffect(entity.ActiveEffect{Type: entity.StatusPoison, Duration: 3, Value: 5})
+					p.AddEffect(entity.ActiveEffect{Type: entity.StatusBurn, Duration: 2, Value: 6})
+				}
+			}
+			s.addLog(fmt.Sprintf("  %s이(가) 모든 적을 저주! 독+화상!", m.Name))
 		}
 	}
 }

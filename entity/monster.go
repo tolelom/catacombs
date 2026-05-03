@@ -55,17 +55,37 @@ const (
 )
 
 type Monster struct {
-	Name        string
-	Type        MonsterType
-	HP, MaxHP   int
-	ATK, DEF    int
-	IsBoss      bool
-	IsMiniBoss  bool
-	IsElite     bool
-	ElitePrefix ElitePrefixType
-	TauntTarget bool
-	TauntTurns  int
-	Pattern     BossPattern
+	Name              string
+	Type              MonsterType
+	HP, MaxHP         int
+	ATK, DEF          int
+	IsBoss            bool
+	IsMiniBoss        bool
+	IsElite           bool
+	ElitePrefix       ElitePrefixType
+	TauntTarget       bool
+	TauntTurns        int
+	Pattern           BossPattern
+	Phase             int  // 1 = base; 2 = enraged (boss < 50% HP)
+	PhaseTransitioned bool // true once Phase 2 effects have been applied
+	Vulnerable        bool // 1-turn flag for B15 phase 2 (1.5x dmg taken)
+}
+
+// CheckPhaseTransition returns true if a boss/mini-boss should enter phase 2
+// this turn. Phase 2 triggers when HP first drops below 50% MaxHP.
+func (m *Monster) CheckPhaseTransition() bool {
+	if !m.IsBoss {
+		return false
+	}
+	if m.PhaseTransitioned {
+		return false
+	}
+	if m.HP*2 <= m.MaxHP {
+		m.PhaseTransitioned = true
+		m.Phase = 2
+		return true
+	}
+	return false
 }
 
 func NewMonster(mt MonsterType, floor int, scaling float64) *Monster {
@@ -88,6 +108,7 @@ func NewMonster(mt MonsterType, floor int, scaling float64) *Monster {
 		DEF:        def,
 		IsBoss:     base.IsBoss,
 		IsMiniBoss: isMiniBoss,
+		Phase:      1,
 	}
 }
 
