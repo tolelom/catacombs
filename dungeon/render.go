@@ -293,6 +293,14 @@ func roomMarker(room *Room, roomIdx int, isCurrent bool) (string, string) {
 		return num, ansiFgBrRed
 	case RoomEmpty:
 		return num, ansiFgGray
+	case RoomMimic:
+		return num, ansiFgYellow // looks like treasure on the map
+	case RoomGamble:
+		return num, ansiFgYellow
+	case RoomCursedAltar:
+		return num, ansiFgMagenta
+	case RoomWanderingMerchant:
+		return num, ansiFgCyan
 	default:
 		return num, ansiReset
 	}

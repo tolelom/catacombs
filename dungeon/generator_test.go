@@ -44,8 +44,8 @@ func TestRoomTypeProbability(t *testing.T) {
 		counts[RandomRoomType(rng)]++
 	}
 	combatPct := float64(counts[RoomCombat]) / float64(n) * 100
-	if combatPct < 40 || combatPct > 50 {
-		t.Errorf("Combat room probability: got %.1f%%, want ~45%% (range 5-50)", combatPct)
+	if combatPct < 32 || combatPct > 42 {
+		t.Errorf("Combat room probability: got %.1f%%, want ~37%% (range 5-42)", combatPct)
 	}
 }
 

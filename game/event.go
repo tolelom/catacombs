@@ -71,7 +71,123 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 		s.signalCombat()
 	case dungeon.RoomEmpty:
 		room.Cleared = true
+	case dungeon.RoomMimic:
+		s.handleMimic(room)
+	case dungeon.RoomGamble:
+		s.handleGamble()
+		room.Cleared = true
+	case dungeon.RoomCursedAltar:
+		s.handleCursedAltar()
+		room.Cleared = true
+	case dungeon.RoomWanderingMerchant:
+		s.handleWanderingMerchant()
+		s.state.Phase = PhaseShop
 	}
+}
+
+// handleMimic: 50% it's actually a treasure, 50% an ambush by a tough monster
+// (1.5x stat scaling). The room is marked Cleared on the treasure path; combat
+// path defers to combat clear.
+func (s *GameSession) handleMimic(room *dungeon.Room) {
+	if s.rng.Float64() < 0.5 {
+		s.addLog("미믹! 보물 상자가 깨어났습니다!")
+		floor := s.state.FloorNum
+		mimic := entity.NewMonster(entity.MonsterDarkKnight, floor, s.cfg.Combat.MonsterScaling)
+		mimic.Name = "Mimic"
+		mimic.HP = int(float64(mimic.HP) * 1.5)
+		mimic.MaxHP = mimic.HP
+		mimic.ATK = int(float64(mimic.ATK) * 1.3)
+		s.state.Monsters = []*entity.Monster{mimic}
+		s.state.Phase = PhaseCombat
+		s.state.CombatTurn = 0
+		s.coopUsedThisCombat = make(map[string]bool)
+		s.signalCombat()
+		for _, p := range s.state.Players {
+			p.SkillUses = s.effectiveSkillUses()
+		}
+	} else {
+		s.addLog("진짜 보물 상자였습니다!")
+		s.grantTreasure()
+		room.Cleared = true
+	}
+}
+
+// handleGamble: each player can bet 50 gold. Outcome:
+// - 50%: lose the 50 gold
+// - 30%: win 100 gold (+50 net)
+// - 20%: win a random item
+func (s *GameSession) handleGamble() {
+	s.addLog("도박장 발견! 골드 50을 베팅하면 운에 따라 보상.")
+	for _, p := range s.state.Players {
+		if p.IsOut() || p.Gold < 50 {
+			continue
+		}
+		p.Gold -= 50
+		roll := s.rng.Float64()
+		switch {
+		case roll < 0.50:
+			s.addLog(fmt.Sprintf("%s 베팅 실패! -50G", p.Name))
+		case roll < 0.80:
+			p.Gold += 100
+			s.addLog(fmt.Sprintf("%s 베팅 성공! +50G", p.Name))
+		default:
+			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+				floor := s.state.FloorNum
+				bonus := 4 + s.rng.Intn(6) + floor/3
+				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
+				p.Inventory = append(p.Inventory, item)
+				s.addLog(fmt.Sprintf("%s 잭팟! %s 획득 (ATK+%d)", p.Name, item.Name, item.Bonus))
+			} else {
+				p.Gold += 150
+				s.addLog(fmt.Sprintf("%s 잭팟! 인벤 가득 → +150G", p.Name))
+			}
+		}
+	}
+}
+
+// handleCursedAltar: each player loses 30% MaxHP, gains random permanent
+// stat boost (ATK+5 / DEF+3 / Gold+100).
+func (s *GameSession) handleCursedAltar() {
+	s.addLog("저주받은 제단! 생명력을 바쳐 힘을 얻습니다.")
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		cost := p.MaxHP * 30 / 100
+		p.HP -= cost
+		if p.HP < 1 {
+			p.HP = 1
+		}
+		switch s.rng.Intn(3) {
+		case 0:
+			p.ATK += 5
+			s.addLog(fmt.Sprintf("%s -%dHP, +5 ATK 영구!", p.Name, cost))
+		case 1:
+			p.DEF += 3
+			s.addLog(fmt.Sprintf("%s -%dHP, +3 DEF 영구!", p.Name, cost))
+		case 2:
+			p.Gold += 100
+			s.addLog(fmt.Sprintf("%s -%dHP, +100G!", p.Name, cost))
+		}
+	}
+}
+
+// handleWanderingMerchant: rare items at 2x normal price (one-time stock).
+func (s *GameSession) handleWanderingMerchant() {
+	floor := s.state.FloorNum
+	weaponBonus := 6 + s.rng.Intn(6) + floor/3
+	armorBonus := 4 + s.rng.Intn(4) + floor/4
+	weaponPrice := (40 + weaponBonus*5) * 2
+	armorPrice := (30 + armorBonus*5) * 2
+	potionPrice := (20 + floor/2) * 2
+
+	s.state.ShopItems = []entity.Item{
+		{Name: "Greater HP Potion", Type: entity.ItemConsumable, Bonus: 60 + floor*2, Price: potionPrice},
+		{Name: "Rare " + weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
+		{Name: "Rare " + armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
+	}
+	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
+	s.addLog("방랑상인이 희귀 아이템을 들고 나타났습니다! (가격 2배)")
 }
 
 func (s *GameSession) spawnMonsters() {
