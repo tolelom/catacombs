@@ -141,6 +141,18 @@ func (s *CodexScreen) View(ctx *Context) string {
 	for _, name := range allNames {
 		if discoveredSet[name] {
 			entries += fmt.Sprintf("  [x] %s\n", lipgloss.NewStyle().Foreground(colorGreen).Render(name))
+			var lore string
+			switch s.tab {
+			case 0:
+				lore = monsterLore(name)
+			case 1:
+				lore = itemLore(name)
+			case 2:
+				lore = eventLore(name)
+			}
+			if lore != "" {
+				entries += "      " + styleSystem.Render(lore) + "\n"
+			}
 		} else {
 			entries += fmt.Sprintf("  [ ] %s\n", lipgloss.NewStyle().Foreground(colorGray).Render("???"))
 		}
