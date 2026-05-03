@@ -16,6 +16,9 @@ func (s *GameSession) RunTurn() {
 	s.clearLog()
 	s.actions = make(map[string]PlayerAction)
 	s.state.SubmittedActions = make(map[string]string)
+	// Clear single-turn coop modifiers from the previous turn before this turn resolves.
+	s.coopDamageReduction = make(map[string]float64)
+	s.invincibleNextTurn = make(map[string]bool)
 	s.mu.Unlock()
 
 	// Drain stale actions and leave-signals from previous turn
@@ -89,6 +92,9 @@ collecting:
 	s.resolvePlayerActions()
 	s.resolveMonsterActions()
 	s.state.TurnResolving = false
+	// One-turn flags consumed during this turn — clear so they don't carry over.
+	s.critGuaranteedNext = false
+	s.enemyMissNextTurn = false
 	// PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
 }
 
@@ -126,8 +132,14 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 
 			if p.IsDead() {
-				s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
-				s.state.AnyPlayerDied = true
+				if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
+					p.Revive(0.30)
+					s.soloHealerRevived[p.Fingerprint] = true
+					s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
+				} else {
+					s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+					s.state.AnyPlayerDied = true
+				}
 			}
 		}
 	}
@@ -160,7 +172,10 @@ func (s *GameSession) resolvePlayerActions() {
 		switch action.Type {
 		case ActionAttack:
 			multiplier := 1.0
-			if p.Skills != nil {
+			if s.critGuaranteedNext {
+				multiplier = 2.0
+				s.addLog(fmt.Sprintf("%s 급소 노출 치명타!", p.Name))
+			} else if p.Skills != nil {
 				if pct := p.Skills.GetCritChance(p.Class); pct > 0 && s.rng.Intn(100) < pct {
 					multiplier = 2.0
 					s.addLog(fmt.Sprintf("%s 치명타!", p.Name))
@@ -278,6 +293,8 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 		case ActionWait:
 			s.addLog(fmt.Sprintf("%s 방어 중", p.Name))
+		case ActionCoop:
+			s.applyCoopAbility(p)
 		}
 	}
 
@@ -317,6 +334,8 @@ func (s *GameSession) resolvePlayerActions() {
 			actionType = "skill"
 		case ActionItem:
 			actionType = "item"
+		case ActionCoop:
+			actionType = "coop"
 		default:
 			continue
 		}
@@ -332,6 +351,7 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 			intents[i].PlayerATK += combo.Effect.BonusDamage
 		}
+		s.applyCoopComboEffect(combo.Effect)
 	}
 
 	// Build name→player map for relic effects
@@ -457,6 +477,8 @@ func (s *GameSession) advanceFloor() {
 	s.state.Floor = dungeon.GenerateFloor(s.state.FloorNum, s.rng)
 	s.state.Phase = PhaseExploring
 	s.state.CombatTurn = 0
+	s.scoutUsedThisFloor = make(map[string]bool)
+	s.nextRoomPreview = nil
 	s.addLog(fmt.Sprintf("B%d층으로 내려갑니다...", s.state.FloorNum))
 	for _, p := range s.state.Players {
 		if p.IsDead() {
@@ -498,12 +520,23 @@ func (s *GameSession) resolveMonsterActions() {
 		if isAoE {
 			for _, p := range s.state.Players {
 				if !p.IsOut() {
+					if s.enemyMissNextTurn && s.rng.Float64() < 0.50 {
+						s.addLog(fmt.Sprintf("%s 환영진으로 %s 광역 공격 회피!", p.Name, m.Name))
+						continue
+					}
 					dmg := combat.CalcDamage(s.rng, m.ATK, p.EffectiveDEF(), 0.5)
+					dmg = s.applyDamageMods(p, dmg)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s 광역 공격으로 %s에게 %d 피해", m.Name, p.Name, dmg))
 					if p.IsDead() {
-						s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
-						s.state.AnyPlayerDied = true
+						if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
+							p.Revive(0.30)
+							s.soloHealerRevived[p.Fingerprint] = true
+							s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
+						} else {
+							s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+							s.state.AnyPlayerDied = true
+						}
 					}
 				}
 			}
@@ -544,7 +577,13 @@ func (s *GameSession) resolveMonsterActions() {
 			if targetIdx >= 0 && targetIdx < len(s.state.Players) {
 				p := s.state.Players[targetIdx]
 				if !p.IsOut() {
+					if s.enemyMissNextTurn && s.rng.Float64() < 0.50 {
+						s.addLog(fmt.Sprintf("%s 환영진으로 %s의 공격 회피!", p.Name, m.Name))
+						m.TickTaunt()
+						continue
+					}
 					dmg := combat.CalcDamage(s.rng, m.ATK, p.EffectiveDEF(), 1.0)
+					dmg = s.applyDamageMods(p, dmg)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s이(가) %s을(를) 공격하여 %d 피해", m.Name, p.Name, dmg))
 					if m.IsElite {
@@ -559,8 +598,14 @@ func (s *GameSession) resolveMonsterActions() {
 						}
 					}
 					if p.IsDead() {
-						s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
-						s.state.AnyPlayerDied = true
+						if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
+							p.Revive(0.30)
+							s.soloHealerRevived[p.Fingerprint] = true
+							s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
+						} else {
+							s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+							s.state.AnyPlayerDied = true
+						}
 					}
 				}
 			}
@@ -579,5 +624,127 @@ func (s *GameSession) resolveMonsterActions() {
 		s.state.Phase = PhaseResult
 		s.state.GameOver = true
 		s.addLog("파티가 전멸했습니다!")
+	}
+}
+
+// applyDamageMods reduces incoming damage by coop reductions, returns 0 if
+// invincible. Caller holds s.mu.
+func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
+	if s.invincibleNextTurn[p.Fingerprint] {
+		return 0
+	}
+	if mult, ok := s.coopDamageReduction[p.Fingerprint]; ok && mult > 0 {
+		reduced := float64(dmg) * (1.0 - mult)
+		if reduced < 0 {
+			reduced = 0
+		}
+		return int(reduced)
+	}
+	return dmg
+}
+
+// applyCoopAbility resolves one player's coop ability use. Caller holds s.mu.
+func (s *GameSession) applyCoopAbility(p *entity.Player) {
+	if p.Class == entity.ClassRogue {
+		s.addLog(fmt.Sprintf("%s 정찰은 전투 외에 사용해야 합니다", p.Name))
+		return
+	}
+	if s.coopUsedThisCombat[p.Fingerprint] {
+		s.addLog(fmt.Sprintf("%s 협동기는 이번 전투에 이미 사용했습니다", p.Name))
+		return
+	}
+	switch p.Class {
+	case entity.ClassWarrior:
+		res := combat.ApplyWarriorCoop(p)
+		s.mergeCoopReduction(res.DamageReduction)
+		for _, msg := range res.Logs {
+			s.addLog(msg)
+		}
+	case entity.ClassMage:
+		res := combat.ApplyMageCoop(p, s.state.Players, s.state.SoloMode)
+		s.mergeCoopReduction(res.DamageReduction)
+		for _, msg := range res.Logs {
+			s.addLog(msg)
+		}
+	case entity.ClassHealer:
+		reviveAllowed := !s.healerReviveUsed[p.Fingerprint]
+		res := combat.ApplyHealerCoop(p, s.state.Players, reviveAllowed)
+		if res.ReviveFingerprint != "" {
+			for _, target := range s.state.Players {
+				if target.Fingerprint == res.ReviveFingerprint {
+					target.Revive(res.ReviveHPPercent)
+					s.healerReviveUsed[p.Fingerprint] = true
+					break
+				}
+			}
+		} else {
+			if s.state.SoloMode {
+				p.Heal(p.MaxHP * 30 / 100)
+			} else {
+				for _, ally := range s.state.Players {
+					if !ally.IsOut() {
+						ally.Heal(ally.MaxHP * 30 / 100)
+					}
+				}
+			}
+		}
+		for _, msg := range res.Logs {
+			s.addLog(msg)
+		}
+	}
+	s.coopUsedThisCombat[p.Fingerprint] = true
+}
+
+// mergeCoopReduction merges incoming damage-reduction multipliers into the
+// session map, taking the maximum per fingerprint.
+func (s *GameSession) mergeCoopReduction(in map[string]float64) {
+	for fp, mult := range in {
+		if cur := s.coopDamageReduction[fp]; mult > cur {
+			s.coopDamageReduction[fp] = mult
+		}
+	}
+}
+
+// applyCoopComboEffect propagates extended coop combo effects to session state.
+// Caller holds s.mu.
+func (s *GameSession) applyCoopComboEffect(eff combat.ComboEffect) {
+	if eff.WarriorBulwarkOverride > 0 {
+		for _, p := range s.state.Players {
+			if p.Class == entity.ClassWarrior && !p.IsOut() {
+				if cur := s.coopDamageReduction[p.Fingerprint]; eff.WarriorBulwarkOverride > cur {
+					s.coopDamageReduction[p.Fingerprint] = eff.WarriorBulwarkOverride
+				}
+			}
+		}
+	}
+	if eff.HealMultiplier > 1 {
+		bonus := eff.HealMultiplier - 1.0
+		for _, p := range s.state.Players {
+			if !p.IsOut() {
+				p.Heal(int(float64(p.MaxHP) * 0.30 * bonus))
+			}
+		}
+	}
+	if eff.GuaranteeCritNextTurn {
+		s.critGuaranteedNext = true
+	}
+	if eff.InvincibleHealTarget {
+		var minHPP *entity.Player
+		minHP := int(^uint(0) >> 1)
+		for _, p := range s.state.Players {
+			if !p.IsOut() && p.HP < minHP {
+				minHP = p.HP
+				minHPP = p
+			}
+		}
+		if minHPP != nil {
+			s.invincibleNextTurn[minHPP.Fingerprint] = true
+		}
+	}
+	if eff.EnemyMissNextTurn {
+		s.enemyMissNextTurn = true
+	}
+	if eff.PoisonNextCombat {
+		s.poisonNextCombat = true
 	}
 }

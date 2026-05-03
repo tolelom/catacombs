@@ -370,6 +370,16 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 			} else if isForceQuit(key) {
 				return s, tea.Quit
+			} else if key.String() == "6" {
+				if ctx.Session != nil && len(neighbors) > 0 {
+					target := neighbors[s.moveCursor]
+					if err := ctx.Session.SubmitForesight(ctx.Fingerprint, target); err != nil {
+						s.skillMsg = err.Error()
+					} else {
+						s.skillMsg = "정찰 완료!"
+					}
+					s.gameState = ctx.Session.GetState()
+				}
 			} else if isKey(key, "q") {
 				return s.leaveGame(ctx)
 			}
@@ -422,6 +432,8 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionFlee})
 				case "5":
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionWait})
+				case "6":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionCoop, TargetIdx: s.targetCursor})
 				}
 				return s, s.pollState()
 			}
@@ -531,10 +543,14 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 		sb.WriteString("\n")
 
 		// Action bar
+		coopHint := "[6]협동기"
+		if state.CoopAvailable != nil && !state.CoopAvailable[fingerprint] {
+			coopHint = styleSystem.Render("[6]협동기(사용됨)")
+		}
 		if isHealer {
-			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 [Tab]적 [Shift+Tab]아군 [/]채팅"))
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [Tab]적 [Shift+Tab]아군 [/]채팅"))
 		} else {
-			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 [Tab]대상 [/]채팅"))
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [Tab]대상 [/]채팅"))
 		}
 		sb.WriteString("\n")
 
@@ -565,6 +581,12 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 					skillDesc = "스킬: Scout — 주변 방 공개"
 				}
 				skillDesc += fmt.Sprintf(" (남은 횟수: %d)", p.SkillUses)
+				coopAbility := entity.GetCoopAbility(p.Class)
+				coopStatus := "사용가능"
+				if state.CoopAvailable == nil || !state.CoopAvailable[p.Fingerprint] {
+					coopStatus = "사용됨"
+				}
+				skillDesc += fmt.Sprintf("\n협동기: %s [%s]", coopAbility.Name, coopStatus)
 				sb.WriteString(styleSystem.Render(skillDesc))
 				sb.WriteString("\n")
 				break
@@ -663,8 +685,28 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 				break
 			}
 		}
+		if state.NextRoomPreview != nil {
+			previewStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("117")).Bold(true)
+			line := fmt.Sprintf("\n[정찰] 다음 방: %s", state.NextRoomPreview.RoomTypeLabel)
+			if !state.NextRoomPreview.HideMonsters && len(state.NextRoomPreview.MonsterNames) > 0 {
+				line += " — " + strings.Join(state.NextRoomPreview.MonsterNames, ", ")
+			}
+			sb.WriteString(previewStyle.Render(line))
+			sb.WriteString("\n")
+		}
+		myCanScout := false
+		for _, p := range state.Players {
+			if p.Fingerprint == fingerprint && p.Class == entity.ClassRogue {
+				if state.CoopAvailable != nil && state.CoopAvailable[fingerprint] {
+					myCanScout = true
+				}
+				break
+			}
+		}
 		if !state.SoloMode && myVoted {
 			sb.WriteString("[Q] 종료  — 다른 파티원의 투표를 기다리는 중...")
+		} else if myCanScout {
+			sb.WriteString("[Up/Down] 선택  [Enter] 이동  [6] 정찰  [Q] 종료")
 		} else {
 			sb.WriteString("[Up/Down] 선택  [Enter] 이동  [Q] 종료")
 		}
@@ -695,6 +737,10 @@ func renderCombatLog(log []string) string {
 
 func colorizeLog(msg string) string {
 	switch {
+	case strings.Contains(msg, "AEGIS") || strings.Contains(msg, "CRUSADER") || strings.Contains(msg, "EXPOSE") || strings.Contains(msg, "SANCTUARY") || strings.Contains(msg, "MIRAGE") || strings.Contains(msg, "VENOMOUS") || strings.Contains(msg, "강철결계") || strings.Contains(msg, "성전사") || strings.Contains(msg, "급소") || strings.Contains(msg, "성역") || strings.Contains(msg, "환영진") || strings.Contains(msg, "독칼"):
+		return styleCombo.Render(msg)
+	case strings.Contains(msg, "견고함") || strings.Contains(msg, "결계") || strings.Contains(msg, "신성 가호") || strings.Contains(msg, "정찰"):
+		return styleCoop.Render(msg)
 	case strings.Contains(msg, "도주"):
 		return styleFlee.Render(msg)
 	case strings.Contains(msg, "협동"):

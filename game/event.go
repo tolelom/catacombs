@@ -27,6 +27,7 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 	if s.state.Floor == nil || roomIdx < 0 || roomIdx >= len(s.state.Floor.Rooms) {
 		return
 	}
+	s.nextRoomPreview = nil
 	s.state.Floor.CurrentRoom = roomIdx
 	dungeon.UpdateVisibility(s.state.Floor)
 	room := s.state.Floor.Rooms[roomIdx]
@@ -126,6 +127,8 @@ func (s *GameSession) spawnMonsters() {
 	for _, p := range s.state.Players {
 		p.SkillUses = s.effectiveSkillUses()
 	}
+	s.coopUsedThisCombat = make(map[string]bool)
+	s.applyPoisonNextCombatIfPending()
 }
 
 func (s *GameSession) spawnBoss() {
@@ -173,6 +176,29 @@ func (s *GameSession) spawnBoss() {
 	for _, p := range s.state.Players {
 		p.SkillUses = s.effectiveSkillUses()
 	}
+	s.coopUsedThisCombat = make(map[string]bool)
+	s.applyPoisonNextCombatIfPending()
+}
+
+// applyPoisonNextCombatIfPending applies the Venomous Edge combo's effect at
+// combat start: every spawned monster takes 15% MaxHP damage immediately.
+// Caller holds s.mu.
+func (s *GameSession) applyPoisonNextCombatIfPending() {
+	if !s.poisonNextCombat {
+		return
+	}
+	for _, m := range s.state.Monsters {
+		dmg := m.MaxHP * 15 / 100
+		if dmg < 1 {
+			dmg = 1
+		}
+		m.HP -= dmg
+		if m.HP < 1 {
+			m.HP = 1
+		}
+	}
+	s.addLog("독칼: 모든 적이 즉시 독 피해를 받았습니다 (-15% MaxHP)")
+	s.poisonNextCombat = false
 }
 
 func (s *GameSession) grantTreasure() {
@@ -393,4 +419,6 @@ func (s *GameSession) spawnMiniBoss() {
 	for _, p := range s.state.Players {
 		p.SkillUses = s.effectiveSkillUses()
 	}
+	s.coopUsedThisCombat = make(map[string]bool)
+	s.applyPoisonNextCombatIfPending()
 }

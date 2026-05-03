@@ -12,6 +12,14 @@ type ComboEffect struct {
 	BonusDamage      int     // added to each AttackIntent.PlayerATK
 	HealAll          int     // heal all players after resolution
 	Message          string  // shown in combat log
+
+	// Coop combo extensions
+	HealMultiplier         float64 // multiplies Divine Grace heal (Crusader)
+	WarriorBulwarkOverride float64 // overrides warrior damage reduction (Iron Aegis)
+	GuaranteeCritNextTurn  bool    // next-turn party crit (Expose Weakness)
+	InvincibleHealTarget   bool    // 1-turn invincibility on heal target (Sanctuary)
+	EnemyMissNextTurn      bool    // 50% enemy miss next turn (Mirage)
+	PoisonNextCombat       bool    // next combat: 15% MaxHP poison hit (Venomous Edge)
 }
 
 type ComboDef struct {
@@ -61,6 +69,55 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassRogue, ActionType: "item"},
 		},
 		Effect: ComboEffect{HealAll: 20, Message: "💚 RESTORATION! 합동 치유가 폭발적으로 발동!"},
+	},
+	// Coop pair combos (ActionType "coop")
+	{
+		Name: "Iron Aegis",
+		Required: []ComboAction{
+			{Class: entity.ClassWarrior, ActionType: "coop"},
+			{Class: entity.ClassMage, ActionType: "coop"},
+		},
+		Effect: ComboEffect{WarriorBulwarkOverride: 0.75, Message: "🛡️ IRON AEGIS! 강철결계가 워리어를 감쌉니다!"},
+	},
+	{
+		Name: "Crusader",
+		Required: []ComboAction{
+			{Class: entity.ClassWarrior, ActionType: "coop"},
+			{Class: entity.ClassHealer, ActionType: "coop"},
+		},
+		Effect: ComboEffect{HealMultiplier: 2.0, Message: "⚔️✨ CRUSADER! 성스러운 회복!"},
+	},
+	{
+		Name: "Expose Weakness",
+		Required: []ComboAction{
+			{Class: entity.ClassWarrior, ActionType: "coop"},
+			{Class: entity.ClassRogue, ActionType: "coop"},
+		},
+		Effect: ComboEffect{GuaranteeCritNextTurn: true, Message: "🎯 EXPOSE WEAKNESS! 다음 턴 모든 공격 치명타!"},
+	},
+	{
+		Name: "Sanctuary",
+		Required: []ComboAction{
+			{Class: entity.ClassMage, ActionType: "coop"},
+			{Class: entity.ClassHealer, ActionType: "coop"},
+		},
+		Effect: ComboEffect{InvincibleHealTarget: true, Message: "✨🛡️ SANCTUARY! 회복 대상 1턴 무적!"},
+	},
+	{
+		Name: "Mirage",
+		Required: []ComboAction{
+			{Class: entity.ClassMage, ActionType: "coop"},
+			{Class: entity.ClassRogue, ActionType: "coop"},
+		},
+		Effect: ComboEffect{EnemyMissNextTurn: true, Message: "🌫️ MIRAGE! 다음 턴 적 공격 50% 빗나감!"},
+	},
+	{
+		Name: "Venomous Edge",
+		Required: []ComboAction{
+			{Class: entity.ClassHealer, ActionType: "coop"},
+			{Class: entity.ClassRogue, ActionType: "coop"},
+		},
+		Effect: ComboEffect{PoisonNextCombat: true, Message: "🐍 VENOMOUS EDGE! 다음 전투 적들에게 독!"},
 	},
 }
 

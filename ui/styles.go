@@ -28,4 +28,5 @@ var (
 	styleHeader = lipgloss.NewStyle().Foreground(colorPink).Bold(true)
 	styleAction = lipgloss.NewStyle().Bold(true)
 	styleTimer  = lipgloss.NewStyle().Foreground(colorYellow).Bold(true)
+	styleCombo  = lipgloss.NewStyle().Foreground(lipgloss.Color("220")).Bold(true)
 )

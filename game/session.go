@@ -34,7 +34,18 @@ const (
 	ActionItem
 	ActionFlee
 	ActionWait
+	ActionCoop
 )
+
+// RoomPreview is what Foresight reveals to the party about the next room
+// before they vote to enter it. Boss rooms hide the monster names but
+// expose the room type.
+type RoomPreview struct {
+	RoomIdx       int
+	RoomTypeLabel string
+	MonsterNames  []string
+	HideMonsters  bool
+}
 
 type GameState struct {
 	Floor      *dungeon.Floor
@@ -61,6 +72,8 @@ type GameState struct {
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
 	ShopSold         []bool          // parallel to ShopItems; true once a non-consumable slot is sold
 	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
+	NextRoomPreview  *RoomPreview    // populated when Foresight has been used
+	CoopAvailable    map[string]bool // fingerprint → can use coop now (HUD display)
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -92,6 +105,19 @@ type GameSession struct {
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	rng            *rand.Rand           // session-scoped RNG; deterministic for daily runs
+
+	// Coop ability state — all maps keyed by player fingerprint.
+	coopUsedThisCombat  map[string]bool    // reset on combat start
+	healerReviveUsed    map[string]bool    // run-scoped (revive arm of Divine Grace)
+	scoutUsedThisFloor  map[string]bool    // reset on floor advance
+	soloHealerRevived   map[string]bool    // run-scoped solo auto-revive
+	coopDamageReduction map[string]float64 // applies for current turn only
+	invincibleNextTurn  map[string]bool    // applies for next turn (Sanctuary combo)
+	nextRoomPreview     *RoomPreview       // populated by Foresight, consumed at next room entry
+	critGuaranteedNext  bool               // next turn party crit (Expose Weakness combo)
+	enemyMissNextTurn   bool               // next turn 50% enemy attacks miss (Mirage)
+	poisonNextCombat    bool               // next combat starts enemies poisoned (Venomous Edge)
+
 	HardMode       bool
 	ActiveMutation *Mutation
 	DailyMode      bool
@@ -114,13 +140,19 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		state: GameState{
 			FloorNum: 1,
 		},
-		actions:      make(map[string]PlayerAction),
-		actionCh:     make(chan playerActionMsg, 4),
-		combatSignal: make(chan struct{}, 1),
-		playerLeftCh: make(chan struct{}, 4),
-		done:         make(chan struct{}),
-		lastActivity: make(map[string]time.Time),
-		rng:          rand.New(rand.NewSource(time.Now().UnixNano())),
+		actions:             make(map[string]PlayerAction),
+		actionCh:            make(chan playerActionMsg, 4),
+		combatSignal:        make(chan struct{}, 1),
+		playerLeftCh:        make(chan struct{}, 4),
+		done:                make(chan struct{}),
+		lastActivity:        make(map[string]time.Time),
+		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
+		coopUsedThisCombat:  make(map[string]bool),
+		healerReviveUsed:    make(map[string]bool),
+		scoutUsedThisFloor:  make(map[string]bool),
+		soloHealerRevived:   make(map[string]bool),
+		coopDamageReduction: make(map[string]float64),
+		invincibleNextTurn:  make(map[string]bool),
 	}
 }
 
@@ -302,6 +334,12 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 	if s.actions != nil {
 		delete(s.actions, fingerprint)
 	}
+	delete(s.coopUsedThisCombat, fingerprint)
+	delete(s.healerReviveUsed, fingerprint)
+	delete(s.scoutUsedThisFloor, fingerprint)
+	delete(s.soloHealerRevived, fingerprint)
+	delete(s.coopDamageReduction, fingerprint)
+	delete(s.invincibleNextTurn, fingerprint)
 	// Wake RunTurn's collect loop in case it's blocked waiting for this
 	// player's never-arriving action.
 	select {
@@ -498,7 +536,70 @@ func (s *GameSession) GetState() GameState {
 		LastEventName:    s.state.LastEventName,
 		MoveVotes:        moveVotesCopy,
 		ShopLeavers:      shopLeaversCopy,
+		NextRoomPreview:  s.nextRoomPreview,
+		CoopAvailable:    s.computeCoopAvailable(),
 	}
+}
+
+// computeCoopAvailable returns a map of fingerprint→true when that player can
+// fire their coop ability right now. Caller must hold s.mu.
+func (s *GameSession) computeCoopAvailable() map[string]bool {
+	out := make(map[string]bool, len(s.state.Players))
+	for _, p := range s.state.Players {
+		if p.IsOut() || p.Fingerprint == "" {
+			continue
+		}
+		switch p.Class {
+		case entity.ClassRogue:
+			if s.state.Phase == PhaseExploring && !s.scoutUsedThisFloor[p.Fingerprint] {
+				out[p.Fingerprint] = true
+			}
+		default:
+			if s.state.Phase == PhaseCombat && !s.coopUsedThisCombat[p.Fingerprint] {
+				out[p.Fingerprint] = true
+			}
+		}
+	}
+	return out
+}
+
+// SubmitForesight is the Rogue's coop ability. Available once per floor while
+// exploring. Reveals the next room's type and exposes monster room context for
+// informed party voting. Boss rooms hide monster names but show "보스" type.
+func (s *GameSession) SubmitForesight(fingerprint string, roomIdx int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.state.Phase != PhaseExploring {
+		return fmt.Errorf("정찰은 탐험 중에만 사용 가능")
+	}
+	if s.scoutUsedThisFloor[fingerprint] {
+		return fmt.Errorf("정찰은 층당 1회만 사용 가능")
+	}
+	var rogue *entity.Player
+	for _, p := range s.state.Players {
+		if p.Fingerprint == fingerprint {
+			rogue = p
+			break
+		}
+	}
+	if rogue == nil || rogue.IsOut() || rogue.Class != entity.ClassRogue {
+		return fmt.Errorf("정찰은 살아있는 도적만 사용 가능")
+	}
+	if s.state.Floor == nil || roomIdx < 0 || roomIdx >= len(s.state.Floor.Rooms) {
+		return fmt.Errorf("유효하지 않은 방")
+	}
+	room := s.state.Floor.Rooms[roomIdx]
+	preview := &RoomPreview{RoomIdx: roomIdx, RoomTypeLabel: room.Type.String()}
+	switch room.Type {
+	case dungeon.RoomCombat:
+		preview.MonsterNames = []string{"전투방"}
+	case dungeon.RoomBoss:
+		preview.HideMonsters = true
+	}
+	s.nextRoomPreview = preview
+	s.scoutUsedThisFloor[fingerprint] = true
+	s.addLog(fmt.Sprintf("%s 정찰 사용! 다음 방: %s", rogue.Name, room.Type.String()))
+	return nil
 }
 
 func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
