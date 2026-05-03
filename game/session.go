@@ -35,6 +35,7 @@ const (
 	ActionFlee
 	ActionWait
 	ActionCoop
+	ActionRelic
 )
 
 // RoomPreview is what Foresight reveals to the party about the next room
@@ -119,6 +120,9 @@ type GameSession struct {
 	soloHealerRevived   map[string]bool    // run-scoped solo auto-revive
 	coopDamageReduction map[string]float64 // applies for current turn only
 	invincibleNextTurn  map[string]bool    // applies for next turn (Sanctuary combo)
+	dodgeBonusThisTurn  map[string]float64 // Smoke Bomb: extra dodge%, fingerprint→bonus (0..1)
+	extraActionNext     map[string]bool    // Time Glass: bearer gets a second action next turn
+	activeRelicUsed     map[string]bool    // fingerprint → already used active relic this combat
 	nextRoomPreview     *RoomPreview       // populated by Foresight, consumed at next room entry
 	critGuaranteedNext  bool               // next turn party crit (Expose Weakness combo)
 	enemyMissNextTurn   bool               // next turn 50% enemy attacks miss (Mirage)
@@ -163,6 +167,9 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		soloHealerRevived:   make(map[string]bool),
 		coopDamageReduction: make(map[string]float64),
 		invincibleNextTurn:  make(map[string]bool),
+		dodgeBonusThisTurn:  make(map[string]float64),
+		extraActionNext:     make(map[string]bool),
+		activeRelicUsed:     make(map[string]bool),
 	}
 }
 

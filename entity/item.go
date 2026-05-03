@@ -152,7 +152,21 @@ const (
 	RelicPoisonImmunity // immune to poison
 	RelicBurnResist     // halve burn damage
 	RelicLifeSteal      // heal 10% of damage dealt
+	// Active relics — triggered by player via ActionUseRelic, consumed once per combat
+	RelicActiveSmokeBomb // 1턴 파티 회피 +30%
+	RelicActiveBloodstone // 즉시 30% MaxHP 회복
+	RelicActiveTimeGlass  // 자신 다음 턴 추가 1회 행동
 )
+
+// IsActive returns true for relics that are triggered by the player rather
+// than auto-applied. Active relics have a per-combat cooldown.
+func (e RelicEffect) IsActive() bool {
+	switch e {
+	case RelicActiveSmokeBomb, RelicActiveBloodstone, RelicActiveTimeGlass:
+		return true
+	}
+	return false
+}
 
 type Relic struct {
 	Name   string

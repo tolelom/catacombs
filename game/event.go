@@ -251,6 +251,7 @@ func (s *GameSession) spawnMonsters() {
 		p.SkillUses = s.effectiveSkillUses()
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
+	s.activeRelicUsed = make(map[string]bool)
 	s.applyPoisonNextCombatIfPending()
 }
 
@@ -306,6 +307,7 @@ func (s *GameSession) spawnBoss() {
 		p.SkillUses = s.effectiveSkillUses()
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
+	s.activeRelicUsed = make(map[string]bool)
 	s.applyPoisonNextCombatIfPending()
 }
 
@@ -553,5 +555,6 @@ func (s *GameSession) spawnMiniBoss() {
 		p.SkillUses = s.effectiveSkillUses()
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
+	s.activeRelicUsed = make(map[string]bool)
 	s.applyPoisonNextCombatIfPending()
 }

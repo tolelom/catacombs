@@ -479,6 +479,8 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionWait})
 				case "6":
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionCoop, TargetIdx: s.targetCursor})
+				case "7":
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionRelic, TargetIdx: s.targetCursor})
 				}
 				return s, s.pollState()
 			}
@@ -609,9 +611,9 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 			coopHint = styleSystem.Render("[6]협동기(사용됨)")
 		}
 		if isHealer {
-			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [Tab]적 [Shift+Tab]아군 [/]채팅"))
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [7]유물 [Tab]적 [Shift+Tab]아군 [/]채팅"))
 		} else {
-			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [Tab]대상 [/]채팅"))
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [7]유물 [Tab]대상 [/]채팅"))
 		}
 		sb.WriteString("\n")
 

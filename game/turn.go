@@ -19,6 +19,7 @@ func (s *GameSession) RunTurn() {
 	// Clear single-turn coop modifiers from the previous turn before this turn resolves.
 	s.coopDamageReduction = make(map[string]float64)
 	s.invincibleNextTurn = make(map[string]bool)
+	s.dodgeBonusThisTurn = make(map[string]float64)
 	s.mu.Unlock()
 
 	// Drain stale actions and leave-signals from previous turn
@@ -90,6 +91,12 @@ collecting:
 	s.state.TurnResolving = true
 	s.state.PendingLogs = nil
 	s.resolvePlayerActions()
+	// Time Glass: each player flagged for an extra action gets one more attack
+	// at end of player phase (auto-attack target 0). Then flag clears.
+	if len(s.extraActionNext) > 0 {
+		s.runExtraActions()
+		s.extraActionNext = make(map[string]bool)
+	}
 	s.resolveMonsterActions()
 	s.state.TurnResolving = false
 	// One-turn flags consumed during this turn — clear so they don't carry over.
@@ -304,6 +311,8 @@ func (s *GameSession) resolvePlayerActions() {
 			s.addLog(fmt.Sprintf("%s 방어 중", p.Name))
 		case ActionCoop:
 			s.applyCoopAbility(p)
+		case ActionRelic:
+			s.applyActiveRelic(p)
 		}
 	}
 
@@ -529,6 +538,9 @@ func (s *GameSession) grantBossRelic() {
 		{Name: "Antidote Charm", Effect: entity.RelicPoisonImmunity, Value: 0, Price: 100},
 		{Name: "Flame Guard", Effect: entity.RelicBurnResist, Value: 0, Price: 120},
 		{Name: "Life Siphon", Effect: entity.RelicLifeSteal, Value: 10, Price: 150},
+		{Name: "Smoke Bomb", Effect: entity.RelicActiveSmokeBomb, Value: 0, Price: 130},
+		{Name: "Bloodstone", Effect: entity.RelicActiveBloodstone, Value: 30, Price: 130},
+		{Name: "Time Glass", Effect: entity.RelicActiveTimeGlass, Value: 0, Price: 180},
 	}
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -678,8 +690,8 @@ func (s *GameSession) resolveMonsterActions() {
 
 // applyDamageMods reduces incoming damage by coop reductions, returns 0 if
 // invincible. Also applies class-based dodge/block rolls (Rogue +10% dodge,
-// Warrior +10% block). Returns the final damage value (0 if dodged).
-// Caller holds s.mu.
+// Warrior +10% block) and Smoke Bomb relic dodge bonus. Returns the final
+// damage value (0 if dodged). Caller holds s.mu.
 func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
 	if s.invincibleNextTurn[p.Fingerprint] {
 		return 0
@@ -691,6 +703,9 @@ func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
 		dodgeChance += 0.10
 	case entity.ClassWarrior:
 		blockChance += 0.10
+	}
+	if bonus, ok := s.dodgeBonusThisTurn[p.Fingerprint]; ok {
+		dodgeChance += bonus
 	}
 	roll := s.rng.Float64()
 	if roll < dodgeChance {
@@ -709,6 +724,87 @@ func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
 		return int(reduced)
 	}
 	return dmg
+}
+
+// runExtraActions performs one extra auto-attack per player who used Time
+// Glass last turn. Skips if no monsters alive. Caller holds s.mu.
+func (s *GameSession) runExtraActions() {
+	if len(s.state.Monsters) == 0 {
+		return
+	}
+	var extras []combat.AttackIntent
+	var owners []string
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		if !s.extraActionNext[p.Fingerprint] {
+			continue
+		}
+		// Find first alive monster
+		targetIdx := -1
+		for i, m := range s.state.Monsters {
+			if !m.IsDead() {
+				targetIdx = i
+				break
+			}
+		}
+		if targetIdx < 0 {
+			continue
+		}
+		extras = append(extras, combat.AttackIntent{PlayerATK: p.EffectiveATK(), TargetIdx: targetIdx, Multiplier: 1.0, IsAoE: false})
+		owners = append(owners, p.Name)
+		s.addLog(fmt.Sprintf("⏳ %s Time Glass 추가 행동!", p.Name))
+	}
+	if len(extras) == 0 {
+		return
+	}
+	results := combat.ResolveAttacks(s.rng, extras, s.state.Monsters, s.cfg.Game.CoopBonus)
+	for i, r := range results {
+		owner := owners[i]
+		if r.Missed && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
+			s.addLog(fmt.Sprintf("%s의 추가 공격을 %s가 회피!", owner, s.state.Monsters[r.TargetIdx].Name))
+		} else if r.Glanced && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
+			s.addLog(fmt.Sprintf("%s 추가 공격: %s에게 %d 피해 (글랜스)", owner, s.state.Monsters[r.TargetIdx].Name, r.Damage))
+		} else if r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
+			s.addLog(fmt.Sprintf("%s 추가 공격: %s에게 %d 피해", owner, s.state.Monsters[r.TargetIdx].Name, r.Damage))
+		}
+	}
+}
+
+// applyActiveRelic resolves an ActionRelic submission — looks for an active
+// relic in the player's inventory and triggers its effect. Once per combat.
+// Caller holds s.mu.
+func (s *GameSession) applyActiveRelic(p *entity.Player) {
+	if s.activeRelicUsed[p.Fingerprint] {
+		s.addLog(fmt.Sprintf("%s 액티브 유물은 이번 전투에 이미 사용했습니다", p.Name))
+		return
+	}
+	for _, r := range p.Relics {
+		if !r.Effect.IsActive() {
+			continue
+		}
+		switch r.Effect {
+		case entity.RelicActiveSmokeBomb:
+			for _, ally := range s.state.Players {
+				if !ally.IsOut() {
+					s.dodgeBonusThisTurn[ally.Fingerprint] = 0.30
+				}
+			}
+			s.addLog(fmt.Sprintf("%s Smoke Bomb! 1턴간 파티 회피 +30%%", p.Name))
+		case entity.RelicActiveBloodstone:
+			heal := p.MaxHP * 30 / 100
+			before := p.HP
+			p.Heal(heal)
+			s.addLog(fmt.Sprintf("%s Bloodstone! HP %d 회복", p.Name, p.HP-before))
+		case entity.RelicActiveTimeGlass:
+			s.extraActionNext[p.Fingerprint] = true
+			s.addLog(fmt.Sprintf("%s Time Glass! 다음 턴 행동 1회 추가 예약", p.Name))
+		}
+		s.activeRelicUsed[p.Fingerprint] = true
+		return
+	}
+	s.addLog(fmt.Sprintf("%s 발동 가능한 액티브 유물이 없습니다", p.Name))
 }
 
 // applyCoopAbility resolves one player's coop ability use. Caller holds s.mu.
