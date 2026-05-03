@@ -206,6 +206,42 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if s.gameState.StartingPartySize >= 4 {
 				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "full_party")
 			}
+			// Coop / content polish achievements
+			if len(s.gameState.CombosFiredThisRun) >= 1 {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "coop_first")
+			}
+			if coopCount := countCoopCombos(s.gameState.CombosFiredThisRun); coopCount >= 6 {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "coop_master")
+			}
+			if s.gameState.MimicKilled {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "mimic_bait")
+			}
+			if s.gameState.BossPhase2Reached {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "boss_phase2")
+			}
+			// Cumulative counters → store, then check threshold
+			if s.gameState.RevivesThisRun > 0 {
+				_ = ctx.Store.IncCounter(ctx.Fingerprint, "revives", int64(s.gameState.RevivesThisRun))
+			}
+			if s.gameState.AltarUsedThisRun > 0 {
+				_ = ctx.Store.IncCounter(ctx.Fingerprint, "altars", int64(s.gameState.AltarUsedThisRun))
+			}
+			if revives, _ := ctx.Store.GetCounter(ctx.Fingerprint, "revives"); revives >= 5 {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "revive_5")
+			}
+			if altars, _ := ctx.Store.GetCounter(ctx.Fingerprint, "altars"); altars >= 3 {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "cursed_lover")
+			}
+			if souls, _ := ctx.Store.GetSouls(ctx.Fingerprint); souls >= 1000 {
+				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "soul_collector")
+			}
+			// Tier 4 unlocked check on this player's allocation
+			for _, p := range s.gameState.Players {
+				if p.Fingerprint == ctx.Fingerprint && p.Skills != nil && p.Skills.Allocated >= 4 {
+					_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "tier4_unlocked")
+					break
+				}
+			}
 
 			// Unlock triggers
 			if s.gameState.FloorNum >= 10 {
@@ -453,6 +489,22 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 
 func (s *GameScreen) View(ctx *Context) string {
 	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint, s.skillMsg)
+}
+
+// countCoopCombos returns how many of the 6 coop pair combos appear in the
+// run-scoped combo set.
+func countCoopCombos(fired map[string]bool) int {
+	if fired == nil {
+		return 0
+	}
+	coop := []string{"Iron Aegis", "Crusader", "Expose Weakness", "Sanctuary", "Mirage", "Venomous Edge"}
+	n := 0
+	for _, name := range coop {
+		if fired[name] {
+			n++
+		}
+	}
+	return n
 }
 
 func renderGame(state game.GameState, width, height int, targetCursor int, allyCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string, skillMsg string) string {

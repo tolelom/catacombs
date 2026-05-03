@@ -148,6 +148,7 @@ func (s *GameSession) handleGamble() {
 // handleCursedAltar: each player loses 30% MaxHP, gains random permanent
 // stat boost (ATK+5 / DEF+3 / Gold+100).
 func (s *GameSession) handleCursedAltar() {
+	s.state.AltarUsedThisRun++
 	s.addLog("저주받은 제단! 생명력을 바쳐 힘을 얻습니다.")
 	for _, p := range s.state.Players {
 		if p.IsOut() {

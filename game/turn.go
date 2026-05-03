@@ -352,6 +352,10 @@ func (s *GameSession) resolvePlayerActions() {
 			intents[i].PlayerATK += combo.Effect.BonusDamage
 		}
 		s.applyCoopComboEffect(combo.Effect)
+		if s.state.CombosFiredThisRun == nil {
+			s.state.CombosFiredThisRun = make(map[string]bool)
+		}
+		s.state.CombosFiredThisRun[combo.Name] = true
 	}
 
 	// Build name→player map for relic effects
@@ -412,6 +416,9 @@ func (s *GameSession) resolvePlayerActions() {
 	// Award gold only for monsters that JUST died this turn
 	for i, m := range s.state.Monsters {
 		if m.IsDead() && aliveBeforeTurn[i] {
+			if m.Name == "Mimic" {
+				s.state.MimicKilled = true
+			}
 			goldReward := 5 + s.state.FloorNum*2
 			for _, p := range s.state.Players {
 				if !p.IsOut() {
@@ -677,6 +684,7 @@ func (s *GameSession) applyCoopAbility(p *entity.Player) {
 				if target.Fingerprint == res.ReviveFingerprint {
 					target.Revive(res.ReviveHPPercent)
 					s.healerReviveUsed[p.Fingerprint] = true
+					s.state.RevivesThisRun++
 					break
 				}
 			}
@@ -717,6 +725,7 @@ func (s *GameSession) checkBossPhaseTransitions() {
 		if !m.CheckPhaseTransition() {
 			continue
 		}
+		s.state.BossPhase2Reached = true
 		s.addLog(fmt.Sprintf("⚡ %s 광폭화! Phase 2 진입!", m.Name))
 		switch floor {
 		case 5:

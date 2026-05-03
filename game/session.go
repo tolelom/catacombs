@@ -74,6 +74,12 @@ type GameState struct {
 	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
 	NextRoomPreview  *RoomPreview    // populated when Foresight has been used
 	CoopAvailable    map[string]bool // fingerprint → can use coop now (HUD display)
+	// Run-scoped event flags (drives polish achievements at GameOver)
+	CombosFiredThisRun map[string]bool // combo name → fired at least once this run
+	BossPhase2Reached  bool            // any boss reached Phase 2
+	MimicKilled        bool            // any mimic monster defeated
+	AltarUsedThisRun   int             // cursed altar uses this run
+	RevivesThisRun     int             // Divine Grace revives this run
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -535,10 +541,26 @@ func (s *GameSession) GetState() GameState {
 		StartingPartySize: s.state.StartingPartySize,
 		LastEventName:    s.state.LastEventName,
 		MoveVotes:        moveVotesCopy,
-		ShopLeavers:      shopLeaversCopy,
-		NextRoomPreview:  s.nextRoomPreview,
-		CoopAvailable:    s.computeCoopAvailable(),
+		ShopLeavers:        shopLeaversCopy,
+		NextRoomPreview:    s.nextRoomPreview,
+		CoopAvailable:      s.computeCoopAvailable(),
+		CombosFiredThisRun: copyStringBoolMap(s.state.CombosFiredThisRun),
+		BossPhase2Reached:  s.state.BossPhase2Reached,
+		MimicKilled:        s.state.MimicKilled,
+		AltarUsedThisRun:   s.state.AltarUsedThisRun,
+		RevivesThisRun:     s.state.RevivesThisRun,
 	}
+}
+
+func copyStringBoolMap(in map[string]bool) map[string]bool {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]bool, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 // computeCoopAvailable returns a map of fingerprint→true when that player can

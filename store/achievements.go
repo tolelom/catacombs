@@ -24,6 +24,15 @@ var AchievementDefs = []Achievement{
 	{ID: "full_party", Name: "동료들", Description: "4명으로 게임 시작"},
 	{ID: "relic_collector", Name: "유물 수집가", Description: "한 번의 플레이에서 유물 3개 이상 수집"},
 	{ID: "flee_master", Name: "전략적 후퇴", Description: "전투에서 도주 성공"},
+	// Coop & content additions
+	{ID: "coop_first", Name: "연계의 시작", Description: "콤보 1회 발동"},
+	{ID: "coop_master", Name: "합주", Description: "한 런에서 6쌍 콤보 모두 발동"},
+	{ID: "revive_5", Name: "불사조", Description: "신성 가호 부활 5회 누적"},
+	{ID: "mimic_bait", Name: "미믹 사냥꾼", Description: "미믹 처치"},
+	{ID: "cursed_lover", Name: "광신도", Description: "저주 제단 3회 사용"},
+	{ID: "tier4_unlocked", Name: "정점", Description: "Tier 4 캡스톤 노드 1개 획득"},
+	{ID: "soul_collector", Name: "영혼 수집가", Description: "영혼 1000 누적"},
+	{ID: "boss_phase2", Name: "끝까지 몰아붙여라", Description: "보스 Phase 2 진입"},
 }
 
 func (d *DB) UnlockAchievement(player, achievementID string) (bool, error) {
