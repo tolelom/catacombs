@@ -428,12 +428,19 @@ func (s *GameSession) resolvePlayerActions() {
 	s.checkBossPhaseTransitions()
 
 	// Award gold only for monsters that JUST died this turn
+	goldMult := 1.0
+	if s.NGPlusLevel > 0 {
+		goldMult += 0.30 * float64(s.NGPlusLevel)
+	}
+	if s.ActiveCurse != nil && s.ActiveCurse.GoldMult > 0 {
+		goldMult *= s.ActiveCurse.GoldMult
+	}
 	for i, m := range s.state.Monsters {
 		if m.IsDead() && aliveBeforeTurn[i] {
 			if m.Name == "Mimic" {
 				s.state.MimicKilled = true
 			}
-			goldReward := 5 + s.state.FloorNum*2
+			goldReward := int(float64(5+s.state.FloorNum*2) * goldMult)
 			for _, p := range s.state.Players {
 				if !p.IsOut() {
 					bonus := 0
@@ -768,12 +775,16 @@ func (s *GameSession) mergeCoopReduction(in map[string]float64) {
 }
 
 // checkBossPhaseTransitions runs after damage to detect bosses entering
-// Phase 2 (HP < 50% MaxHP) and applies their unique enrage effects.
-// Caller holds s.mu.
+// Phase 2 and applies their unique enrage effects. Threshold defaults to 50%
+// HP, raised to 70% by the Cruel curse. Caller holds s.mu.
 func (s *GameSession) checkBossPhaseTransitions() {
 	floor := s.state.FloorNum
+	threshold := 50
+	if s.ActiveCurse != nil && s.ActiveCurse.ID == "cruel" {
+		threshold = 70
+	}
 	for _, m := range s.state.Monsters {
-		if !m.CheckPhaseTransition() {
+		if !m.CheckPhaseTransitionAt(threshold) {
 			continue
 		}
 		s.state.BossPhase2Reached = true

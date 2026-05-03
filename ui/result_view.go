@@ -30,6 +30,33 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
 			return ls, ls.pollLobby()
+		} else if isKey(key, "n") && s.gameState.Victory && ctx.Lobby != nil {
+			// NG+ branch: leave current session, create new one with NGPlusLevel++ and a random curse
+			oldNG := 0
+			if ctx.Session != nil {
+				oldNG = ctx.Session.NGPlusLevel
+			}
+			if ctx.RoomCode != "" {
+				ctx.Lobby.LeaveSession(ctx.RoomCode, ctx.Fingerprint)
+			}
+			ctx.Session = nil
+			ctx.RoomCode = ""
+			code := ctx.Lobby.CreateRoom(ctx.PlayerName + fmt.Sprintf(" NG+%d", oldNG+1))
+			if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
+				ctx.RoomCode = code
+				session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
+					gs := game.NewGameSession(ctx.Lobby.Cfg())
+					gs.NGPlusLevel = oldNG + 1
+					curse := game.PickCurse(nil)
+					gs.ActiveCurse = &curse
+					gs.ApplyWeeklyMutation()
+					return gs
+				})
+				if session != nil {
+					ctx.Session = session
+				}
+				return NewClassSelectScreen(), nil
+			}
 		} else if isForceQuit(key) {
 			return s, tea.Quit
 		}
@@ -115,7 +142,11 @@ func renderResult(state game.GameState, rankings []store.RunRecord, playerName s
 		}
 	}
 
-	sb.WriteString("\n" + styleAction.Render("  [Enter] 로비로 돌아가기") + "\n")
+	if state.Victory {
+		sb.WriteString("\n" + styleAction.Render("  [Enter] 로비로 돌아가기  [N] New Game+ (저주 1개 + 적 +25%)") + "\n")
+	} else {
+		sb.WriteString("\n" + styleAction.Render("  [Enter] 로비로 돌아가기") + "\n")
+	}
 
 	return sb.String()
 }

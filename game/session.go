@@ -128,6 +128,10 @@ type GameSession struct {
 	ActiveMutation *Mutation
 	DailyMode      bool
 	DailyDate      string
+
+	// New Game+ state
+	NGPlusLevel int
+	ActiveCurse *Curse
 }
 
 type playerActionMsg struct {
@@ -183,12 +187,20 @@ func (s *GameSession) ApplyWeeklyMutation() {
 }
 
 // effectiveSkillUses returns the per-combat skill use budget, accounting for
-// the active mutation. Reading via this helper avoids mutating shared config.
+// the active mutation and any NG+ curse. Reading via this helper avoids
+// mutating shared config.
 func (s *GameSession) effectiveSkillUses() int {
 	if s.hasMutation("no_skills") {
 		return 0
 	}
-	return s.cfg.Game.SkillUses
+	uses := s.cfg.Game.SkillUses
+	if s.ActiveCurse != nil {
+		uses += s.ActiveCurse.SkillUseDelta
+		if uses < 0 {
+			uses = 0
+		}
+	}
+	return uses
 }
 
 // effectiveTurnTimeout returns the per-turn timeout in seconds, accounting
@@ -377,6 +389,28 @@ func (s *GameSession) AddPlayer(p *entity.Player) {
 			p.MaxHP = 1
 		}
 		p.HP = p.MaxHP
+	}
+	if s.ActiveCurse != nil {
+		c := s.ActiveCurse
+		if c.HPMult != 0 && c.HPMult != 1.0 {
+			p.MaxHP = int(float64(p.MaxHP) * c.HPMult)
+			if p.MaxHP < 1 {
+				p.MaxHP = 1
+			}
+			p.HP = p.MaxHP
+		}
+		if c.ATKMult != 0 && c.ATKMult != 1.0 {
+			p.ATK = int(float64(p.ATK) * c.ATKMult)
+			if p.ATK < 1 {
+				p.ATK = 1
+			}
+		}
+		if c.DEFMult != 0 && c.DEFMult != 1.0 {
+			p.DEF = int(float64(p.DEF) * c.DEFMult)
+			if p.DEF < 0 {
+				p.DEF = 0
+			}
+		}
 	}
 	s.state.Players = append(s.state.Players, p)
 }

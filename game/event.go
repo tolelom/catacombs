@@ -237,6 +237,12 @@ func (s *GameSession) spawnMonsters() {
 			m.MaxHP = m.HP
 			m.ATK = int(float64(m.ATK) * mult)
 		}
+		if s.NGPlusLevel > 0 {
+			ng := 1.0 + 0.25*float64(s.NGPlusLevel)
+			m.HP = int(float64(m.HP) * ng)
+			m.MaxHP = m.HP
+			m.ATK = int(float64(m.ATK) * ng)
+		}
 		s.state.Monsters[i] = m
 	}
 
@@ -286,6 +292,12 @@ func (s *GameSession) spawnBoss() {
 		boss.HP = int(float64(boss.HP) * mult)
 		boss.MaxHP = boss.HP
 		boss.ATK = int(float64(boss.ATK) * mult)
+	}
+	if s.NGPlusLevel > 0 {
+		ng := 1.0 + 0.25*float64(s.NGPlusLevel)
+		boss.HP = int(float64(boss.HP) * ng)
+		boss.MaxHP = boss.HP
+		boss.ATK = int(float64(boss.ATK) * ng)
 	}
 	s.state.Monsters = []*entity.Monster{boss}
 

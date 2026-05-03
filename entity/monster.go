@@ -134,15 +134,22 @@ func (m *Monster) TickEffects() []string {
 }
 
 // CheckPhaseTransition returns true if a boss/mini-boss should enter phase 2
-// this turn. Phase 2 triggers when HP first drops below 50% MaxHP.
+// this turn. Phase 2 default threshold is 50% HP. Pass thresholdPercent (e.g.
+// 70 for the Cruel curse) to trigger earlier.
 func (m *Monster) CheckPhaseTransition() bool {
+	return m.CheckPhaseTransitionAt(50)
+}
+
+// CheckPhaseTransitionAt allows the caller to override the HP percentage at
+// which Phase 2 fires.
+func (m *Monster) CheckPhaseTransitionAt(thresholdPercent int) bool {
 	if !m.IsBoss {
 		return false
 	}
 	if m.PhaseTransitioned {
 		return false
 	}
-	if m.HP*2 <= m.MaxHP {
+	if m.HP*100 <= m.MaxHP*thresholdPercent {
 		m.PhaseTransitioned = true
 		m.Phase = 2
 		return true
