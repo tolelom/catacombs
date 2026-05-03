@@ -517,7 +517,8 @@ func renderGame(state game.GameState, width, height int, targetCursor int, allyC
 	if chatting {
 		chatStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("117"))
 		chatView := chatStyle.Render(fmt.Sprintf("> %s_", chatInput))
-		return lipgloss.JoinVertical(lipgloss.Left, mapView, hudView, logView, chatView)
+		hint := styleSystem.Render("emote: /hi /gg /go /wait /help /dance /cheer /laugh /cry /think /sorry /thanks /rage")
+		return lipgloss.JoinVertical(lipgloss.Left, mapView, hudView, logView, chatView, hint)
 	}
 
 	parts := []string{mapView, hudView, logView}
