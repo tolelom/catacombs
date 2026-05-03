@@ -32,4 +32,19 @@ func applyPermaUpgrades(ctx *Context, p *entity.Player) {
 		}
 		p.Skills.Points += lvl
 	}
+	// Class mastery: cumulative bonus by class run count
+	runs, _ := ctx.Store.GetCounter(p.Fingerprint, store.MasteryCounterKey(p.Class.String()))
+	if runs > 0 {
+		reward := store.ClassMasteryRewards(p.Class.String(), int(runs))
+		if reward.HPDelta > 0 {
+			p.MaxHP += reward.HPDelta
+			p.HP = p.MaxHP
+		}
+		if reward.ATKDelta > 0 {
+			p.ATK += reward.ATKDelta
+		}
+		if reward.DEFDelta > 0 {
+			p.DEF += reward.DEFDelta
+		}
+	}
 }

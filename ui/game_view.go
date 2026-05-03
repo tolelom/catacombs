@@ -162,6 +162,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					if soulGain := int64(p.Gold / 10); soulGain > 0 {
 						_ = ctx.Store.AddSouls(ctx.Fingerprint, soulGain)
 					}
+					// Mastery counter: count any run that reached floor 5+
+					if s.gameState.FloorNum >= 5 {
+						_ = ctx.Store.IncCounter(ctx.Fingerprint, store.MasteryCounterKey(p.Class.String()), 1)
+					}
 					break
 				}
 			}
