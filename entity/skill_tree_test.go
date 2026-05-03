@@ -68,9 +68,9 @@ func TestCannotAllocateWithoutPoints(t *testing.T) {
 
 func TestFullyAllocated(t *testing.T) {
 	ps := NewPlayerSkills()
-	ps.Points = 4
+	ps.Points = 5
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		err := ps.Allocate(0, ClassWarrior)
 		if err != nil {
 			t.Fatalf("unexpected error on allocation %d: %v", i+1, err)
