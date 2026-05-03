@@ -322,6 +322,13 @@ func (s *GameSession) grantTreasure() {
 			s.addLog(fmt.Sprintf("%s의 인벤토리가 가득 찼습니다!", p.Name))
 			continue
 		}
+		// 10% chance: drop a set item instead of regular gear.
+		if s.rng.Float64() < 0.10 {
+			item := randomSetItem(s.rng, floor)
+			p.Inventory = append(p.Inventory, item)
+			s.addLog(fmt.Sprintf("%s 희귀 발견: %s (Bonus+%d)", p.Name, item.Name, item.Bonus))
+			continue
+		}
 		if s.rng.Float64() < 0.5 {
 			bonus := 3 + s.rng.Intn(6) + floor/3
 			item := entity.Item{

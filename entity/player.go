@@ -125,6 +125,7 @@ func (p *Player) EffectiveATK() int {
 		}
 	}
 	atk += p.Skills.GetATKBonus(p.Class)
+	atk += SetBonusATK(p.Inventory)
 	return atk
 }
 
@@ -141,6 +142,7 @@ func (p *Player) EffectiveDEF() int {
 		}
 	}
 	def += p.Skills.GetDEFBonus(p.Class)
+	def += SetBonusDEF(p.Inventory)
 	return def
 }
 

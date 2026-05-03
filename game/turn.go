@@ -528,8 +528,26 @@ func (s *GameSession) grantBossRelic() {
 			r := relics[s.rng.Intn(len(relics))]
 			p.Relics = append(p.Relics, r)
 			s.addLog(fmt.Sprintf("%s 유물 획득: %s", p.Name, r.Name))
+			// Bosses also drop one set item per surviving player.
+			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+				item := randomSetItem(s.rng, s.state.FloorNum)
+				p.Inventory = append(p.Inventory, item)
+				s.addLog(fmt.Sprintf("%s 세트 아이템: %s", p.Name, item.Name))
+			}
 		}
 	}
+}
+
+// randomSetItem rolls a random set item appropriate for the current floor.
+func randomSetItem(rng interface{ Intn(int) int }, floor int) entity.Item {
+	sets := []entity.ItemSet{entity.SetFlame, entity.SetFrost, entity.SetHoly, entity.SetShadow, entity.SetNature}
+	set := sets[rng.Intn(len(sets))]
+	if rng.Intn(2) == 0 {
+		bonus := 4 + rng.Intn(5) + floor/3
+		return entity.Item{Name: entity.SetName(set) + " 무기", Type: entity.ItemWeapon, Bonus: bonus, Set: set}
+	}
+	bonus := 3 + rng.Intn(4) + floor/4
+	return entity.Item{Name: entity.SetName(set) + " 갑옷", Type: entity.ItemArmor, Bonus: bonus, Set: set}
 }
 
 func (s *GameSession) resolveMonsterActions() {
