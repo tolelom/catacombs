@@ -137,6 +137,9 @@ type GameSession struct {
 	// New Game+ state
 	NGPlusLevel int
 	ActiveCurse *Curse
+
+	// Daily challenge modifier (set by lobby when DailyMode = true)
+	DailyMod *DailyModifier
 }
 
 type playerActionMsg struct {
@@ -204,9 +207,12 @@ func (s *GameSession) effectiveSkillUses() int {
 	uses := s.cfg.Game.SkillUses
 	if s.ActiveCurse != nil {
 		uses += s.ActiveCurse.SkillUseDelta
-		if uses < 0 {
-			uses = 0
-		}
+	}
+	if s.DailyMod != nil {
+		uses += s.DailyMod.SkillUseDelta
+	}
+	if uses < 0 {
+		uses = 0
 	}
 	return uses
 }
@@ -397,6 +403,9 @@ func (s *GameSession) AddPlayer(p *entity.Player) {
 			p.MaxHP = 1
 		}
 		p.HP = p.MaxHP
+	}
+	if s.DailyMod != nil && s.DailyMod.StartGoldBonus > 0 {
+		p.Gold += s.DailyMod.StartGoldBonus
 	}
 	if s.ActiveCurse != nil {
 		c := s.ActiveCurse

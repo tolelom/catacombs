@@ -149,6 +149,8 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						gs := game.NewGameSession(ctx.Lobby.Cfg())
 						gs.DailyMode = true
 						gs.DailyDate = time.Now().Format("2006-01-02")
+						mod := game.PickDailyModifier(gs.DailyDate)
+						gs.DailyMod = &mod
 						gs.ApplyWeeklyMutation()
 						return gs
 					})
@@ -214,6 +216,8 @@ func renderLobby(state lobbyState, width, height int) string {
 		Padding(0, 1)
 
 	header := headerStyle.Render(fmt.Sprintf("── 로비 ── %d명 접속중 ──", state.online))
+	dailyMod := game.PickDailyModifier(time.Now().Format("2006-01-02"))
+	dailyHint := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("오늘의 일일 변이: %s — %s", dailyMod.Name, dailyMod.Desc))
 	menu := "[C] 방 만들기  [J] 코드로 참가  [D] 일일 도전  [S] 영혼의 제단  [Up/Down] 선택  [Enter] 참가  [Q] 뒤로"
 	if state.hardUnlocked {
 		hardStatus := "OFF"
@@ -256,6 +260,8 @@ func renderLobby(state lobbyState, width, height int) string {
 
 	parts := []string{
 		header,
+		"",
+		dailyHint,
 		"",
 		roomStyle.Render(roomList),
 		"",

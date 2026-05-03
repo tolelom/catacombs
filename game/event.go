@@ -243,6 +243,21 @@ func (s *GameSession) spawnMonsters() {
 			m.MaxHP = m.HP
 			m.ATK = int(float64(m.ATK) * ng)
 		}
+		if s.DailyMod != nil {
+			if s.DailyMod.MonsterHPMult > 0 && s.DailyMod.MonsterHPMult != 1.0 {
+				m.HP = int(float64(m.HP) * s.DailyMod.MonsterHPMult)
+				if m.HP < 1 {
+					m.HP = 1
+				}
+				m.MaxHP = m.HP
+			}
+			if s.DailyMod.MonsterATKMult > 0 && s.DailyMod.MonsterATKMult != 1.0 {
+				m.ATK = int(float64(m.ATK) * s.DailyMod.MonsterATKMult)
+				if m.ATK < 1 {
+					m.ATK = 1
+				}
+			}
+		}
 		s.state.Monsters[i] = m
 	}
 
@@ -299,6 +314,18 @@ func (s *GameSession) spawnBoss() {
 		boss.HP = int(float64(boss.HP) * ng)
 		boss.MaxHP = boss.HP
 		boss.ATK = int(float64(boss.ATK) * ng)
+	}
+	if s.DailyMod != nil {
+		if s.DailyMod.MonsterHPMult > 0 && s.DailyMod.MonsterHPMult != 1.0 {
+			boss.HP = int(float64(boss.HP) * s.DailyMod.MonsterHPMult)
+			if boss.HP < 1 {
+				boss.HP = 1
+			}
+			boss.MaxHP = boss.HP
+		}
+		if s.DailyMod.MonsterATKMult > 0 && s.DailyMod.MonsterATKMult != 1.0 {
+			boss.ATK = int(float64(boss.ATK) * s.DailyMod.MonsterATKMult)
+		}
 	}
 	s.state.Monsters = []*entity.Monster{boss}
 

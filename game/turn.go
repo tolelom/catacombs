@@ -444,6 +444,9 @@ func (s *GameSession) resolvePlayerActions() {
 	if s.ActiveCurse != nil && s.ActiveCurse.GoldMult > 0 {
 		goldMult *= s.ActiveCurse.GoldMult
 	}
+	if s.DailyMod != nil && s.DailyMod.GoldMult > 0 {
+		goldMult *= s.DailyMod.GoldMult
+	}
 	for i, m := range s.state.Monsters {
 		if m.IsDead() && aliveBeforeTurn[i] {
 			if m.Name == "Mimic" {
