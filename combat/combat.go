@@ -42,6 +42,8 @@ type AttackResult struct {
 	Damage      int
 	CoopApplied bool
 	IsAoE       bool
+	Missed      bool // monster dodged
+	Glanced     bool // partial hit (50% damage)
 }
 
 func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.Monster, coopBonus float64) []AttackResult {
@@ -77,12 +79,24 @@ func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.M
 				continue
 			}
 			m := monsters[intent.TargetIdx]
-			// Skip if the target died earlier in the same turn — otherwise
-			// chip damage on a corpse fires Life Siphon healing and bloats
-			// the combat log with phantom hits.
 			if m.IsDead() {
 				results[i] = AttackResult{TargetIdx: -1}
 				continue
+			}
+			r := rngOrDefault(rng)
+			// 5% dodge, 5% glance — non-elite/non-boss only (so bosses stay reliable)
+			if !m.IsBoss && !m.IsMiniBoss {
+				roll := r.Float64()
+				if roll < 0.05 {
+					results[i] = AttackResult{TargetIdx: intent.TargetIdx, Missed: true}
+					continue
+				}
+				if roll < 0.10 {
+					dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier*0.5)
+					m.TakeDamage(dmg)
+					results[i] = AttackResult{TargetIdx: intent.TargetIdx, Damage: dmg, Glanced: true}
+					continue
+				}
 			}
 			dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier)
 			coopApplied := false

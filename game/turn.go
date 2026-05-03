@@ -383,6 +383,11 @@ func (s *GameSession) resolvePlayerActions() {
 					coopStr = " (협동!)"
 				}
 				s.addLog(fmt.Sprintf("%s 전체 적에게 총 %d 피해%s", owner, r.Damage, coopStr))
+			} else if r.Missed && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
+				s.addLog(fmt.Sprintf("%s의 공격을 %s가 회피!", owner, s.state.Monsters[r.TargetIdx].Name))
+			} else if r.Glanced && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
+				target := s.state.Monsters[r.TargetIdx]
+				s.addLog(fmt.Sprintf("%s이(가) %s에게 %d 피해 (글랜스)", owner, target.Name, r.Damage))
 			} else if r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
 				target := s.state.Monsters[r.TargetIdx]
 				coopStr := ""
@@ -647,10 +652,29 @@ func (s *GameSession) resolveMonsterActions() {
 }
 
 // applyDamageMods reduces incoming damage by coop reductions, returns 0 if
-// invincible. Caller holds s.mu.
+// invincible. Also applies class-based dodge/block rolls (Rogue +10% dodge,
+// Warrior +10% block). Returns the final damage value (0 if dodged).
+// Caller holds s.mu.
 func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
 	if s.invincibleNextTurn[p.Fingerprint] {
 		return 0
+	}
+	dodgeChance := 0.05
+	blockChance := 0.05
+	switch p.Class {
+	case entity.ClassRogue:
+		dodgeChance += 0.10
+	case entity.ClassWarrior:
+		blockChance += 0.10
+	}
+	roll := s.rng.Float64()
+	if roll < dodgeChance {
+		s.addLog(fmt.Sprintf("%s 회피!", p.Name))
+		return 0
+	}
+	if roll < dodgeChance+blockChance {
+		s.addLog(fmt.Sprintf("%s 블록!", p.Name))
+		dmg = dmg / 2
 	}
 	if mult, ok := s.coopDamageReduction[p.Fingerprint]; ok && mult > 0 {
 		reduced := float64(dmg) * (1.0 - mult)
