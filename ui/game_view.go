@@ -223,6 +223,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if s.gameState.BossPhase2Reached {
 				_, _ = ctx.Store.UnlockAchievement(ctx.Fingerprint, "boss_phase2")
 			}
+			// Per-boss kill counters drive trophies in the codex.
+			for bossName := range s.gameState.BossesKilledThisRun {
+				_ = ctx.Store.IncCounter(ctx.Fingerprint, "boss_kill:"+bossName, 1)
+			}
 			// Cumulative counters → store, then check threshold
 			if s.gameState.RevivesThisRun > 0 {
 				_ = ctx.Store.IncCounter(ctx.Fingerprint, "revives", int64(s.gameState.RevivesThisRun))

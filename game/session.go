@@ -81,6 +81,7 @@ type GameState struct {
 	MimicKilled        bool            // any mimic monster defeated
 	AltarUsedThisRun   int             // cursed altar uses this run
 	RevivesThisRun     int             // Divine Grace revives this run
+	BossesKilledThisRun map[string]bool // boss name → killed this run
 }
 
 func (s *GameSession) addLog(msg string) {
@@ -590,6 +591,7 @@ func (s *GameSession) GetState() GameState {
 		MimicKilled:        s.state.MimicKilled,
 		AltarUsedThisRun:   s.state.AltarUsedThisRun,
 		RevivesThisRun:     s.state.RevivesThisRun,
+		BossesKilledThisRun: copyStringBoolMap(s.state.BossesKilledThisRun),
 	}
 }
 

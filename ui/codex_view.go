@@ -46,14 +46,20 @@ var (
 
 // CodexScreen displays the player's codex with discovered entries.
 type CodexScreen struct {
-	codex store.Codex
-	tab   int // 0=monsters, 1=items, 2=events
+	codex      store.Codex
+	tab        int // 0=monsters, 1=items, 2=events, 3=bosses
+	bossKills  map[string]int64
 }
 
 func NewCodexScreen(ctx *Context) *CodexScreen {
 	var codex store.Codex
+	bossKills := make(map[string]int64)
 	if ctx.Store != nil {
 		codex, _ = ctx.Store.GetCodex(ctx.Fingerprint)
+		for _, name := range []string{"Guardian", "Warden", "Overlord", "Archlich"} {
+			n, _ := ctx.Store.GetCounter(ctx.Fingerprint, "boss_kill:"+name)
+			bossKills[name] = n
+		}
 	} else {
 		codex = store.Codex{
 			Monsters: make(map[string]bool),
@@ -61,7 +67,7 @@ func NewCodexScreen(ctx *Context) *CodexScreen {
 			Events:   make(map[string]bool),
 		}
 	}
-	return &CodexScreen{codex: codex}
+	return &CodexScreen{codex: codex, bossKills: bossKills}
 }
 
 func (s *CodexScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
@@ -70,10 +76,10 @@ func (s *CodexScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			return NewTitleScreen(), nil
 		}
 		if key.Type == tea.KeyTab || isKey(key, "right", "l") || key.Type == tea.KeyRight {
-			s.tab = (s.tab + 1) % 3
+			s.tab = (s.tab + 1) % 4
 		}
 		if isKey(key, "left", "h") || key.Type == tea.KeyLeft {
-			s.tab = (s.tab + 2) % 3
+			s.tab = (s.tab + 3) % 4
 		}
 	}
 	return s, nil
@@ -83,7 +89,7 @@ func (s *CodexScreen) View(ctx *Context) string {
 	title := styleHeader.Render("-- 도감 --")
 
 	// Tab headers
-	tabNames := []string{"몬스터", "아이템", "이벤트"}
+	tabNames := []string{"몬스터", "아이템", "이벤트", "보스 트로피"}
 	var tabs []string
 	for i, name := range tabNames {
 		if i == s.tab {
@@ -117,6 +123,27 @@ func (s *CodexScreen) View(ctx *Context) string {
 		discovered = s.codex.Events
 		allNames = allEvents
 		total = totalEvents
+	case 3:
+		// Boss trophy tab — render directly and return early.
+		bossNames := []string{"Guardian", "Warden", "Overlord", "Archlich"}
+		var b string
+		killCount := 0
+		for _, name := range bossNames {
+			n := s.bossKills[name]
+			if n > 0 {
+				killCount++
+				b += fmt.Sprintf("  🏆 %s — %d회 처치\n", lipgloss.NewStyle().Foreground(colorYellow).Bold(true).Render(name), n)
+				if lore := monsterLore(name); lore != "" {
+					b += "      " + styleSystem.Render(lore) + "\n"
+				}
+			} else {
+				b += fmt.Sprintf("  [ ] %s\n", lipgloss.NewStyle().Foreground(colorGray).Render("???"))
+			}
+		}
+		footer := styleSystem.Render("[Tab/Left/Right] 탭 전환  [Esc] 뒤로")
+		completion := lipgloss.NewStyle().Foreground(colorCyan).Render(fmt.Sprintf("트로피: %d/%d", killCount, len(bossNames)))
+		content := lipgloss.JoinVertical(lipgloss.Center, title, "", tabBar, "", completion, "", b, "", footer)
+		return lipgloss.Place(ctx.Width, ctx.Height, lipgloss.Center, lipgloss.Center, content)
 	}
 
 	count := len(discovered)

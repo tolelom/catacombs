@@ -468,6 +468,10 @@ func (s *GameSession) resolvePlayerActions() {
 			s.addLog(fmt.Sprintf("%s 처치! +%d 골드", m.Name, goldReward))
 			if m.IsBoss {
 				s.state.BossKilled = true
+				if s.state.BossesKilledThisRun == nil {
+					s.state.BossesKilledThisRun = make(map[string]bool)
+				}
+				s.state.BossesKilledThisRun[m.Name] = true
 				s.grantBossRelic()
 			}
 		}
