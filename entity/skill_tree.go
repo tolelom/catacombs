@@ -39,8 +39,10 @@ func NewPlayerSkills() *PlayerSkills {
 	return &PlayerSkills{BranchIndex: -1}
 }
 
-// branchDefs holds 2 branches per class. Tier 4 (Nodes[3]) is the capstone,
-// only allocatable after the 3 base tiers and typically after floor 11.
+// branchDefs holds 2 branches per class. Tier 4 (Nodes[3]) is the capstone.
+// Allocate enforces the points-spent prerequisite (3 prior tiers in this
+// branch) but does NOT gate on floor — players who buy the StartSkillPts
+// perma-upgrade can land the capstone within the first few floors.
 var branchDefs = map[Class][2]SkillBranch{
 	ClassWarrior: {
 		{

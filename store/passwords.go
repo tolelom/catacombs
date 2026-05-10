@@ -7,6 +7,19 @@ import (
 
 var bucketPasswords = []byte("passwords")
 
+// dummyHash is a bcrypt hash run against the unknown-user code path so a
+// timing observer can't distinguish "user does not exist" (instant return)
+// from "user exists, password mismatch" (slow bcrypt). Computed once at
+// startup; if generation somehow fails (extremely unlikely) the timing leak
+// remains but the rest of auth still works.
+var dummyHash []byte
+
+func init() {
+	if h, err := bcrypt.GenerateFromPassword([]byte("dummy-never-matches"), bcrypt.DefaultCost); err == nil {
+		dummyHash = h
+	}
+}
+
 // SavePassword stores a bcrypt-hashed password for the given nickname.
 func (d *DB) SavePassword(nickname, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -33,6 +46,11 @@ func (d *DB) CheckPassword(nickname, password string) (bool, error) {
 		return false, err
 	}
 	if hash == nil {
+		// Run the dummy hash so an attacker can't enumerate accounts by
+		// measuring the early-return latency. We discard the result.
+		if dummyHash != nil {
+			_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
+		}
 		return false, nil
 	}
 	err = bcrypt.CompareHashAndPassword(hash, []byte(password))

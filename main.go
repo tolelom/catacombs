@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -30,7 +31,10 @@ func main() {
 	cfg, err := config.Load("config.yaml")
 	if err != nil {
 		if os.IsNotExist(err) {
-			cfg, _ = config.Load("")
+			cfg, err = config.Load("")
+			if err != nil {
+				log.Fatalf("Failed to load default config: %v", err)
+			}
 		} else {
 			log.Fatalf("Failed to load config: %v", err)
 		}
@@ -47,7 +51,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
-	defer func() { _ = db.Close() }()
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("db close failed", "error", err)
+		}
+	}()
 
 	lobby := game.NewLobby(cfg)
 	startTime := time.Now()
@@ -64,9 +72,16 @@ func main() {
 		log.Fatalf("Failed to create SSH server: %v", err)
 	}
 
-	// Start backup scheduler
+	// Start backup scheduler. The WaitGroup ensures we don't tear down the
+	// DB while a scheduled Backup/PruneBackups is mid-flight (a Bolt View
+	// txn racing with Close would error).
 	backupDone := make(chan struct{})
-	go backupScheduler(db, cfg.Backup, backupDone)
+	var backupWG sync.WaitGroup
+	backupWG.Add(1)
+	go func() {
+		defer backupWG.Done()
+		backupScheduler(db, cfg.Backup, backupDone)
+	}()
 
 	// Start SSH server in background
 	sshErrCh := make(chan error, 1)
@@ -93,8 +108,9 @@ func main() {
 	// Graceful shutdown
 	slog.Info("starting graceful shutdown")
 
-	// Stop backup scheduler
+	// Stop backup scheduler and wait for it to exit before db.Close fires.
 	close(backupDone)
+	backupWG.Wait()
 
 	// Shutdown web server (5s timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

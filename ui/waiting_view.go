@@ -24,9 +24,9 @@ func (s *WaitingScreen) pollWaiting() tea.Cmd {
 }
 
 func (s *WaitingScreen) startGame(ctx *Context) (Screen, tea.Cmd) {
-	room := ctx.Lobby.GetRoom(ctx.RoomCode)
-	if room != nil && room.Session != nil {
-		ctx.Session = room.Session
+	snap, ok := ctx.Lobby.RoomSnapshot(ctx.RoomCode)
+	if ok && snap.Session != nil {
+		ctx.Session = snap.Session
 		ctx.Session.StartGame()
 		ctx.Lobby.StartRoom(ctx.RoomCode)
 		gs := NewGameScreen()
@@ -52,8 +52,7 @@ func (s *WaitingScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if ctx.Lobby != nil {
 				ctx.Lobby.SetPlayerReady(ctx.RoomCode, ctx.Fingerprint, true)
 				// Solo: if only 1 player in room, start immediately
-				room := ctx.Lobby.GetRoom(ctx.RoomCode)
-				if room != nil && len(room.Players) == 1 {
+				if snap, ok := ctx.Lobby.RoomSnapshot(ctx.RoomCode); ok && len(snap.Players) == 1 {
 					return s.startGame(ctx)
 				}
 			}
@@ -91,9 +90,8 @@ func (s *WaitingScreen) View(ctx *Context) string {
 
 	playerList := ""
 	if ctx.Lobby != nil {
-		room := ctx.Lobby.GetRoom(ctx.RoomCode)
-		if room != nil {
-			for _, p := range room.Players {
+		if snap, ok := ctx.Lobby.RoomSnapshot(ctx.RoomCode); ok {
+			for _, p := range snap.Players {
 				status := notReadyStyle.Render("...")
 				if p.Ready {
 					status = readyStyle.Render("준비 완료")

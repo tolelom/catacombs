@@ -66,7 +66,11 @@ func Open(path string) (*DB, error) {
 		}
 		return nil
 	})
-	return &DB{db: db}, err
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	return &DB{db: db}, nil
 }
 
 func (d *DB) Close() error {

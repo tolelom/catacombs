@@ -40,6 +40,9 @@ func (d *DB) UnlockAchievement(player, achievementID string) (bool, error) {
 	alreadyUnlocked := false
 	err := d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketAchievements)
+		if b == nil {
+			return errBucketMissing
+		}
 		if b.Get(key) != nil {
 			alreadyUnlocked = true
 			return nil

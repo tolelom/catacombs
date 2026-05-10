@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -85,9 +86,14 @@ func PruneBackups(destDir string, keep int) (int, error) {
 	})
 	deleted := 0
 	for i := 0; i < len(backups)-keep; i++ {
-		if err := os.Remove(filepath.Join(destDir, backups[i].name)); err == nil {
-			deleted++
+		path := filepath.Join(destDir, backups[i].name)
+		if err := os.Remove(path); err != nil {
+			// Don't abort prune on a single failure (perm issue, file in
+			// use); log and keep going so the rest of the rotation works.
+			slog.Warn("backup prune remove failed", "path", path, "error", err)
+			continue
 		}
+		deleted++
 	}
 	return deleted, nil
 }

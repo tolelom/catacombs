@@ -129,16 +129,21 @@ type GameSession struct {
 	enemyMissNextTurn   bool               // next turn 50% enemy attacks miss (Mirage)
 	poisonNextCombat    bool               // next combat starts enemies poisoned (Venomous Edge)
 
+	// The fields below are set during session construction (inside an
+	// EnsureSession init callback under Lobby.mu) and are not mutated
+	// thereafter. Reading them without s.mu is safe because the lobby-lock
+	// release establishes happens-before for every subsequent reader.
 	HardMode       bool
 	ActiveMutation *Mutation
 	DailyMode      bool
 	DailyDate      string
 
-	// New Game+ state
+	// New Game+ state — same publication invariant as above.
 	NGPlusLevel int
 	ActiveCurse *Curse
 
-	// Daily challenge modifier (set by lobby when DailyMode = true)
+	// Daily challenge modifier (set by lobby when DailyMode = true) — same
+	// publication invariant as above.
 	DailyMod *DailyModifier
 }
 
@@ -273,6 +278,9 @@ func (s *GameSession) combatLoop() {
 		s.mu.Unlock()
 
 		if gameOver {
+			// Reading state without s.mu here is safe: FloorNum/Victory are
+			// only written inside RunTurn (advanceFloor / turn.go), all on
+			// this same combatLoop goroutine.
 			slog.Info("game over", "floor", s.state.FloorNum, "victory", s.state.Victory)
 			return
 		}
@@ -372,6 +380,9 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 	delete(s.soloHealerRevived, fingerprint)
 	delete(s.coopDamageReduction, fingerprint)
 	delete(s.invincibleNextTurn, fingerprint)
+	delete(s.dodgeBonusThisTurn, fingerprint)
+	delete(s.extraActionNext, fingerprint)
+	delete(s.activeRelicUsed, fingerprint)
 	// Wake RunTurn's collect loop in case it's blocked waiting for this
 	// player's never-arriving action.
 	select {

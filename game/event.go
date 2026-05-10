@@ -97,10 +97,18 @@ func (s *GameSession) handleMimic(room *dungeon.Room) {
 		mimic.HP = int(float64(mimic.HP) * 1.5)
 		mimic.MaxHP = mimic.HP
 		mimic.ATK = int(float64(mimic.ATK) * 1.3)
+		s.applyDifficultyMods(mimic)
 		s.state.Monsters = []*entity.Monster{mimic}
 		s.state.Phase = PhaseCombat
 		s.state.CombatTurn = 0
+		// Match other combat-start sites: reset every per-combat map and
+		// apply pending Venomous Edge poison. Without this, Time Glass's
+		// extraActionNext would carry over from the prior combat into the
+		// mimic fight (free attack), and Venomous Edge would skip the mimic.
 		s.coopUsedThisCombat = make(map[string]bool)
+		s.activeRelicUsed = make(map[string]bool)
+		s.extraActionNext = make(map[string]bool)
+		s.applyPoisonNextCombatIfPending()
 		s.signalCombat()
 		for _, p := range s.state.Players {
 			p.SkillUses = s.effectiveSkillUses()
@@ -231,33 +239,7 @@ func (s *GameSession) spawnMonsters() {
 		if s.hasMutation("elite_flood") || s.rng.Float64() < 0.20 {
 			entity.ApplyPrefix(m, entity.RandomPrefix(s.rng))
 		}
-		if s.HardMode {
-			mult := s.cfg.Difficulty.HardModeMonsterMult
-			m.HP = int(float64(m.HP) * mult)
-			m.MaxHP = m.HP
-			m.ATK = int(float64(m.ATK) * mult)
-		}
-		if s.NGPlusLevel > 0 {
-			ng := 1.0 + 0.25*float64(s.NGPlusLevel)
-			m.HP = int(float64(m.HP) * ng)
-			m.MaxHP = m.HP
-			m.ATK = int(float64(m.ATK) * ng)
-		}
-		if s.DailyMod != nil {
-			if s.DailyMod.MonsterHPMult > 0 && s.DailyMod.MonsterHPMult != 1.0 {
-				m.HP = int(float64(m.HP) * s.DailyMod.MonsterHPMult)
-				if m.HP < 1 {
-					m.HP = 1
-				}
-				m.MaxHP = m.HP
-			}
-			if s.DailyMod.MonsterATKMult > 0 && s.DailyMod.MonsterATKMult != 1.0 {
-				m.ATK = int(float64(m.ATK) * s.DailyMod.MonsterATKMult)
-				if m.ATK < 1 {
-					m.ATK = 1
-				}
-			}
-		}
+		s.applyDifficultyMods(m)
 		s.state.Monsters[i] = m
 	}
 
@@ -267,6 +249,7 @@ func (s *GameSession) spawnMonsters() {
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
 	s.activeRelicUsed = make(map[string]bool)
+	s.extraActionNext = make(map[string]bool)
 	s.applyPoisonNextCombatIfPending()
 }
 
@@ -303,30 +286,7 @@ func (s *GameSession) spawnBoss() {
 		boss.MaxHP = boss.HP
 		boss.DEF = int(float64(boss.DEF) * s.cfg.Combat.SoloHPReduction)
 	}
-	if s.HardMode {
-		mult := s.cfg.Difficulty.HardModeMonsterMult
-		boss.HP = int(float64(boss.HP) * mult)
-		boss.MaxHP = boss.HP
-		boss.ATK = int(float64(boss.ATK) * mult)
-	}
-	if s.NGPlusLevel > 0 {
-		ng := 1.0 + 0.25*float64(s.NGPlusLevel)
-		boss.HP = int(float64(boss.HP) * ng)
-		boss.MaxHP = boss.HP
-		boss.ATK = int(float64(boss.ATK) * ng)
-	}
-	if s.DailyMod != nil {
-		if s.DailyMod.MonsterHPMult > 0 && s.DailyMod.MonsterHPMult != 1.0 {
-			boss.HP = int(float64(boss.HP) * s.DailyMod.MonsterHPMult)
-			if boss.HP < 1 {
-				boss.HP = 1
-			}
-			boss.MaxHP = boss.HP
-		}
-		if s.DailyMod.MonsterATKMult > 0 && s.DailyMod.MonsterATKMult != 1.0 {
-			boss.ATK = int(float64(boss.ATK) * s.DailyMod.MonsterATKMult)
-		}
-	}
+	s.applyDifficultyMods(boss)
 	s.state.Monsters = []*entity.Monster{boss}
 
 	// Reset skill uses for all players at combat start
@@ -335,6 +295,7 @@ func (s *GameSession) spawnBoss() {
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
 	s.activeRelicUsed = make(map[string]bool)
+	s.extraActionNext = make(map[string]bool)
 	s.applyPoisonNextCombatIfPending()
 }
 
@@ -568,12 +529,7 @@ func (s *GameSession) spawnMiniBoss() {
 		miniBoss.MaxHP = miniBoss.HP
 		miniBoss.DEF = int(float64(miniBoss.DEF) * s.cfg.Combat.SoloHPReduction)
 	}
-	if s.HardMode {
-		mult := s.cfg.Difficulty.HardModeMonsterMult
-		miniBoss.HP = int(float64(miniBoss.HP) * mult)
-		miniBoss.MaxHP = miniBoss.HP
-		miniBoss.ATK = int(float64(miniBoss.ATK) * mult)
-	}
+	s.applyDifficultyMods(miniBoss)
 	s.state.Monsters = []*entity.Monster{miniBoss}
 	s.addLog(fmt.Sprintf("미니보스 등장: %s!", miniBoss.Name))
 
@@ -583,5 +539,41 @@ func (s *GameSession) spawnMiniBoss() {
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
 	s.activeRelicUsed = make(map[string]bool)
+	s.extraActionNext = make(map[string]bool)
 	s.applyPoisonNextCombatIfPending()
+}
+
+// applyDifficultyMods scales a monster's HP/ATK by HardMode, NG+ level, and
+// the active daily challenge modifier. SoloMode is intentionally NOT applied
+// here — solo balance is handled per-spawn-context (regular spawns and bosses
+// reduce HP for solo, but B10 phase-2 summons stay tough by design). Caller
+// holds s.mu.
+func (s *GameSession) applyDifficultyMods(m *entity.Monster) {
+	if s.HardMode {
+		mult := s.cfg.Difficulty.HardModeMonsterMult
+		m.HP = int(float64(m.HP) * mult)
+		m.MaxHP = m.HP
+		m.ATK = int(float64(m.ATK) * mult)
+	}
+	if s.NGPlusLevel > 0 {
+		ng := 1.0 + 0.25*float64(s.NGPlusLevel)
+		m.HP = int(float64(m.HP) * ng)
+		m.MaxHP = m.HP
+		m.ATK = int(float64(m.ATK) * ng)
+	}
+	if s.DailyMod != nil {
+		if s.DailyMod.MonsterHPMult > 0 && s.DailyMod.MonsterHPMult != 1.0 {
+			m.HP = int(float64(m.HP) * s.DailyMod.MonsterHPMult)
+			if m.HP < 1 {
+				m.HP = 1
+			}
+			m.MaxHP = m.HP
+		}
+		if s.DailyMod.MonsterATKMult > 0 && s.DailyMod.MonsterATKMult != 1.0 {
+			m.ATK = int(float64(m.ATK) * s.DailyMod.MonsterATKMult)
+			if m.ATK < 1 {
+				m.ATK = 1
+			}
+		}
+	}
 }

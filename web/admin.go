@@ -76,13 +76,17 @@ func (a *authThrottle) recordSuccess(ip string) {
 	delete(a.fails, ip)
 }
 
-// clientIP prefers an X-Forwarded-For header (set by Caddy in production)
-// and falls back to the raw RemoteAddr otherwise. Only the first hop is
-// trusted because the rest of the chain is attacker-controlled.
+// clientIP returns the IP address used for throttling. X-Forwarded-For is a
+// list of intermediaries appended in order (client, proxy1, proxy2, ...);
+// when a request reaches us through Caddy the LAST entry is the hop Caddy
+// added — i.e., the actual client as seen by Caddy. Reading the FIRST entry
+// would let any attacker bypass throttling by setting their own
+// X-Forwarded-For header. Falls back to RemoteAddr if no XFF is set.
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if i := strings.IndexByte(xff, ','); i >= 0 {
-			return strings.TrimSpace(xff[:i])
+		// Take the rightmost (last) entry — set by our trusted proxy.
+		if i := strings.LastIndexByte(xff, ','); i >= 0 {
+			return strings.TrimSpace(xff[i+1:])
 		}
 		return strings.TrimSpace(xff)
 	}
@@ -118,8 +122,15 @@ func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Han
 		}
 		throttle.recordSuccess(ip)
 
-		todayRuns, _ := db.GetTodayRunCount()
-		avgFloor, _ := db.GetTodayAvgFloor()
+		todayRuns, err1 := db.GetTodayRunCount()
+		avgFloor, err2 := db.GetTodayAvgFloor()
+		if err1 != nil || err2 != nil {
+			// Don't show synthesized zeros that an operator would mistake
+			// for "everything is fine"; surface the failure so the dashboard
+			// shows red.
+			http.Error(w, "stats unavailable", http.StatusServiceUnavailable)
+			return
+		}
 
 		stats := AdminStats{
 			OnlinePlayers: len(lobby.ListOnline()),

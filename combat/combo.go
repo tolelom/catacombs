@@ -77,7 +77,10 @@ var comboDefs = []ComboDef{
 			{Class: entity.ClassWarrior, ActionType: "coop"},
 			{Class: entity.ClassMage, ActionType: "coop"},
 		},
-		Effect: ComboEffect{WarriorBulwarkOverride: 0.75, Message: "🛡️ IRON AEGIS! 강철결계가 워리어를 감쌉니다!"},
+		// 0.75 matches solo Bulwark for the warrior (no-op on them via the
+		// max-wins merge), but it spreads that reduction to every party
+		// member who otherwise has no coop reduction this turn.
+		Effect: ComboEffect{WarriorBulwarkOverride: 0.75, Message: "🛡️ IRON AEGIS! 강철결계가 파티 전원을 감쌉니다!"},
 	},
 	{
 		Name: "Crusader",

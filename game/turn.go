@@ -90,18 +90,27 @@ collecting:
 
 	s.state.TurnResolving = true
 	s.state.PendingLogs = nil
-	s.resolvePlayerActions()
-	// Time Glass: each player flagged for an extra action gets one more attack
-	// at end of player phase (auto-attack target 0). Then flag clears.
+	// Time Glass: players flagged on the *previous* turn get one extra attack
+	// before this turn's normal player phase. Flag is cleared so a single use
+	// only buys one bonus turn.
 	if len(s.extraActionNext) > 0 {
 		s.runExtraActions()
 		s.extraActionNext = make(map[string]bool)
 	}
+	s.resolvePlayerActions()
 	s.resolveMonsterActions()
 	s.state.TurnResolving = false
 	// One-turn flags consumed during this turn — clear so they don't carry over.
 	s.critGuaranteedNext = false
 	s.enemyMissNextTurn = false
+	// B15 phase 2 vulnerable window — flips every turn so the 1.5x damage
+	// buff alternates (per the design comment in checkBossPhaseTransitions);
+	// without this, Vulnerable would stay true permanently after entry.
+	for _, m := range s.state.Monsters {
+		if m.IsBoss && m.Phase == 2 && s.state.FloorNum == 15 && !m.IsDead() {
+			m.Vulnerable = !m.Vulnerable
+		}
+	}
 	// PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
 }
 
@@ -312,7 +321,7 @@ func (s *GameSession) resolvePlayerActions() {
 		case ActionCoop:
 			s.applyCoopAbility(p)
 		case ActionRelic:
-			s.applyActiveRelic(p)
+			s.applyActiveRelic(p, action.TargetIdx)
 		}
 	}
 
@@ -654,7 +663,10 @@ func (s *GameSession) resolveMonsterActions() {
 					dmg = s.applyDamageMods(p, dmg)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s이(가) %s을(를) 공격하여 %d 피해", m.Name, p.Name, dmg))
-					if m.IsElite {
+					// Elite on-hit effects only apply when the strike actually
+					// connected — dodge/block/Sanctuary that reduced dmg to 0
+					// shouldn't still inflict status (or heal vampiric for 0).
+					if m.IsElite && dmg > 0 {
 						def := entity.ElitePrefixDefs[m.ElitePrefix]
 						if def.OnHit >= 0 {
 							p.AddEffect(entity.ActiveEffect{Type: def.OnHit, Duration: 2, Value: 3})
@@ -779,39 +791,52 @@ func (s *GameSession) runExtraActions() {
 	}
 }
 
-// applyActiveRelic resolves an ActionRelic submission — looks for an active
-// relic in the player's inventory and triggers its effect. Once per combat.
+// applyActiveRelic resolves an ActionRelic submission. choice is the UI's
+// armed-relic cursor and selects which active relic in the player's
+// inventory fires when more than one is owned. Once per combat per player.
 // Caller holds s.mu.
-func (s *GameSession) applyActiveRelic(p *entity.Player) {
+func (s *GameSession) applyActiveRelic(p *entity.Player, choice int) {
 	if s.activeRelicUsed[p.Fingerprint] {
 		s.addLog(fmt.Sprintf("%s 액티브 유물은 이번 전투에 이미 사용했습니다", p.Name))
 		return
 	}
+	actives := make([]entity.Relic, 0, len(p.Relics))
 	for _, r := range p.Relics {
-		if !r.Effect.IsActive() {
-			continue
+		if r.Effect.IsActive() {
+			actives = append(actives, r)
 		}
-		switch r.Effect {
-		case entity.RelicActiveSmokeBomb:
-			for _, ally := range s.state.Players {
-				if !ally.IsOut() {
-					s.dodgeBonusThisTurn[ally.Fingerprint] = 0.30
-				}
-			}
-			s.addLog(fmt.Sprintf("%s Smoke Bomb! 1턴간 파티 회피 +30%%", p.Name))
-		case entity.RelicActiveBloodstone:
-			heal := p.MaxHP * 30 / 100
-			before := p.HP
-			p.Heal(heal)
-			s.addLog(fmt.Sprintf("%s Bloodstone! HP %d 회복", p.Name, p.HP-before))
-		case entity.RelicActiveTimeGlass:
-			s.extraActionNext[p.Fingerprint] = true
-			s.addLog(fmt.Sprintf("%s Time Glass! 다음 턴 행동 1회 추가 예약", p.Name))
-		}
-		s.activeRelicUsed[p.Fingerprint] = true
+	}
+	if len(actives) == 0 {
+		s.addLog(fmt.Sprintf("%s 발동 가능한 액티브 유물이 없습니다", p.Name))
 		return
 	}
-	s.addLog(fmt.Sprintf("%s 발동 가능한 액티브 유물이 없습니다", p.Name))
+	if choice < 0 || choice >= len(actives) {
+		choice = 0
+	}
+	r := actives[choice]
+	switch r.Effect {
+	case entity.RelicActiveSmokeBomb:
+		for _, ally := range s.state.Players {
+			if !ally.IsOut() {
+				s.dodgeBonusThisTurn[ally.Fingerprint] = 0.30
+			}
+		}
+		s.addLog(fmt.Sprintf("%s Smoke Bomb! 1턴간 파티 회피 +30%%", p.Name))
+	case entity.RelicActiveBloodstone:
+		heal := p.MaxHP * 30 / 100
+		before := p.HP
+		p.Heal(heal)
+		gained := p.HP - before
+		if gained > 0 {
+			s.addLog(fmt.Sprintf("%s Bloodstone! HP %d 회복", p.Name, gained))
+		} else {
+			s.addLog(fmt.Sprintf("%s Bloodstone — 이미 만피", p.Name))
+		}
+	case entity.RelicActiveTimeGlass:
+		s.extraActionNext[p.Fingerprint] = true
+		s.addLog(fmt.Sprintf("%s Time Glass! 다음 턴 행동 1회 추가 예약", p.Name))
+	}
+	s.activeRelicUsed[p.Fingerprint] = true
 }
 
 // applyCoopAbility resolves one player's coop ability use. Caller holds s.mu.
@@ -901,12 +926,16 @@ func (s *GameSession) checkBossPhaseTransitions() {
 			}
 			s.addLog(fmt.Sprintf("  %s ATK +50%%!", m.Name))
 		case 10:
-			// B10 Warden: split — summon 2 slimes scaled to floor
+			// B10 Warden: split — summon 2 slimes scaled to floor.
+			// applyDifficultyMods covers HardMode/NG+/DailyMod so summons
+			// stay scary in late-game runs (the HP*2 boost happens BEFORE
+			// scaling so it survives multiplication).
 			scaling := s.cfg.Combat.MonsterScaling
 			for i := 0; i < 2; i++ {
 				summon := entity.NewMonster(entity.MonsterSlime, floor, scaling)
 				summon.HP = summon.MaxHP * 2 // tougher summons
 				summon.MaxHP = summon.HP
+				s.applyDifficultyMods(summon)
 				s.state.Monsters = append(s.state.Monsters, summon)
 			}
 			s.addLog(fmt.Sprintf("  %s이(가) 슬라임 2마리를 소환!", m.Name))

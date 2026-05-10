@@ -36,6 +36,12 @@ type LobbyScreen struct {
 	hardMode     bool
 	hardUnlocked bool
 	errMsg       string
+	// dailyDate is captured on lobby refresh so the header banner and the
+	// daily-challenge session created via [D] use the same date — avoids a
+	// midnight crossover where header shows yesterday's modifier but the run
+	// is created with today's.
+	dailyDate string
+	dailyMod  game.DailyModifier
 }
 
 func NewLobbyScreen() *LobbyScreen {
@@ -52,7 +58,7 @@ func (s *LobbyScreen) refreshLobby(ctx *Context) {
 	if ctx.Lobby == nil {
 		return
 	}
-	rooms := ctx.Lobby.ListRooms()
+	rooms := ctx.Lobby.ListRoomSnapshots()
 	s.rooms = make([]roomInfo, len(rooms))
 	for i, r := range rooms {
 		status := "대기중"
@@ -75,6 +81,8 @@ func (s *LobbyScreen) refreshLobby(ctx *Context) {
 	if ctx.Store != nil {
 		s.hardUnlocked = ctx.Store.IsUnlocked(ctx.Fingerprint, "hard_mode")
 	}
+	s.dailyDate = time.Now().Format("2006-01-02")
+	s.dailyMod = game.PickDailyModifier(s.dailyDate)
 }
 
 func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
@@ -142,15 +150,19 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		} else if isKey(key, "d") {
 			// Daily Challenge: create a private solo daily session
 			if ctx.Lobby != nil {
+				if s.dailyDate == "" {
+					s.dailyDate = time.Now().Format("2006-01-02")
+					s.dailyMod = game.PickDailyModifier(s.dailyDate)
+				}
+				dailyDate, dailyMod := s.dailyDate, s.dailyMod
 				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 일일 도전")
 				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 					ctx.RoomCode = code
 					session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
 						gs := game.NewGameSession(ctx.Lobby.Cfg())
 						gs.DailyMode = true
-						gs.DailyDate = time.Now().Format("2006-01-02")
-						mod := game.PickDailyModifier(gs.DailyDate)
-						gs.DailyMod = &mod
+						gs.DailyDate = dailyDate
+						gs.DailyMod = &dailyMod
 						gs.ApplyWeeklyMutation()
 						return gs
 					})
@@ -188,6 +200,7 @@ func (s *LobbyScreen) View(ctx *Context) string {
 		hardMode:     s.hardMode,
 		hardUnlocked: s.hardUnlocked,
 		errMsg:       s.errMsg,
+		dailyMod:     s.dailyMod,
 	}
 	return renderLobby(state, ctx.Width, ctx.Height)
 }
@@ -204,6 +217,7 @@ type lobbyState struct {
 	hardMode     bool
 	hardUnlocked bool
 	errMsg       string
+	dailyMod     game.DailyModifier
 }
 
 func renderLobby(state lobbyState, width, height int) string {
@@ -216,8 +230,10 @@ func renderLobby(state lobbyState, width, height int) string {
 		Padding(0, 1)
 
 	header := headerStyle.Render(fmt.Sprintf("── 로비 ── %d명 접속중 ──", state.online))
-	dailyMod := game.PickDailyModifier(time.Now().Format("2006-01-02"))
-	dailyHint := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("오늘의 일일 변이: %s — %s", dailyMod.Name, dailyMod.Desc))
+	dailyHint := ""
+	if state.dailyMod.Name != "" {
+		dailyHint = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("오늘의 일일 변이: %s — %s", state.dailyMod.Name, state.dailyMod.Desc))
+	}
 	menu := "[C] 방 만들기  [J] 코드로 참가  [D] 일일 도전  [S] 영혼의 제단  [Up/Down] 선택  [Enter] 참가  [Q] 뒤로"
 	if state.hardUnlocked {
 		hardStatus := "OFF"

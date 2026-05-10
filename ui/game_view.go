@@ -20,6 +20,7 @@ type GameScreen struct {
 	targetCursor  int
 	allyCursor    int // for Healer skill targeting allies
 	moveCursor    int
+	relicCursor   int // index into local player's active relics; cycled with [r]
 	chatting      bool
 	chatInput     string
 	rankingSaved  bool
@@ -488,7 +489,11 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				case "6":
 					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionCoop, TargetIdx: s.targetCursor})
 				case "7":
-					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionRelic, TargetIdx: s.targetCursor})
+					ctx.Session.SubmitAction(ctx.Fingerprint, game.PlayerAction{Type: game.ActionRelic, TargetIdx: s.relicCursor})
+				case "r":
+					if n := countActiveRelics(s.gameState, ctx.Fingerprint); n > 0 {
+						s.relicCursor = (s.relicCursor + 1) % n
+					}
 				}
 				return s, s.pollState()
 			}
@@ -498,7 +503,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *GameScreen) View(ctx *Context) string {
-	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.chatting, s.chatInput, ctx.Fingerprint, s.skillMsg)
+	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.relicCursor, s.chatting, s.chatInput, ctx.Fingerprint, s.skillMsg)
 }
 
 // countCoopCombos returns how many of the 6 coop pair combos appear in the
@@ -517,15 +522,37 @@ func countCoopCombos(fired map[string]bool) int {
 	return n
 }
 
-func renderGame(state game.GameState, width, height int, targetCursor int, allyCursor int, moveCursor int, chatting bool, chatInput string, fingerprint string, skillMsg string) string {
+// playerActiveRelics returns the local player's active (triggerable) relics in
+// inventory order. Used by the [r] cycle key and the HUD armed-relic readout.
+func playerActiveRelics(state game.GameState, fingerprint string) []entity.Relic {
+	for _, p := range state.Players {
+		if p.Fingerprint != fingerprint {
+			continue
+		}
+		out := make([]entity.Relic, 0, len(p.Relics))
+		for _, r := range p.Relics {
+			if r.Effect.IsActive() {
+				out = append(out, r)
+			}
+		}
+		return out
+	}
+	return nil
+}
+
+func countActiveRelics(state game.GameState, fingerprint string) int {
+	return len(playerActiveRelics(state, fingerprint))
+}
+
+func renderGame(state game.GameState, width, height int, targetCursor int, allyCursor int, moveCursor int, relicCursor int, chatting bool, chatInput string, fingerprint string, skillMsg string) string {
 	mapView := renderMap(state.Floor)
-	hudView := renderHUD(state, targetCursor, allyCursor, moveCursor, fingerprint)
+	hudView := renderHUD(state, targetCursor, allyCursor, moveCursor, relicCursor, fingerprint)
 	logView := renderCombatLog(state.CombatLog)
 
 	if chatting {
 		chatStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("117"))
 		chatView := chatStyle.Render(fmt.Sprintf("> %s_", chatInput))
-		hint := styleSystem.Render("emote: /hi /gg /go /wait /help /dance /cheer /laugh /cry /think /sorry /thanks /rage")
+		hint := styleSystem.Render("emote: " + strings.Join(game.EmoteList(), " "))
 		return lipgloss.JoinVertical(lipgloss.Left, mapView, hudView, logView, chatView, hint)
 	}
 
@@ -556,7 +583,7 @@ func renderMap(floor *dungeon.Floor) string {
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
-func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCursor int, fingerprint string) string {
+func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCursor int, relicCursor int, fingerprint string) string {
 	var sb strings.Builder
 	border := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
@@ -619,10 +646,24 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 		if state.CoopAvailable != nil && !state.CoopAvailable[fingerprint] {
 			coopHint = styleSystem.Render("[6]협동기(사용됨)")
 		}
+		// Relic hint: show armed relic name when player owns at least one
+		// active relic, plus a [r] cycle hint when more than one is owned.
+		relicHint := " [7]유물"
+		if actives := playerActiveRelics(state, fingerprint); len(actives) > 0 {
+			idx := relicCursor
+			if idx < 0 || idx >= len(actives) {
+				idx = 0
+			}
+			if len(actives) > 1 {
+				relicHint = fmt.Sprintf(" [7]유물(%s) [r]전환", actives[idx].Name)
+			} else {
+				relicHint = fmt.Sprintf(" [7]유물(%s)", actives[idx].Name)
+			}
+		}
 		if isHealer {
-			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [7]유물 [Tab]적 [Shift+Tab]아군 [/]채팅"))
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(relicHint+" [Tab]적 [Shift+Tab]아군 [/]채팅"))
 		} else {
-			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(" [7]유물 [Tab]대상 [/]채팅"))
+			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(relicHint+" [Tab]대상 [/]채팅"))
 		}
 		sb.WriteString("\n")
 

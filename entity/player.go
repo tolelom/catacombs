@@ -199,7 +199,10 @@ func (p *Player) TickEffects() []string {
 		case StatusBleed:
 			p.HP -= e.Value
 			msgs = append(msgs, fmt.Sprintf("%s 출혈 피해 %d", p.Name, e.Value))
-			e.Value++ // Bleed intensifies each turn
+			// Bleed escalates per turn while a single application is active;
+			// note that AddEffect replaces an existing Bleed rather than
+			// stacking, so a fresh hit resets the intensification.
+			e.Value++
 		case StatusCurse:
 			msgs = append(msgs, fmt.Sprintf("%s 저주 상태! 회복량 감소", p.Name))
 		}

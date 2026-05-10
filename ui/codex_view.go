@@ -38,6 +38,10 @@ var allEvents = []string{
 	"shrine", "chest", "ghost", "mushroom",
 }
 
+// bossNames is the codex-display order for the boss trophy tab. Kept here so
+// the lookup (NewCodexScreen) and the renderer agree.
+var bossNames = []string{"Guardian", "Warden", "Overlord", "Archlich"}
+
 var (
 	totalMonsters = len(allMonsters)
 	totalItems    = len(allItems)
@@ -56,7 +60,7 @@ func NewCodexScreen(ctx *Context) *CodexScreen {
 	bossKills := make(map[string]int64)
 	if ctx.Store != nil {
 		codex, _ = ctx.Store.GetCodex(ctx.Fingerprint)
-		for _, name := range []string{"Guardian", "Warden", "Overlord", "Archlich"} {
+		for _, name := range bossNames {
 			n, _ := ctx.Store.GetCounter(ctx.Fingerprint, "boss_kill:"+name)
 			bossKills[name] = n
 		}
@@ -125,7 +129,6 @@ func (s *CodexScreen) View(ctx *Context) string {
 		total = totalEvents
 	case 3:
 		// Boss trophy tab — render directly and return early.
-		bossNames := []string{"Guardian", "Warden", "Overlord", "Archlich"}
 		var b string
 		killCount := 0
 		for _, name := range bossNames {

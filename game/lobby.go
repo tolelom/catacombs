@@ -72,19 +72,23 @@ func (l *Lobby) UnregisterSession(fingerprint string) {
 
 func (l *Lobby) GetActiveSession(fingerprint string) (string, *GameSession) {
 	l.mu.RLock()
-	defer l.mu.RUnlock()
 	code, ok := l.activeSessions[fingerprint]
 	if !ok {
+		l.mu.RUnlock()
 		return "", nil
 	}
 	room, ok := l.rooms[code]
 	if !ok || room.Session == nil {
+		l.mu.RUnlock()
 		return "", nil
 	}
-	// Check if this player is still in the session
-	for _, p := range room.Session.GetState().Players {
+	session := room.Session
+	l.mu.RUnlock()
+	// GetState takes session.mu; calling it under l.mu would let one slow
+	// session serialise every other reconnect on the lobby lock.
+	for _, p := range session.GetState().Players {
 		if p.Fingerprint == fingerprint {
-			return code, room.Session
+			return code, session
 		}
 	}
 	return "", nil
@@ -230,12 +234,63 @@ func (l *Lobby) GetRoom(code string) *LobbyRoom {
 	return l.rooms[code]
 }
 
+// RoomSnapshot is a point-in-time copy of a LobbyRoom's read-only state. The
+// Players slice is a fresh copy so callers can iterate without holding l.mu.
+// Session is a pointer; once a session is created it is not reassigned, so
+// the pointer is safe to use after RoomSnapshot returns.
+type RoomSnapshot struct {
+	Code    string
+	Name    string
+	Players []LobbyPlayer
+	Status  RoomStatus
+	Session *GameSession
+}
+
+// RoomSnapshot returns a copy of the room's state under l.mu, decoupling
+// callers (especially UI code rendering on a tick) from concurrent
+// JoinRoom/LeaveRoom/SetPlayer* mutations on room.Players.
+func (l *Lobby) RoomSnapshot(code string) (RoomSnapshot, bool) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	room, ok := l.rooms[code]
+	if !ok {
+		return RoomSnapshot{}, false
+	}
+	return RoomSnapshot{
+		Code:    room.Code,
+		Name:    room.Name,
+		Players: append([]LobbyPlayer(nil), room.Players...),
+		Status:  room.Status,
+		Session: room.Session,
+	}, true
+}
+
 func (l *Lobby) ListRooms() []*LobbyRoom {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	result := make([]*LobbyRoom, 0, len(l.rooms))
 	for _, r := range l.rooms {
 		result = append(result, r)
+	}
+	return result
+}
+
+// ListRoomSnapshots returns a copy of every room's state under l.mu. Use this
+// from UI / external readers instead of ListRooms — the latter hands back live
+// *LobbyRoom pointers, and reading their Players slice without l.mu races
+// with Join/Leave/SetPlayer* mutations.
+func (l *Lobby) ListRoomSnapshots() []RoomSnapshot {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	result := make([]RoomSnapshot, 0, len(l.rooms))
+	for _, r := range l.rooms {
+		result = append(result, RoomSnapshot{
+			Code:    r.Code,
+			Name:    r.Name,
+			Players: append([]LobbyPlayer(nil), r.Players...),
+			Status:  r.Status,
+			Session: r.Session,
+		})
 	}
 	return result
 }

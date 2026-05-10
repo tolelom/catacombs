@@ -25,6 +25,9 @@ func newCodex() Codex {
 func (d *DB) RecordCodexEntry(fingerprint, category, id string) error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketCodex)
+		if b == nil {
+			return errBucketMissing
+		}
 		key := []byte(fingerprint)
 		codex := newCodex()
 
@@ -66,6 +69,9 @@ func (d *DB) GetCodex(fingerprint string) (Codex, error) {
 	codex := newCodex()
 	err := d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketCodex)
+		if b == nil {
+			return nil
+		}
 		v := b.Get([]byte(fingerprint))
 		if v == nil {
 			return nil

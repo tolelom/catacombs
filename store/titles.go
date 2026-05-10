@@ -33,6 +33,9 @@ func (d *DB) EarnTitle(fingerprint, titleID string) (bool, error) {
 	newlyEarned := false
 	err := d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketTitles)
+		if b == nil {
+			return errBucketMissing
+		}
 		key := []byte(fingerprint)
 		var data PlayerTitleData
 
@@ -70,6 +73,9 @@ func (d *DB) EarnTitle(fingerprint, titleID string) (bool, error) {
 func (d *DB) SetActiveTitle(fingerprint, titleID string) error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketTitles)
+		if b == nil {
+			return errBucketMissing
+		}
 		key := []byte(fingerprint)
 		var data PlayerTitleData
 
@@ -105,6 +111,9 @@ func (d *DB) GetTitleData(fingerprint string) (PlayerTitleData, error) {
 	var data PlayerTitleData
 	err := d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketTitles)
+		if b == nil {
+			return nil
+		}
 		v := b.Get([]byte(fingerprint))
 		if v == nil {
 			return nil

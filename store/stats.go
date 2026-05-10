@@ -13,6 +13,9 @@ func (d *DB) GetTodayRunCount() (int, error) {
 	count := 0
 	err := d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketDailyRuns)
+		if b == nil {
+			return nil
+		}
 		c := b.Cursor()
 		prefix := []byte(today + ":")
 		for k, _ := c.Seek(prefix); k != nil && len(k) >= len(prefix) && string(k[:len(prefix)]) == string(prefix); k, _ = c.Next() {
@@ -30,6 +33,9 @@ func (d *DB) GetTodayAvgFloor() (float64, error) {
 	count := 0
 	err := d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketDailyRuns)
+		if b == nil {
+			return nil
+		}
 		c := b.Cursor()
 		prefix := []byte(today + ":")
 		for k, v := c.Seek(prefix); k != nil && len(k) >= len(prefix) && string(k[:len(prefix)]) == string(prefix); k, v = c.Next() {

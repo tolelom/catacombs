@@ -47,7 +47,16 @@ func NewServer(addr string, lobby *game.Lobby, db *store.DB) (*ssh.Server, error
 					// per-connection identifier so lobby/session bookkeeping
 					// (dedup, activeSessions, RegisterSession) doesn't collide
 					// across simultaneous web players.
-					fingerprint = "anon:" + randomToken(8)
+					tok, err := randomToken(8)
+					if err != nil {
+						// OS RNG failure — refuse the session rather than
+						// minting a colliding "fallback" fingerprint that
+						// would cross-route concurrent web players.
+						slog.Error("anon fingerprint RNG failed; refusing session", "error", err)
+						_ = s.Exit(1)
+						return rejectModel{}, nil
+					}
+					fingerprint = "anon:" + tok
 				}
 
 				slog.Info("new SSH session", "fingerprint", fingerprint, "width", pty.Window.Width, "height", pty.Window.Height)
@@ -72,12 +81,24 @@ func Start(addr string, lobby *game.Lobby, db *store.DB) error {
 	return s.ListenAndServe()
 }
 
-func randomToken(n int) string {
+// randomToken returns a hex-encoded n-byte random token. Errors are returned
+// rather than swallowed because the caller (anon fingerprint minting) cannot
+// tolerate collisions: a stale fingerprint would cross-wire concurrent web
+// players in the lobby's activeSessions map.
+func randomToken(n int) (string, error) {
 	buf := make([]byte, n)
 	if _, err := rand.Read(buf); err != nil {
-		// Fall back to a non-empty constant; collisions remain possible but
-		// only when the OS RNG fails, which is itself a critical condition.
-		return "fallback"
+		return "", fmt.Errorf("rand.Read: %w", err)
 	}
-	return hex.EncodeToString(buf)
+	return hex.EncodeToString(buf), nil
 }
+
+// rejectModel is a tea.Model returned from the SSH middleware when the
+// session must be refused (e.g. anon fingerprint minting failed). It does
+// nothing on Init / Update / View — Bubble Tea will see the empty View and
+// the deferred s.Exit(1) will tear the session down.
+type rejectModel struct{}
+
+func (rejectModel) Init() tea.Cmd                           { return tea.Quit }
+func (rejectModel) Update(tea.Msg) (tea.Model, tea.Cmd)     { return rejectModel{}, tea.Quit }
+func (rejectModel) View() string                            { return "" }

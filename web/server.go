@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -19,8 +20,27 @@ import (
 //go:embed static
 var staticFiles embed.FS
 
+const (
+	wsWriteWait  = 10 * time.Second
+	wsPongWait   = 60 * time.Second
+	wsPingPeriod = (wsPongWait * 9) / 10
+)
+
+// upgrader rejects cross-origin WebSocket upgrade requests so a malicious
+// site can't drive the in-game session in a victim's browser. Non-browser
+// clients (no Origin header) are allowed for headless test scripts.
 var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin: func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		u, err := url.Parse(origin)
+		if err != nil {
+			return false
+		}
+		return u.Host == r.Host
+	},
 }
 
 type resizeMsg struct {
@@ -124,6 +144,24 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 		})
 	}
 
+	// gorilla/websocket allows one concurrent writer; both the SSH→WS pump
+	// and the ping ticker write, so guard with a mutex.
+	var writeMu sync.Mutex
+	wsWrite := func(messageType int, data []byte) error {
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		_ = ws.SetWriteDeadline(time.Now().Add(wsWriteWait))
+		return ws.WriteMessage(messageType, data)
+	}
+
+	// Read deadline + pong handler — half-open / slow clients tear down
+	// rather than leaking SSH session and lobby slot.
+	_ = ws.SetReadDeadline(time.Now().Add(wsPongWait))
+	ws.SetPongHandler(func(string) error {
+		_ = ws.SetReadDeadline(time.Now().Add(wsPongWait))
+		return nil
+	})
+
 	// SSH stdout → WebSocket
 	go func() {
 		defer cleanup()
@@ -131,7 +169,7 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 		for {
 			n, err := stdout.Read(buf)
 			if n > 0 {
-				if writeErr := ws.WriteMessage(websocket.BinaryMessage, buf[:n]); writeErr != nil {
+				if writeErr := wsWrite(websocket.BinaryMessage, buf[:n]); writeErr != nil {
 					return
 				}
 			}
@@ -159,6 +197,23 @@ func handleWS(w http.ResponseWriter, r *http.Request, sshPort int) {
 				if json.Unmarshal(data, &msg) == nil && msg.Type == "resize" {
 					_ = session.WindowChange(msg.Rows, msg.Cols)
 				}
+			}
+		}
+	}()
+
+	// Periodic ping so SetReadDeadline keeps refreshing on the read side.
+	go func() {
+		ticker := time.NewTicker(wsPingPeriod)
+		defer ticker.Stop()
+		defer cleanup()
+		for {
+			select {
+			case <-ticker.C:
+				if err := wsWrite(websocket.PingMessage, nil); err != nil {
+					return
+				}
+			case <-done:
+				return
 			}
 		}
 	}()

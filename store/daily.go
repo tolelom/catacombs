@@ -26,6 +26,9 @@ type DailyRecord struct {
 func (d *DB) SaveDaily(record DailyRecord) error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketDailyRuns)
+		if b == nil {
+			return errBucketMissing
+		}
 		key := []byte(record.Date + ":" + record.Player)
 		if existing := b.Get(key); existing != nil {
 			var prev DailyRecord
@@ -51,6 +54,9 @@ func (d *DB) GetDailyLeaderboard(date string, limit int) ([]DailyRecord, error) 
 	prefix := []byte(date + ":")
 	err := d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketDailyRuns)
+		if b == nil {
+			return nil
+		}
 		c := b.Cursor()
 		for k, v := c.Seek(prefix); k != nil && len(k) >= len(prefix) && string(k[:len(prefix)]) == string(prefix); k, v = c.Next() {
 			var r DailyRecord
@@ -83,6 +89,9 @@ func (d *DB) GetStreak(fingerprint, currentDate string) (int, error) {
 	}
 	err = d.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketDailyRuns)
+		if b == nil {
+			return nil
+		}
 		for {
 			key := []byte(date.Format("2006-01-02") + ":" + fingerprint)
 			if b.Get(key) == nil {

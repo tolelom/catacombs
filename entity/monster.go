@@ -71,7 +71,7 @@ type Monster struct {
 	Pattern           BossPattern
 	Phase             int  // 1 = base; 2 = enraged (boss < 50% HP)
 	PhaseTransitioned bool // true once Phase 2 effects have been applied
-	Vulnerable        bool // 1-turn flag for B15 phase 2 (1.5x dmg taken)
+	Vulnerable        bool // toggles every turn while B15 boss is in phase 2 — open windows take 1.5x damage
 	Effects           []ActiveEffect
 }
 
@@ -122,6 +122,8 @@ func (m *Monster) TickEffects() []string {
 				m.HP = 0
 			}
 			msgs = append(msgs, fmt.Sprintf("%s 출혈 피해 %d", m.Name, e.Value))
+			// AddEffect replaces an existing Bleed rather than stacking, so
+			// the intensification only escalates between re-applications.
 			e.Value++
 		}
 		e.Duration--
@@ -133,9 +135,10 @@ func (m *Monster) TickEffects() []string {
 	return msgs
 }
 
-// CheckPhaseTransition returns true if a boss/mini-boss should enter phase 2
-// this turn. Phase 2 default threshold is 50% HP. Pass thresholdPercent (e.g.
-// 70 for the Cruel curse) to trigger earlier.
+// CheckPhaseTransition returns true if a boss should enter phase 2 this turn.
+// Mini-bosses (IsMiniBoss) intentionally do NOT enrage — only true bosses
+// (floors 5/10/15/20). Phase 2 default threshold is 50% HP. Pass
+// thresholdPercent (e.g. 70 for the Cruel curse) to trigger earlier.
 func (m *Monster) CheckPhaseTransition() bool {
 	return m.CheckPhaseTransitionAt(50)
 }
