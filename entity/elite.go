@@ -43,7 +43,7 @@ func RandomPrefix(rng *rand.Rand) ElitePrefixType {
 	if rng == nil {
 		rng = defaultEliteRng
 	}
-	return ElitePrefixType(rng.Intn(5))
+	return ElitePrefixType(rng.Intn(len(ElitePrefixDefs)))
 }
 
 func ApplyPrefix(m *Monster, prefix ElitePrefixType) {

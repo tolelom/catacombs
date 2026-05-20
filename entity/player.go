@@ -52,10 +52,11 @@ type Player struct {
 	Inventory   []Item
 	Relics      []Relic
 	Effects     []ActiveEffect
-	Dead        bool
-	Fled        bool
-	SkillUses   int // remaining skill uses this combat
-	Skills      *PlayerSkills
+	Dead         bool
+	Fled         bool
+	SkillUses    int // remaining skill uses this combat
+	Skills       *PlayerSkills
+	FreezeImmune int // turns of freeze immunity remaining (prevents perma-freeze)
 }
 
 func NewPlayer(name string, class Class) *Player {
@@ -147,6 +148,10 @@ func (p *Player) EffectiveDEF() int {
 }
 
 func (p *Player) AddEffect(e ActiveEffect) {
+	// Freeze immunity prevents perma-freeze
+	if e.Type == StatusFreeze && p.FreezeImmune > 0 {
+		return
+	}
 	// Check relic immunities
 	for _, r := range p.Relics {
 		if e.Type == StatusPoison && r.Effect == RelicPoisonImmunity {
@@ -177,6 +182,10 @@ func (p *Player) HasEffect(t StatusEffect) bool {
 
 func (p *Player) TickEffects() []string {
 	var msgs []string
+	// Tick freeze immunity
+	if p.FreezeImmune > 0 {
+		p.FreezeImmune--
+	}
 	remaining := p.Effects[:0] // reuse underlying array
 	for i := 0; i < len(p.Effects); i++ {
 		e := &p.Effects[i]
@@ -212,6 +221,9 @@ func (p *Player) TickEffects() []string {
 		e.Duration--
 		if e.Duration > 0 {
 			remaining = append(remaining, *e)
+		} else if e.Type == StatusFreeze {
+			// Grant 2 turns of freeze immunity after freeze expires
+			p.FreezeImmune = 2
 		}
 	}
 	p.Effects = remaining
