@@ -43,6 +43,9 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Combat.SoloATKReduction != 0.75 {
 		t.Errorf("expected solo ATK reduction 0.75, got %f", cfg.Combat.SoloATKReduction)
 	}
+	if cfg.Combat.EarlyThreatRamp != 0.08 {
+		t.Errorf("expected early threat ramp 0.08, got %f", cfg.Combat.EarlyThreatRamp)
+	}
 	if cfg.Difficulty.HardModeMonsterMult != 1.35 {
 		t.Errorf("expected hard mode monster mult 1.35, got %f", cfg.Difficulty.HardModeMonsterMult)
 	}

@@ -220,6 +220,43 @@ func (s *GameSession) applySoloScaling(m *entity.Monster) {
 	}
 }
 
+// earlyThreatMult returns a HP/ATK multiplier that compresses the trivial
+// early-game "warmup". It is a smooth bump: 1.0 on the onboarding floors (1-2),
+// rising to a mid-early peak (~floor 6), then tapering back to 1.0 by floor 10
+// where the exponential min-floor scaling takes over. This brings tension
+// forward to ~floor 4-5 without creating a difficulty discontinuity at floor 10.
+// EarlyThreatRamp == 0 disables it entirely.
+func (s *GameSession) earlyThreatMult(floor int) float64 {
+	const fadeFloor = 10 // ramp returns to 1.0 here, merging into base scaling
+	steps := floor - 2
+	if fade := fadeFloor - floor; fade < steps {
+		steps = fade
+	}
+	if steps <= 0 {
+		return 1.0
+	}
+	return 1.0 + s.cfg.Combat.EarlyThreatRamp*float64(steps)
+}
+
+// applyEarlyThreat scales a regular monster's HP and ATK (not DEF — the
+// subtractive damage formula makes DEF lifts disproportionately punishing) by
+// earlyThreatMult. No-op once the multiplier is 1.0.
+func (s *GameSession) applyEarlyThreat(m *entity.Monster, floor int) {
+	mult := s.earlyThreatMult(floor)
+	if mult == 1.0 {
+		return
+	}
+	m.HP = int(float64(m.HP) * mult)
+	if m.HP < 1 {
+		m.HP = 1
+	}
+	m.MaxHP = m.HP
+	m.ATK = int(float64(m.ATK) * mult)
+	if m.ATK < 1 {
+		m.ATK = 1
+	}
+}
+
 func (s *GameSession) spawnMonsters() {
 	count := 1 + s.rng.Intn(5)
 	floor := s.state.FloorNum
@@ -249,6 +286,7 @@ func (s *GameSession) spawnMonsters() {
 	for i := 0; i < count; i++ {
 		mt := valid[s.rng.Intn(len(valid))]
 		m := entity.NewMonster(mt, floor, s.cfg.Combat.MonsterScaling)
+		s.applyEarlyThreat(m, floor)
 		s.applySoloScaling(m)
 		if s.hasMutation("elite_flood") || s.rng.Float64() < 0.20 {
 			entity.ApplyPrefix(m, entity.RandomPrefix(s.rng))
