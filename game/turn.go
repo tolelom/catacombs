@@ -148,14 +148,7 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 
 			if p.IsDead() {
-				if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
-					p.Revive(0.30)
-					s.soloHealerRevived[p.Fingerprint] = true
-					s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
-				} else {
-					s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
-					s.state.AnyPlayerDied = true
-				}
+				s.tryReviveSoloHealerLocked(p)
 			}
 		}
 	}
@@ -603,14 +596,7 @@ func (s *GameSession) resolveMonsterActions() {
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s 광역 공격으로 %s에게 %d 피해", m.Name, p.Name, dmg))
 					if p.IsDead() {
-						if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
-							p.Revive(0.30)
-							s.soloHealerRevived[p.Fingerprint] = true
-							s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
-						} else {
-							s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
-							s.state.AnyPlayerDied = true
-						}
+						s.tryReviveSoloHealerLocked(p)
 					}
 				}
 			}
@@ -675,14 +661,7 @@ func (s *GameSession) resolveMonsterActions() {
 						}
 					}
 					if p.IsDead() {
-						if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
-							p.Revive(0.30)
-							s.soloHealerRevived[p.Fingerprint] = true
-							s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
-						} else {
-							s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
-							s.state.AnyPlayerDied = true
-						}
+						s.tryReviveSoloHealerLocked(p)
 					}
 				}
 			}
@@ -1033,4 +1012,23 @@ func (s *GameSession) applyCoopComboEffect(eff combat.ComboEffect) {
 	if eff.PoisonNextCombat {
 		s.poisonNextCombat = true
 	}
+}
+
+// tryReviveSoloHealerLocked handles a player's death uniformly: if the
+// once-per-run solo-healer auto-revive applies, restores the player to
+// 30% HP and logs the revive; otherwise logs the rip line and flips
+// AnyPlayerDied for the no_death achievement. Returns true when revived.
+// Burning the revive on event damage is intentional — any death counts
+// per the Divine Grace design. Caller holds s.mu. Only call when
+// p.IsDead() == true.
+func (s *GameSession) tryReviveSoloHealerLocked(p *entity.Player) bool {
+	if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
+		p.Revive(0.30)
+		s.soloHealerRevived[p.Fingerprint] = true
+		s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
+		return true
+	}
+	s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
+	s.state.AnyPlayerDied = true
+	return false
 }
