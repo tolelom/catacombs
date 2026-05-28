@@ -42,9 +42,10 @@ type GameConfig struct {
 }
 
 type CombatConfig struct {
-	FleeChance      float64 `yaml:"flee_chance"`
-	MonsterScaling  float64 `yaml:"monster_scaling"`
-	SoloHPReduction float64 `yaml:"solo_hp_reduction"`
+	FleeChance       float64 `yaml:"flee_chance"`
+	MonsterScaling   float64 `yaml:"monster_scaling"`
+	SoloHPReduction  float64 `yaml:"solo_hp_reduction"`
+	SoloATKReduction float64 `yaml:"solo_atk_reduction"`
 }
 
 type DungeonConfig struct {
@@ -66,7 +67,7 @@ func defaults() Config {
 			TurnTimeoutSec: 10, MaxPlayers: 4, MaxFloors: 20,
 			CoopBonus: 0.10, InventoryLimit: 10, SkillUses: 3,
 		},
-		Combat: CombatConfig{FleeChance: 0.50, MonsterScaling: 1.15, SoloHPReduction: 0.50},
+		Combat: CombatConfig{FleeChance: 0.50, MonsterScaling: 1.15, SoloHPReduction: 0.50, SoloATKReduction: 0.75},
 		Dungeon: DungeonConfig{MapWidth: 60, MapHeight: 20, MinRooms: 5, MaxRooms: 8},
 		Backup:     BackupConfig{IntervalMin: 60, Dir: "./data/backup"},
 		Difficulty: DifficultyConfig{HardModeMonsterMult: 1.35, HardModeShopMult: 1.75, HardModeHealMult: 0.6},
@@ -125,6 +126,9 @@ func (c *Config) normalize() {
 	}
 	if c.Combat.SoloHPReduction <= 0 {
 		c.Combat.SoloHPReduction = d.Combat.SoloHPReduction
+	}
+	if c.Combat.SoloATKReduction <= 0 {
+		c.Combat.SoloATKReduction = d.Combat.SoloATKReduction
 	}
 	if c.Difficulty.HardModeMonsterMult <= 0 {
 		c.Difficulty.HardModeMonsterMult = d.Difficulty.HardModeMonsterMult

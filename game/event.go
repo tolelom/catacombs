@@ -199,6 +199,27 @@ func (s *GameSession) handleWanderingMerchant() {
 	s.addLog("방랑상인이 희귀 아이템을 들고 나타났습니다! (가격 2배)")
 }
 
+// applySoloScaling weakens a monster for single-player runs: HP and DEF are
+// reduced by SoloHPReduction (squishier) and ATK by SoloATKReduction (hits
+// softer). The ATK cut compensates for a solo party having no healer sustain
+// or coop combos — without it, fragile classes cannot survive late bosses long
+// enough to kill them. No-op outside solo mode.
+func (s *GameSession) applySoloScaling(m *entity.Monster) {
+	if !s.state.SoloMode {
+		return
+	}
+	m.HP = int(float64(m.HP) * s.cfg.Combat.SoloHPReduction)
+	if m.HP < 1 {
+		m.HP = 1
+	}
+	m.MaxHP = m.HP
+	m.DEF = int(float64(m.DEF) * s.cfg.Combat.SoloHPReduction)
+	m.ATK = int(float64(m.ATK) * s.cfg.Combat.SoloATKReduction)
+	if m.ATK < 1 {
+		m.ATK = 1
+	}
+}
+
 func (s *GameSession) spawnMonsters() {
 	count := 1 + s.rng.Intn(5)
 	floor := s.state.FloorNum
@@ -228,14 +249,7 @@ func (s *GameSession) spawnMonsters() {
 	for i := 0; i < count; i++ {
 		mt := valid[s.rng.Intn(len(valid))]
 		m := entity.NewMonster(mt, floor, s.cfg.Combat.MonsterScaling)
-		if s.state.SoloMode {
-			m.HP = int(float64(m.HP) * s.cfg.Combat.SoloHPReduction)
-			if m.HP < 1 {
-				m.HP = 1
-			}
-			m.MaxHP = m.HP
-			m.DEF = int(float64(m.DEF) * s.cfg.Combat.SoloHPReduction)
-		}
+		s.applySoloScaling(m)
 		if s.hasMutation("elite_flood") || s.rng.Float64() < 0.20 {
 			entity.ApplyPrefix(m, entity.RandomPrefix(s.rng))
 		}
@@ -278,14 +292,7 @@ func (s *GameSession) spawnBoss() {
 	case entity.MonsterBoss20:
 		boss.Pattern = entity.PatternHeal // Inferno theme (+ natural AoE every 3 turns)
 	}
-	if s.state.SoloMode {
-		boss.HP = int(float64(boss.HP) * s.cfg.Combat.SoloHPReduction)
-		if boss.HP < 1 {
-			boss.HP = 1
-		}
-		boss.MaxHP = boss.HP
-		boss.DEF = int(float64(boss.DEF) * s.cfg.Combat.SoloHPReduction)
-	}
+	s.applySoloScaling(boss)
 	s.applyDifficultyMods(boss)
 	s.state.Monsters = []*entity.Monster{boss}
 
@@ -521,14 +528,7 @@ func (s *GameSession) spawnMiniBoss() {
 		miniBoss.Pattern = entity.PatternHeal
 	}
 
-	if s.state.SoloMode {
-		miniBoss.HP = int(float64(miniBoss.HP) * s.cfg.Combat.SoloHPReduction)
-		if miniBoss.HP < 1 {
-			miniBoss.HP = 1
-		}
-		miniBoss.MaxHP = miniBoss.HP
-		miniBoss.DEF = int(float64(miniBoss.DEF) * s.cfg.Combat.SoloHPReduction)
-	}
+	s.applySoloScaling(miniBoss)
 	s.applyDifficultyMods(miniBoss)
 	s.state.Monsters = []*entity.Monster{miniBoss}
 	s.addLog(fmt.Sprintf("미니보스 등장: %s!", miniBoss.Name))

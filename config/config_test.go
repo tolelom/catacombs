@@ -37,6 +37,12 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Combat.MonsterScaling != 1.15 {
 		t.Errorf("expected monster scaling 1.15, got %f", cfg.Combat.MonsterScaling)
 	}
+	if cfg.Combat.SoloHPReduction != 0.50 {
+		t.Errorf("expected solo HP reduction 0.50, got %f", cfg.Combat.SoloHPReduction)
+	}
+	if cfg.Combat.SoloATKReduction != 0.75 {
+		t.Errorf("expected solo ATK reduction 0.75, got %f", cfg.Combat.SoloATKReduction)
+	}
 	if cfg.Difficulty.HardModeMonsterMult != 1.35 {
 		t.Errorf("expected hard mode monster mult 1.35, got %f", cfg.Difficulty.HardModeMonsterMult)
 	}
