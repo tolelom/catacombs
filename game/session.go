@@ -1040,6 +1040,32 @@ func (s *GameSession) ClearMoveVotes() {
 	s.state.MoveVotes = nil
 }
 
+// tallyEventQuorumLocked returns true if every alive player has cast an
+// event vote. Does NOT compute a winner — winner selection lives in
+// resolveEventVoteLocked. Returns false when no alive players remain.
+// The anonymous-solo special case stays in SubmitEventVote because it
+// depends on the caller's fingerprint context. Caller holds s.mu.
+func (s *GameSession) tallyEventQuorumLocked() bool {
+	aliveCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			aliveCount++
+		}
+	}
+	if aliveCount == 0 {
+		return false
+	}
+	voteCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			if _, ok := s.eventVotes[p.Fingerprint]; ok {
+				voteCount++
+			}
+		}
+	}
+	return voteCount >= aliveCount
+}
+
 // SubmitEventVote records a player's event choice during PhaseEvent. When
 // all alive players have voted, the majority choice (ties broken by lowest
 // index) is resolved and applied to the party. Returns true if this call
@@ -1071,7 +1097,7 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 		s.state.EventVotes[k] = v
 	}
 
-	// Quorum check: all alive players voted (anonymous solo path = 1 vote)
+	// Defensive: nobody alive to receive the outcome. Clear and bail.
 	aliveCount := 0
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -1079,27 +1105,19 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 		}
 	}
 	if aliveCount == 0 {
-		// Defensive: no alive players left to receive outcome; just clear.
 		s.clearPendingEventLocked(true)
 		return true
 	}
-	voteCount := 0
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			if _, ok := s.eventVotes[p.Fingerprint]; ok {
-				voteCount++
-			}
-		}
-	}
-	// Anonymous single-player test path: treat untracked fingerprint as the
-	// vote we just received.
+	// Anonymous single-player test path: the caller passed no fingerprint so
+	// the vote did not land in s.eventVotes — treat this call as the sole
+	// alive vote.
 	if aliveCount == 1 && fingerprint == "" && len(s.eventVotes) == 0 {
-		voteCount = 1
+		s.resolveEventVoteLocked()
+		return true
 	}
-	if voteCount < aliveCount {
+	if !s.tallyEventQuorumLocked() {
 		return false
 	}
-
 	s.resolveEventVoteLocked()
 	return true
 }
