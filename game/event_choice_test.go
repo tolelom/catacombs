@@ -249,3 +249,120 @@ func TestSubmitEventVote_SoloModeImmediateResolve(t *testing.T) {
 		t.Error("solo resolve should return to PhaseExploring")
 	}
 }
+
+func TestApplyEventOutcome_PartywideHealAndGoldSplit(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	for _, fp := range []string{"fp-a", "fp-b", "fp-c"} {
+		p := entity.NewPlayer(fp, entity.ClassWarrior)
+		p.Fingerprint = fp
+		p.HP = 50
+		p.MaxHP = 100
+		p.Gold = 100
+		s.AddPlayer(p)
+	}
+	s.mu.Lock()
+	s.applyEventOutcome(EventOutcome{HPChange: 20, GoldChange: -30})
+	s.mu.Unlock()
+
+	st := s.GetState()
+	for _, p := range st.Players {
+		if p.HP != 70 {
+			t.Errorf("each player should heal to 70, got %s HP=%d", p.Fingerprint, p.HP)
+		}
+		if p.Gold != 90 {
+			t.Errorf("each player should pay 10 (30/3), got %s Gold=%d", p.Fingerprint, p.Gold)
+		}
+	}
+}
+
+func TestApplyEventOutcome_GoldRemainderToFirstAlive(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	for _, fp := range []string{"fp-a", "fp-b", "fp-c"} {
+		p := entity.NewPlayer(fp, entity.ClassWarrior)
+		p.Fingerprint = fp
+		p.Gold = 100
+		s.AddPlayer(p)
+	}
+	s.mu.Lock()
+	// -10 across 3 players → 3,3,3 + remainder 1 on first alive
+	s.applyEventOutcome(EventOutcome{GoldChange: -10})
+	s.mu.Unlock()
+
+	st := s.GetState()
+	if st.Players[0].Gold != 96 { // 100 - 3 - 1
+		t.Errorf("first alive should bear remainder, got %d (expected 96)", st.Players[0].Gold)
+	}
+	if st.Players[1].Gold != 97 || st.Players[2].Gold != 97 {
+		t.Errorf("others should pay 3 each, got %d %d", st.Players[1].Gold, st.Players[2].Gold)
+	}
+}
+
+func TestApplyEventOutcome_ItemDropPerPlayerSkipFull(t *testing.T) {
+	cfg := testCfg(t)
+	limit := cfg.Game.InventoryLimit
+	s := NewGameSession(cfg)
+	full := entity.NewPlayer("full", entity.ClassWarrior)
+	full.Fingerprint = "fp-full"
+	for i := 0; i < limit; i++ {
+		full.Inventory = append(full.Inventory, entity.Item{Name: "junk", Type: entity.ItemConsumable, Bonus: 1})
+	}
+	empty := entity.NewPlayer("empty", entity.ClassWarrior)
+	empty.Fingerprint = "fp-empty"
+	s.AddPlayer(full)
+	s.AddPlayer(empty)
+	s.mu.Lock()
+	s.state.FloorNum = 1
+	s.applyEventOutcome(EventOutcome{ItemDrop: true})
+	s.mu.Unlock()
+
+	st := s.GetState()
+	if len(st.Players[0].Inventory) != limit {
+		t.Errorf("full inventory should not grow, got %d", len(st.Players[0].Inventory))
+	}
+	if len(st.Players[1].Inventory) != 1 {
+		t.Errorf("empty inventory should receive 1 item, got %d", len(st.Players[1].Inventory))
+	}
+}
+
+func TestApplyEventOutcome_GoldClampsToZero(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("broke", entity.ClassWarrior)
+	p.Fingerprint = "fp-broke"
+	p.Gold = 2
+	s.AddPlayer(p)
+	s.mu.Lock()
+	s.applyEventOutcome(EventOutcome{GoldChange: -100})
+	s.mu.Unlock()
+
+	if g := s.GetState().Players[0].Gold; g != 0 {
+		t.Errorf("gold must clamp to 0, got %d", g)
+	}
+}
+
+// TestEventVote_PlayerLeaveReevaluates ensures that when a player leaves
+// mid-vote, a subsequent SubmitEventVote from the remaining player satisfies
+// the new quorum and resolves the event.
+func TestEventVote_PlayerLeaveReevaluates(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	for _, fp := range []string{"fp-a", "fp-b", "fp-c"} {
+		p := entity.NewPlayer(fp, entity.ClassWarrior)
+		p.Fingerprint = fp
+		p.HP = p.MaxHP - 10
+		s.AddPlayer(p)
+	}
+	enterDeterministicEvent(t, s, "shrine")
+
+	_ = s.SubmitEventVote("fp-a", 0)
+	_ = s.SubmitEventVote("fp-b", 0)
+	// fp-c leaves before voting
+	s.RemovePlayer("fp-c")
+
+	// Now alive==2, votes==2 — but RemovePlayer does NOT itself resolve.
+	// Re-submit fp-b's vote (idempotent path) to trigger quorum check.
+	if !s.SubmitEventVote("fp-b", 0) {
+		t.Fatal("re-submit after leaver should satisfy quorum and resolve")
+	}
+	if s.GetState().Phase != PhaseExploring {
+		t.Error("phase should be PhaseExploring after resolve")
+	}
+}

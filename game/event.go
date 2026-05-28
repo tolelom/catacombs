@@ -447,22 +447,76 @@ func armorName(floor int) string {
 	}
 }
 
-// applyEventOutcome applies an event outcome to the party. STUB — replaced
-// with full party-wide logic in Task 6.
+// applyEventOutcome applies an event outcome to the party per the rules in
+// the design spec: HPChange to each alive player, GoldChange split evenly
+// (remainder to the first alive player), ItemDrop one rolled item per alive
+// player (skip if inventory full). Caller holds s.mu.
 func (s *GameSession) applyEventOutcome(o EventOutcome) {
+	alive := make([]*entity.Player, 0, len(s.state.Players))
 	for _, p := range s.state.Players {
-		if p.IsOut() {
-			continue
+		if !p.IsOut() {
+			alive = append(alive, p)
 		}
-		if o.HPChange > 0 {
+	}
+	if len(alive) == 0 {
+		return
+	}
+
+	// HP change: each alive player heals/takes damage of the full amount.
+	if o.HPChange > 0 {
+		for _, p := range alive {
+			before := p.HP
 			p.Heal(o.HPChange)
-		} else if o.HPChange < 0 {
-			p.TakeDamage(-o.HPChange)
+			s.addLog(fmt.Sprintf("  %s HP %d 회복", p.Name, p.HP-before))
 		}
-		if o.GoldChange != 0 {
-			p.Gold += o.GoldChange
+	} else if o.HPChange < 0 {
+		dmg := -o.HPChange
+		for _, p := range alive {
+			p.TakeDamage(dmg)
+			s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
+		}
+	}
+
+	// Gold change: split evenly across alive; remainder to alive[0].
+	if o.GoldChange != 0 {
+		total := o.GoldChange
+		share := total / len(alive)
+		remainder := total - share*len(alive)
+		for i, p := range alive {
+			delta := share
+			if i == 0 {
+				delta += remainder
+			}
+			p.Gold += delta
 			if p.Gold < 0 {
 				p.Gold = 0
+			}
+			if delta > 0 {
+				s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, delta))
+			} else if delta < 0 {
+				s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -delta))
+			}
+		}
+	}
+
+	// Item drop: one rolled item per alive; skip if their inventory is full.
+	if o.ItemDrop {
+		floor := s.state.FloorNum
+		for _, p := range alive {
+			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
+				s.addLog(fmt.Sprintf("  %s의 인벤토리가 가득 찼습니다!", p.Name))
+				continue
+			}
+			if s.rng.Float64() < 0.5 {
+				bonus := 3 + s.rng.Intn(6) + floor/3
+				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
+				p.Inventory = append(p.Inventory, item)
+				s.addLog(fmt.Sprintf("  %s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
+			} else {
+				bonus := 2 + s.rng.Intn(4) + floor/4
+				item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
+				p.Inventory = append(p.Inventory, item)
+				s.addLog(fmt.Sprintf("  %s %s 발견 (DEF+%d)", p.Name, item.Name, item.Bonus))
 			}
 		}
 	}
