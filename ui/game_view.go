@@ -383,9 +383,11 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 			}
 			// Skill point allocation. The meaning of [ and ] depends on the next
-			// allocation step: at a fork (T2 or T4), they're A/B choice; otherwise
-			// they're branch index. We resolve that here by reading NextIsBranch
-			// from the local player.
+			// allocation step:
+			//   - Branch-select stage (BranchIndex == -1): keys pick which branch.
+			//   - At a fork (T2 or T4): keys mean A/B choice; branchIdx stays locked.
+			//   - At an auto tier (T1 already done, T3 step): either key works;
+			//     branchIdx stays locked so the entity layer doesn't reject it.
 			if isKey(key, "[") || isKey(key, "]") {
 				if ctx.Session != nil {
 					var localSkills *entity.PlayerSkills
@@ -397,16 +399,19 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					}
 					branchIdx := 0
 					var choice byte
-					if localSkills != nil && localSkills.BranchIndex != -1 && localSkills.NextIsBranch() {
-						// At T2/T4 fork: keys mean A or B, branch already locked.
+					if localSkills != nil && localSkills.BranchIndex != -1 {
+						// Branch already locked — always pass the locked index.
 						branchIdx = localSkills.BranchIndex
-						if isKey(key, "[") {
-							choice = 'A'
-						} else {
-							choice = 'B'
+						if localSkills.NextIsBranch() {
+							if isKey(key, "[") {
+								choice = 'A'
+							} else {
+								choice = 'B'
+							}
 						}
+						// At an auto tier (T3 step), choice stays 0 — entity layer ignores it.
 					} else {
-						// Branch-select stage (or T3 auto): keys mean branch index.
+						// Branch-select stage: keys pick branch.
 						if isKey(key, "]") {
 							branchIdx = 1
 						}

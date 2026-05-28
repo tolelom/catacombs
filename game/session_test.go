@@ -570,9 +570,9 @@ func TestAllocateSkillPointAppliesMaxHPBoost(t *testing.T) {
 	p.Fingerprint = "fp-w"
 	s.AddPlayer(p)
 
-	// Tank branch T1: Iron Skin (DEF+3). T2 is a fork requiring a choice byte,
-	// which is not yet plumbed through AllocateSkillPoint — Task 2 adds that.
-	// This test covers T1 allocation only and verifies the branch is locked.
+	// Tank branch T1 is auto and grants Iron Skin (DEF+3) only — no MaxHP/HP
+	// delta should apply here. T2/T4 fork plumbing is covered by the
+	// separate TestAllocateSkillPoint_ForwardsChoiceToEntity test below.
 	s.mu.Lock()
 	for _, pl := range s.state.Players {
 		pl.Skills.Points = 1
@@ -669,5 +669,44 @@ func TestAllocateSkillPoint_ForwardsChoiceToEntity(t *testing.T) {
 	got := s.GetState().Players[0].Skills.Choices
 	if got != "B" {
 		t.Errorf("expected Choices 'B' after T2 with choice B, got %q", got)
+	}
+}
+
+// TestAllocateSkillPoint_T3AcceptsAnyBranchIdxArg simulates the UI sending
+// either branchIdx 0 or 1 at the T3 auto stage. With the fix in
+// ui/game_view.go that always preserves the locked branch index, a
+// well-behaved UI never passes a mismatched branchIdx here, but the test
+// guards the session-level contract: T3 advancement only works when
+// branchIdx matches the locked BranchIndex.
+//
+// This prevents regressions of the bug fixed alongside this test, where
+// the UI fell back to deriving branchIdx from the key at T3 and silently
+// generated a "cannot switch branch" error.
+func TestAllocateSkillPoint_T3AcceptsAnyBranchIdxArg(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("A", entity.ClassWarrior)
+	p.Fingerprint = "fp-a"
+	p.Skills = entity.NewPlayerSkills()
+	p.Skills.Points = 3
+	s.AddPlayer(p)
+
+	// Lock Tank (branch 0) via T1, then commit T2A.
+	if err := s.AllocateSkillPoint("fp-a", 0, 0); err != nil {
+		t.Fatalf("T1: %v", err)
+	}
+	if err := s.AllocateSkillPoint("fp-a", 0, 'A'); err != nil {
+		t.Fatalf("T2A: %v", err)
+	}
+
+	// T3 with the LOCKED branch index — must succeed.
+	if err := s.AllocateSkillPoint("fp-a", 0, 0); err != nil {
+		t.Fatalf("T3 with locked branchIdx=0 must succeed, got: %v", err)
+	}
+
+	// Sanity: passing the wrong branchIdx at T3 still errors (defines the
+	// session-level contract the UI fix relies on).
+	p.Skills.Points = 4
+	if err := s.AllocateSkillPoint("fp-a", 1, 0); err == nil {
+		t.Error("T4 with mismatched branchIdx=1 must error")
 	}
 }
