@@ -950,6 +950,53 @@ func (s *GameSession) LeaveShop(fingerprint string) bool {
 	return true
 }
 
+// tallyMoveQuorumLocked returns the winning room index and true if every
+// alive player has cast a move vote. Returns (-1, false) when quorum is
+// not met or no alive players remain. Tie-break: lowest room index.
+// Caller holds s.mu.
+func (s *GameSession) tallyMoveQuorumLocked() (int, bool) {
+	aliveCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			aliveCount++
+		}
+	}
+	if aliveCount == 0 {
+		return -1, false
+	}
+	voteCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			if _, ok := s.moveVotes[p.Fingerprint]; ok {
+				voteCount++
+			}
+		}
+	}
+	if voteCount < aliveCount {
+		return -1, false
+	}
+	tally := make(map[int]int)
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			if room, ok := s.moveVotes[p.Fingerprint]; ok {
+				tally[room]++
+			}
+		}
+	}
+	bestRoom := -1
+	bestCount := 0
+	for room, count := range tally {
+		if count > bestCount || (count == bestCount && (bestRoom < 0 || room < bestRoom)) {
+			bestRoom = room
+			bestCount = count
+		}
+	}
+	if bestRoom < 0 {
+		return -1, false
+	}
+	return bestRoom, true
+}
+
 // SubmitMoveVote records a player's room choice during exploration.
 // When all alive players have voted, the majority choice wins and the party moves.
 // Returns true if the vote triggered a move (all votes collected).
@@ -968,62 +1015,20 @@ func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 	}
 	s.moveVotes[fingerprint] = roomIdx
 
-	// Copy votes to state for UI display
+	// Mirror to snapshot map for UI display.
 	s.state.MoveVotes = make(map[string]int, len(s.moveVotes))
 	for k, v := range s.moveVotes {
 		s.state.MoveVotes[k] = v
 	}
 
-	// Check if all alive players have voted
-	aliveCount := 0
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			aliveCount++
-		}
-	}
-	if aliveCount == 0 {
-		return false
-	}
-	voteCount := 0
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			if _, ok := s.moveVotes[p.Fingerprint]; ok {
-				voteCount++
-			}
-		}
-	}
-
-	if voteCount < aliveCount {
+	winner, met := s.tallyMoveQuorumLocked()
+	if !met {
 		return false
 	}
 
-	// All voted — resolve by majority
-	tally := make(map[int]int)
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			if room, ok := s.moveVotes[p.Fingerprint]; ok {
-				tally[room]++
-			}
-		}
-	}
-	bestRoom := -1
-	bestCount := 0
-	for room, count := range tally {
-		if count > bestCount || (count == bestCount && (bestRoom < 0 || room < bestRoom)) {
-			bestRoom = room
-			bestCount = count
-		}
-	}
-	if bestRoom < 0 {
-		return false
-	}
-
-	// Clear votes
 	s.moveVotes = nil
 	s.state.MoveVotes = nil
-
-	// Execute the move (inline EnterRoom logic since we already hold the lock)
-	s.enterRoomLocked(bestRoom)
+	s.enterRoomLocked(winner)
 	return true
 }
 
