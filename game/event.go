@@ -447,6 +447,61 @@ func armorName(floor int) string {
 	}
 }
 
+// applyEventOutcome applies an event outcome to the party. STUB — replaced
+// with full party-wide logic in Task 6.
+func (s *GameSession) applyEventOutcome(o EventOutcome) {
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		if o.HPChange > 0 {
+			p.Heal(o.HPChange)
+		} else if o.HPChange < 0 {
+			p.TakeDamage(-o.HPChange)
+		}
+		if o.GoldChange != 0 {
+			p.Gold += o.GoldChange
+			if p.Gold < 0 {
+				p.Gold = 0
+			}
+		}
+	}
+}
+
+// resolveEventVoteLocked tallies eventVotes, picks the winning choice (lowest
+// index breaks ties), runs Resolve, applies the outcome party-wide, and
+// returns the session to PhaseExploring with the room cleared. Caller holds
+// s.mu and has verified quorum.
+func (s *GameSession) resolveEventVoteLocked() {
+	if s.pendingEvent == nil {
+		s.clearPendingEventLocked(true)
+		return
+	}
+	// Tally
+	tally := make(map[int]int, len(s.pendingEvent.Choices))
+	for _, idx := range s.eventVotes {
+		tally[idx]++
+	}
+	winnerIdx := -1
+	bestCount := -1
+	for idx, count := range tally {
+		if count > bestCount || (count == bestCount && idx < winnerIdx) {
+			bestCount = count
+			winnerIdx = idx
+		}
+	}
+	if winnerIdx < 0 || winnerIdx >= len(s.pendingEvent.Choices) {
+		s.clearPendingEventLocked(true)
+		return
+	}
+	choice := s.pendingEvent.Choices[winnerIdx]
+	outcome := choice.Resolve(s.state.FloorNum, s.rng)
+	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
+
+	s.applyEventOutcome(outcome)
+	s.clearPendingEventLocked(true)
+}
+
 // triggerEvent picks a random event and parks the session in PhaseEvent
 // awaiting player votes. The actual outcome runs later via resolveEventVote.
 // Caller holds s.mu.

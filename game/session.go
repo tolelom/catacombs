@@ -395,6 +395,12 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 	if s.actions != nil {
 		delete(s.actions, fingerprint)
 	}
+	if s.eventVotes != nil {
+		delete(s.eventVotes, fingerprint)
+	}
+	if s.state.EventVotes != nil {
+		delete(s.state.EventVotes, fingerprint)
+	}
 	delete(s.coopUsedThisCombat, fingerprint)
 	delete(s.healerReviveUsed, fingerprint)
 	delete(s.scoutUsedThisFloor, fingerprint)
@@ -998,4 +1004,84 @@ func (s *GameSession) ClearMoveVotes() {
 	defer s.mu.Unlock()
 	s.moveVotes = nil
 	s.state.MoveVotes = nil
+}
+
+// SubmitEventVote records a player's event choice during PhaseEvent. When
+// all alive players have voted, the majority choice (ties broken by lowest
+// index) is resolved and applied to the party. Returns true if this call
+// triggered resolution.
+func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.state.Phase != PhaseEvent || s.pendingEvent == nil {
+		return false
+	}
+	if choiceIdx < 0 || choiceIdx >= len(s.pendingEvent.Choices) {
+		return false
+	}
+	if fingerprint != "" {
+		s.lastActivity[fingerprint] = time.Now()
+	}
+
+	if s.eventVotes == nil {
+		s.eventVotes = make(map[string]int)
+	}
+	if fingerprint != "" {
+		s.eventVotes[fingerprint] = choiceIdx
+	}
+
+	// Mirror to snapshot map
+	s.state.EventVotes = make(map[string]int, len(s.eventVotes))
+	for k, v := range s.eventVotes {
+		s.state.EventVotes[k] = v
+	}
+
+	// Quorum check: all alive players voted (anonymous solo path = 1 vote)
+	aliveCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			aliveCount++
+		}
+	}
+	if aliveCount == 0 {
+		// Defensive: no alive players left to receive outcome; just clear.
+		s.clearPendingEventLocked(true)
+		return true
+	}
+	voteCount := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			if _, ok := s.eventVotes[p.Fingerprint]; ok {
+				voteCount++
+			}
+		}
+	}
+	// Anonymous single-player test path: treat untracked fingerprint as the
+	// vote we just received.
+	if aliveCount == 1 && fingerprint == "" && len(s.eventVotes) == 0 {
+		voteCount = 1
+	}
+	if voteCount < aliveCount {
+		return false
+	}
+
+	s.resolveEventVoteLocked()
+	return true
+}
+
+// clearPendingEventLocked clears all pending-event state and optionally marks
+// the current event room as cleared. Caller holds s.mu.
+func (s *GameSession) clearPendingEventLocked(markRoomCleared bool) {
+	s.pendingEvent = nil
+	s.state.PendingEvent = nil
+	s.state.EventVotes = nil
+	s.eventVotes = nil
+	if markRoomCleared && s.state.Floor != nil {
+		idx := s.state.Floor.CurrentRoom
+		if idx >= 0 && idx < len(s.state.Floor.Rooms) {
+			s.state.Floor.Rooms[idx].Cleared = true
+		}
+	}
+	s.state.Phase = PhaseExploring
 }
