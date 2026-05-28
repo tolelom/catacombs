@@ -391,3 +391,88 @@ func TestEventVote_TriggerWithZeroAlive(t *testing.T) {
 		t.Error("zero-alive event room should be cleared immediately")
 	}
 }
+
+// TestInactivitySweepReleasesEventDeadlock — simulating an inactive player
+// being swept during PhaseEvent should clean their stale vote and let the
+// remaining party resolve. We bypass the live combatLoop and exercise the
+// same logic by deleting the player from s.state.Players and triggering
+// the post-sweep cleanup directly.
+func TestInactivitySweepReleasesEventDeadlock(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	for _, fp := range []string{"fp-a", "fp-b", "fp-c"} {
+		p := entity.NewPlayer(fp, entity.ClassWarrior)
+		p.Fingerprint = fp
+		p.HP = p.MaxHP - 10
+		s.AddPlayer(p)
+	}
+	enterDeterministicEvent(t, s, "shrine")
+
+	// fp-a and fp-b vote; fp-c never does
+	_ = s.SubmitEventVote("fp-a", 0)
+	_ = s.SubmitEventVote("fp-b", 0)
+	if s.GetState().Phase != PhaseEvent {
+		t.Fatal("phase should still be PhaseEvent (fp-c hasn't voted)")
+	}
+
+	// Manually drop fp-c from Players the way the inactivity sweep does
+	// (direct mutation, NOT via RemovePlayer), then invoke the same cleanup
+	// the sweep does inline.
+	s.mu.Lock()
+	kept := make([]*entity.Player, 0, len(s.state.Players))
+	for _, p := range s.state.Players {
+		if p.Fingerprint != "fp-c" {
+			kept = append(kept, p)
+		}
+	}
+	s.state.Players = kept
+
+	// Replicate the inline cleanup from combatLoop.
+	if s.state.Phase == PhaseEvent {
+		alive := make(map[string]bool, len(s.state.Players))
+		for _, p := range s.state.Players {
+			if !p.IsOut() && p.Fingerprint != "" {
+				alive[p.Fingerprint] = true
+			}
+		}
+		for fp := range s.eventVotes {
+			if !alive[fp] {
+				delete(s.eventVotes, fp)
+				delete(s.state.EventVotes, fp)
+			}
+		}
+		aliveCount := len(alive)
+		voteCount := 0
+		for fp := range alive {
+			if _, ok := s.eventVotes[fp]; ok {
+				voteCount++
+			}
+		}
+		if aliveCount > 0 && voteCount >= aliveCount {
+			s.resolveEventVoteLocked()
+		}
+	}
+	s.mu.Unlock()
+
+	if s.GetState().Phase != PhaseExploring {
+		t.Error("phase should be PhaseExploring after sweep cleans the deadlock")
+	}
+}
+
+// TestApplyEventOutcomeSetsAnyPlayerDiedOnLethalDamage — events with
+// negative HPChange that kill a player must flip AnyPlayerDied so the
+// no_death achievement can't be granted incorrectly.
+func TestApplyEventOutcomeSetsAnyPlayerDiedOnLethalDamage(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("fragile", entity.ClassWarrior)
+	p.Fingerprint = "fp-fragile"
+	p.HP = 1
+	s.AddPlayer(p)
+
+	s.mu.Lock()
+	s.applyEventOutcome(EventOutcome{HPChange: -100})
+	s.mu.Unlock()
+
+	if !s.state.AnyPlayerDied {
+		t.Error("AnyPlayerDied should be true after lethal event damage")
+	}
+}
