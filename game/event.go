@@ -473,10 +473,12 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		dmg := -o.HPChange
 		for _, p := range alive {
 			p.TakeDamage(dmg)
-			if p.Dead {
-				s.state.AnyPlayerDied = true
-			}
 			s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
+			if p.IsDead() {
+				// Uniform with combat: try solo-healer auto-revive,
+				// otherwise log the rip and flip AnyPlayerDied.
+				s.tryReviveSoloHealerLocked(p)
+			}
 		}
 	}
 

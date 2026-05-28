@@ -1,6 +1,7 @@
 package game
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/tolelom/catacombs/dungeon"
@@ -445,5 +446,64 @@ func TestApplyEventOutcomeSetsAnyPlayerDiedOnLethalDamage(t *testing.T) {
 
 	if !s.state.AnyPlayerDied {
 		t.Error("AnyPlayerDied should be true after lethal event damage")
+	}
+}
+
+// TestEventDamageRevivesSoloHealer — a solo healer with the once-per-run
+// Divine Grace untouched must auto-revive at 30% HP when a negative-HP
+// event outcome would otherwise kill them. Mirrors the in-combat behavior.
+func TestEventDamageRevivesSoloHealer(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("Cleric", entity.ClassHealer)
+	p.Fingerprint = "fp-cleric"
+	p.HP = 5
+	s.AddPlayer(p)
+	s.mu.Lock()
+	s.state.SoloMode = true
+	s.applyEventOutcome(EventOutcome{HPChange: -100})
+	s.mu.Unlock()
+
+	st := s.GetState()
+	want := st.Players[0].MaxHP * 30 / 100
+	if got := st.Players[0].HP; got != want {
+		t.Errorf("expected solo healer revived to %d HP (30%%), got %d", want, got)
+	}
+	s.mu.Lock()
+	revived := s.soloHealerRevived["fp-cleric"]
+	s.mu.Unlock()
+	if !revived {
+		t.Error("soloHealerRevived flag must be set after the auto-revive")
+	}
+}
+
+// TestEventDamageLogsDeath — in a multi-player party an event outcome
+// that kills a player must emit the standard "☠ X 쓰러졌습니다!" log so
+// the UI shows the same death feedback as combat. Regression for the
+// missing event-death log audit finding.
+func TestEventDamageLogsDeath(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("Alive", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	a.HP = 999
+	a.MaxHP = 999
+	b := entity.NewPlayer("Doomed", entity.ClassMage)
+	b.Fingerprint = "fp-b"
+	b.HP = 1
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+	s.mu.Lock()
+	s.applyEventOutcome(EventOutcome{HPChange: -500})
+	s.mu.Unlock()
+
+	logs := s.GetState().CombatLog
+	found := false
+	for _, line := range logs {
+		if strings.Contains(line, "쓰러졌습니다") && strings.Contains(line, "Doomed") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected a 쓰러졌습니다 log for Doomed, got %v", logs)
 	}
 }
