@@ -908,6 +908,28 @@ func (s *GameSession) SendChat(playerName, message string) {
 	}
 }
 
+// tallyShopLeaversLocked returns true when every available (non-out)
+// player has signaled they are ready to leave the shop. Treats a zero-
+// available party as ready so a wipe in the shop doesn't deadlock.
+// Caller holds s.mu.
+func (s *GameSession) tallyShopLeaversLocked() bool {
+	available := 0
+	ready := 0
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		available++
+		if p.Fingerprint != "" && s.shopLeavers[p.Fingerprint] {
+			ready++
+		}
+	}
+	if available == 0 {
+		return true
+	}
+	return ready >= available
+}
+
 // LeaveShop marks the calling player as ready to leave the shop. The phase
 // only flips back to PhaseExploring once every available (non-out) player
 // has pressed leave, so one impatient player can't yank others out mid-browse.
@@ -924,22 +946,25 @@ func (s *GameSession) LeaveShop(fingerprint string) bool {
 	if fingerprint != "" {
 		s.shopLeavers[fingerprint] = true
 	}
-	available := 0
-	ready := 0
-	for _, p := range s.state.Players {
-		if p.IsOut() {
-			continue
+	// Anonymous solo test path: empty fingerprint with a single alive player
+	// means the caller is the only one available — treat as ready.
+	if fingerprint == "" {
+		available := 0
+		for _, p := range s.state.Players {
+			if !p.IsOut() {
+				available++
+			}
 		}
-		available++
-		if p.Fingerprint != "" && s.shopLeavers[p.Fingerprint] {
-			ready++
+		if available == 1 {
+			s.shopLeavers = nil
+			s.state.Phase = PhaseExploring
+			if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
+				s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+			}
+			return true
 		}
 	}
-	// Solo or empty-fingerprint test runs: act immediately.
-	if available == 0 || (available == 1 && fingerprint == "") {
-		ready = available
-	}
-	if ready < available {
+	if !s.tallyShopLeaversLocked() {
 		return false
 	}
 	s.shopLeavers = nil
