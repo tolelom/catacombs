@@ -366,3 +366,28 @@ func TestEventVote_PlayerLeaveReevaluates(t *testing.T) {
 		t.Error("phase should be PhaseExploring after resolve")
 	}
 }
+
+// TestEventVote_TriggerWithZeroAlive ensures that when entering an event
+// room with zero alive players, the room is immediately cleared without
+// entering PhaseEvent.
+func TestEventVote_TriggerWithZeroAlive(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	// No players added → aliveCount == 0
+	s.mu.Lock()
+	s.state.Floor = &dungeon.Floor{
+		Rooms:       []*dungeon.Room{{Type: dungeon.RoomEvent}},
+		CurrentRoom: 0,
+	}
+	s.state.FloorNum = 1
+	s.state.Phase = PhaseExploring
+	s.mu.Unlock()
+
+	s.EnterRoom(0)
+	st := s.GetState()
+	if st.Phase == PhaseEvent {
+		t.Error("zero-alive entry should not enter PhaseEvent")
+	}
+	if !st.Floor.Rooms[0].Cleared {
+		t.Error("zero-alive event room should be cleared immediately")
+	}
+}
