@@ -1,6 +1,11 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/tolelom/catacombs/dungeon"
+	"github.com/tolelom/catacombs/entity"
+)
 
 // TestEventChoiceTagsPresent enforces every choice in every event has at
 // least one Tag — UI relies on Tags to render category icons.
@@ -33,4 +38,42 @@ func TestPendingEventOnGameState(t *testing.T) {
 	var gs GameState
 	_ = gs.PendingEvent // *PendingEventView
 	_ = gs.EventVotes   // map[string]int
+}
+
+// TestTriggerEventTransitionsToPhaseEvent verifies entering a RoomEvent
+// flips the session into PhaseEvent with PendingEvent populated, instead of
+// resolving immediately.
+func TestTriggerEventTransitionsToPhaseEvent(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("A", entity.ClassWarrior)
+	p.Fingerprint = "fp-a"
+	s.AddPlayer(p)
+
+	// Hand-build a single-room floor with one event room.
+	s.mu.Lock()
+	s.state.Floor = &dungeon.Floor{
+		Rooms: []*dungeon.Room{
+			{Type: dungeon.RoomEvent},
+		},
+		CurrentRoom: 0,
+	}
+	s.state.FloorNum = 1
+	s.state.Phase = PhaseExploring
+	s.mu.Unlock()
+
+	s.EnterRoom(0)
+
+	st := s.GetState()
+	if st.Phase != PhaseEvent {
+		t.Fatalf("phase should be PhaseEvent, got %v", st.Phase)
+	}
+	if st.PendingEvent == nil {
+		t.Fatal("PendingEvent should be populated")
+	}
+	if len(st.PendingEvent.Choices) == 0 {
+		t.Error("PendingEvent.Choices should not be empty")
+	}
+	if st.Floor.Rooms[0].Cleared {
+		t.Error("room should not be cleared yet (waiting for vote)")
+	}
 }

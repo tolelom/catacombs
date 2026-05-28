@@ -624,6 +624,8 @@ func (s *GameSession) GetState() GameState {
 		StartingPartySize: s.state.StartingPartySize,
 		LastEventName:    s.state.LastEventName,
 		MoveVotes:        moveVotesCopy,
+		PendingEvent:     s.state.PendingEvent,
+		EventVotes:       s.state.EventVotes,
 		ShopLeavers:        shopLeaversCopy,
 		NextRoomPreview:    s.nextRoomPreview,
 		CoopAvailable:      s.computeCoopAvailable(),

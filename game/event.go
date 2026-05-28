@@ -60,7 +60,7 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 		room.Cleared = true
 	case dungeon.RoomEvent:
 		s.triggerEvent()
-		room.Cleared = true
+		// room.Cleared flipped after vote quorum in resolveEventVote
 	case dungeon.RoomSecret:
 		s.grantSecretTreasure()
 		room.Cleared = true
@@ -447,67 +447,47 @@ func armorName(floor int) string {
 	}
 }
 
+// triggerEvent picks a random event and parks the session in PhaseEvent
+// awaiting player votes. The actual outcome runs later via resolveEventVote.
+// Caller holds s.mu.
 func (s *GameSession) triggerEvent() {
 	event := PickRandomEvent(s.rng)
 	s.state.LastEventName = event.Name
 	s.addLog(fmt.Sprintf("이벤트: %s — %s", event.Name, event.Description))
 
-	// Auto-resolve with a random choice
-	choice := event.Choices[s.rng.Intn(len(event.Choices))]
-	outcome := choice.Resolve(s.state.FloorNum, s.rng)
-	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
-
-	// Pick a random available player to apply the outcome (excludes fled).
-	var available []*entity.Player
+	// Edge case: nobody alive to vote (post-wipe race). Skip + clear.
+	alive := 0
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
-			available = append(available, p)
+			alive++
 		}
 	}
-	if len(available) == 0 {
+	if alive == 0 {
+		if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
+			s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+		}
 		return
 	}
-	target := available[s.rng.Intn(len(available))]
 
-	if outcome.HPChange > 0 {
-		before := target.HP
-		target.Heal(outcome.HPChange)
-		s.addLog(fmt.Sprintf("  %s HP %d 회복", target.Name, target.HP-before))
-	} else if outcome.HPChange < 0 {
-		target.TakeDamage(-outcome.HPChange)
-		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", target.Name, -outcome.HPChange))
-	}
+	// Stash typed event for Resolve at quorum time.
+	ev := event
+	s.pendingEvent = &ev
 
-	if outcome.GoldChange != 0 {
-		target.Gold += outcome.GoldChange
-		if target.Gold < 0 {
-			target.Gold = 0
-		}
-		if outcome.GoldChange > 0 {
-			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", target.Name, outcome.GoldChange))
-		} else {
-			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", target.Name, -outcome.GoldChange))
-		}
+	// Build snapshot-safe view for the UI.
+	view := &PendingEventView{
+		Name:        event.Name,
+		Description: event.Description,
+		Choices:     make([]EventChoiceView, 0, len(event.Choices)),
 	}
-
-	if outcome.ItemDrop {
-		if len(target.Inventory) < s.cfg.Game.InventoryLimit {
-			floor := s.state.FloorNum
-			if s.rng.Float64() < 0.5 {
-				bonus := 3 + s.rng.Intn(6) + floor/3
-				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
-				target.Inventory = append(target.Inventory, item)
-				s.addLog(fmt.Sprintf("  %s %s 발견 (ATK+%d)", target.Name, item.Name, item.Bonus))
-			} else {
-				bonus := 2 + s.rng.Intn(4) + floor/4
-				item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
-				target.Inventory = append(target.Inventory, item)
-				s.addLog(fmt.Sprintf("  %s %s 발견 (DEF+%d)", target.Name, item.Name, item.Bonus))
-			}
-		} else {
-			s.addLog(fmt.Sprintf("  %s의 인벤토리가 가득 찼습니다!", target.Name))
-		}
+	for _, c := range event.Choices {
+		tagsCopy := make([]ChoiceTag, len(c.Tags))
+		copy(tagsCopy, c.Tags)
+		view.Choices = append(view.Choices, EventChoiceView{Label: c.Label, Tags: tagsCopy})
 	}
+	s.state.PendingEvent = view
+	s.state.EventVotes = make(map[string]int)
+	s.eventVotes = make(map[string]int)
+	s.state.Phase = PhaseEvent
 }
 
 func (s *GameSession) grantSecretTreasure() {
