@@ -339,9 +339,9 @@ func TestApplyEventOutcome_GoldClampsToZero(t *testing.T) {
 	}
 }
 
-// TestEventVote_PlayerLeaveReevaluates ensures that when a player leaves
-// mid-vote, a subsequent SubmitEventVote from the remaining player satisfies
-// the new quorum and resolves the event.
+// TestEventVote_PlayerLeaveReevaluates ensures that when the last
+// outstanding voter leaves mid-vote, RemovePlayer's quorum re-check
+// resolves the event directly — no follow-up SubmitEventVote required.
 func TestEventVote_PlayerLeaveReevaluates(t *testing.T) {
 	s := NewGameSession(testCfg(t))
 	for _, fp := range []string{"fp-a", "fp-b", "fp-c"} {
@@ -354,16 +354,12 @@ func TestEventVote_PlayerLeaveReevaluates(t *testing.T) {
 
 	_ = s.SubmitEventVote("fp-a", 0)
 	_ = s.SubmitEventVote("fp-b", 0)
-	// fp-c leaves before voting
+	// fp-c leaves before voting — RemovePlayer's recheckPhaseQuorumLocked
+	// should now satisfy quorum with the remaining 2 votes and resolve.
 	s.RemovePlayer("fp-c")
 
-	// Now alive==2, votes==2 — but RemovePlayer does NOT itself resolve.
-	// Re-submit fp-b's vote (idempotent path) to trigger quorum check.
-	if !s.SubmitEventVote("fp-b", 0) {
-		t.Fatal("re-submit after leaver should satisfy quorum and resolve")
-	}
 	if s.GetState().Phase != PhaseExploring {
-		t.Error("phase should be PhaseExploring after resolve")
+		t.Error("phase should be PhaseExploring after RemovePlayer auto-resolves")
 	}
 }
 

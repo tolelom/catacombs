@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tolelom/catacombs/config"
+	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
 )
 
@@ -708,5 +709,104 @@ func TestAllocateSkillPoint_T3AcceptsAnyBranchIdxArg(t *testing.T) {
 	p.Skills.Points = 4
 	if err := s.AllocateSkillPoint("fp-a", 1, 0); err == nil {
 		t.Error("T4 with mismatched branchIdx=1 must error")
+	}
+}
+
+// TestRemovePlayerResolvesMoveVote — a 2-player party in PhaseExploring
+// where A has voted and B disconnects must auto-advance instead of
+// stalling forever waiting for B's vote.
+func TestRemovePlayerResolvesMoveVote(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	b := entity.NewPlayer("B", entity.ClassWarrior)
+	b.Fingerprint = "fp-b"
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+
+	// Hand-build a two-room floor (room 0 = current, room 1 = empty target).
+	s.mu.Lock()
+	s.state.Floor = &dungeon.Floor{
+		Rooms: []*dungeon.Room{
+			{Type: dungeon.RoomEmpty, Cleared: true},
+			{Type: dungeon.RoomEmpty, Neighbors: []int{0}},
+		},
+		CurrentRoom: 0,
+	}
+	s.state.FloorNum = 1
+	s.state.Phase = PhaseExploring
+	s.mu.Unlock()
+
+	// A votes for room 1; B does not vote.
+	if s.SubmitMoveVote("fp-a", 1) {
+		t.Fatal("partial vote should not resolve")
+	}
+	if s.GetState().Phase != PhaseExploring {
+		t.Fatal("phase should remain PhaseExploring before B leaves")
+	}
+
+	// B disconnects — quorum should auto-recheck and advance the party.
+	s.RemovePlayer("fp-b")
+
+	st := s.GetState()
+	if st.Floor.CurrentRoom != 1 {
+		t.Errorf("expected CurrentRoom=1 after auto-advance, got %d", st.Floor.CurrentRoom)
+	}
+}
+
+// TestRemovePlayerResolvesShopLeave — a 2-player party in PhaseShop where
+// A has pressed leave and B drops must flip back to PhaseExploring.
+func TestRemovePlayerResolvesShopLeave(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	b := entity.NewPlayer("B", entity.ClassMage)
+	b.Fingerprint = "fp-b"
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+
+	s.mu.Lock()
+	s.state.Floor = &dungeon.Floor{
+		Rooms:       []*dungeon.Room{{Type: dungeon.RoomShop}},
+		CurrentRoom: 0,
+	}
+	s.state.Phase = PhaseShop
+	s.mu.Unlock()
+
+	if s.LeaveShop("fp-a") {
+		t.Fatal("LeaveShop should not transition while B is still browsing")
+	}
+	s.RemovePlayer("fp-b")
+	if got := s.GetState().Phase; got != PhaseExploring {
+		t.Errorf("phase should be PhaseExploring after B leaves, got %v", got)
+	}
+}
+
+// TestRemovePlayerResolvesEventVote — a 2-player party in PhaseEvent where
+// A has voted and B drops must resolve the vote and clear PendingEvent
+// without requiring a redundant re-submit.
+func TestRemovePlayerResolvesEventVote(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	a.HP = a.MaxHP - 10
+	b := entity.NewPlayer("B", entity.ClassMage)
+	b.Fingerprint = "fp-b"
+	b.HP = b.MaxHP - 10
+	s.AddPlayer(a)
+	s.AddPlayer(b)
+	enterDeterministicEvent(t, s, "shrine")
+
+	if s.SubmitEventVote("fp-a", 0) {
+		t.Fatal("partial event vote should not resolve")
+	}
+	s.RemovePlayer("fp-b")
+
+	st := s.GetState()
+	if st.Phase != PhaseExploring {
+		t.Errorf("phase should be PhaseExploring after auto-resolve, got %v", st.Phase)
+	}
+	if st.PendingEvent != nil {
+		t.Error("PendingEvent must be cleared after auto-resolve")
 	}
 }

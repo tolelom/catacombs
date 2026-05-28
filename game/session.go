@@ -388,6 +388,55 @@ func (s *GameSession) signalCombat() {
 	}
 }
 
+// recheckPhaseQuorumLocked runs the per-phase quorum tally and resolves
+// the phase if quorum is met. Used by RemovePlayer and the combatLoop
+// inactivity sweep so a player leaving (explicit Q or 60s timeout) cannot
+// strand the party waiting for a vote they will never cast. Caller holds
+// s.mu.
+func (s *GameSession) recheckPhaseQuorumLocked() {
+	switch s.state.Phase {
+	case PhaseExploring:
+		if winner, met := s.tallyMoveQuorumLocked(); met {
+			s.moveVotes = nil
+			s.state.MoveVotes = nil
+			s.enterRoomLocked(winner)
+		}
+	case PhaseShop:
+		if !s.tallyShopLeaversLocked() {
+			return
+		}
+		s.shopLeavers = nil
+		s.state.Phase = PhaseExploring
+		if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
+			s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+		}
+	case PhaseEvent:
+		// Mirror the sweep behavior: prune any stale votes for fingerprints
+		// no longer in the alive set (RemovePlayer already deletes from the
+		// maps but defense-in-depth keeps the tally correct if a future
+		// caller forgets).
+		alive := make(map[string]bool, len(s.state.Players))
+		for _, p := range s.state.Players {
+			if !p.IsOut() && p.Fingerprint != "" {
+				alive[p.Fingerprint] = true
+			}
+		}
+		for fp := range s.eventVotes {
+			if !alive[fp] {
+				delete(s.eventVotes, fp)
+				delete(s.state.EventVotes, fp)
+			}
+		}
+		if len(alive) == 0 {
+			s.clearPendingEventLocked(true)
+			return
+		}
+		if s.tallyEventQuorumLocked() {
+			s.resolveEventVoteLocked()
+		}
+	}
+}
+
 // RemovePlayer removes a player from the session by fingerprint and returns
 // the number of remaining players. Returns -1 if the fingerprint was not found
 // (so callers can distinguish a no-op from a successful drop to zero).
@@ -439,6 +488,9 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 	delete(s.dodgeBonusThisTurn, fingerprint)
 	delete(s.extraActionNext, fingerprint)
 	delete(s.activeRelicUsed, fingerprint)
+	// The leaver might have been the last voter the party was waiting on —
+	// re-evaluate the current phase's quorum so we don't deadlock.
+	s.recheckPhaseQuorumLocked()
 	// Wake RunTurn's collect loop in case it's blocked waiting for this
 	// player's never-arriving action.
 	select {
