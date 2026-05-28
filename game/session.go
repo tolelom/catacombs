@@ -19,7 +19,24 @@ const (
 	PhaseCombat
 	PhaseShop
 	PhaseResult
+	PhaseEvent
 )
+
+// EventChoiceView is a snapshot-safe view of one event choice for the UI.
+// The Resolve function is intentionally omitted — it is non-copyable behavior
+// state and lives only on the typed *RandomEvent in the session.
+type EventChoiceView struct {
+	Label string
+	Tags  []ChoiceTag
+}
+
+// PendingEventView is a snapshot-safe view of the active event, populated
+// while Phase == PhaseEvent and nil otherwise.
+type PendingEventView struct {
+	Name        string
+	Description string
+	Choices     []EventChoiceView
+}
 
 type PlayerAction struct {
 	Type      ActionType
@@ -71,7 +88,9 @@ type GameState struct {
 	StartingPartySize int // number of players at StartGame; powers the full_party achievement
 	LastEventName    string // name of the most recent random event (for codex)
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
-	ShopSold         []bool          // parallel to ShopItems; true once a non-consumable slot is sold
+	PendingEvent     *PendingEventView // active event during PhaseEvent
+	EventVotes       map[string]int    // fingerprint → choice index
+	ShopSold         []bool            // parallel to ShopItems; true once a non-consumable slot is sold
 	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
 	NextRoomPreview  *RoomPreview    // populated when Foresight has been used
 	CoopAvailable    map[string]bool // fingerprint → can use coop now (HUD display)
@@ -112,6 +131,8 @@ type GameSession struct {
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
+	eventVotes     map[string]int       // fingerprint → choice index
+	pendingEvent   *RandomEvent         // typed event with Resolve funcs; not snapshotted
 	rng            *rand.Rand           // session-scoped RNG; deterministic for daily runs
 
 	// Coop ability state — all maps keyed by player fingerprint.
