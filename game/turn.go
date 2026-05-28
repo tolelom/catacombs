@@ -242,28 +242,6 @@ func (s *GameSession) resolvePlayerActions() {
 				})
 				intentOwners = append(intentOwners, p.Name)
 			case entity.ClassHealer:
-				targetIdx := action.TargetIdx
-				if targetIdx < 0 || targetIdx >= len(s.state.Players) {
-					targetIdx = 0
-				}
-				target := s.state.Players[targetIdx]
-				if target.IsOut() {
-					// Find first alive player to heal instead
-					found := false
-					for _, candidate := range s.state.Players {
-						if !candidate.IsOut() {
-							target = candidate
-							found = true
-							break
-						}
-					}
-					if !found {
-						// No valid target — refund skill use
-						p.SkillUses++
-						s.addLog(fmt.Sprintf("%s 회복 대상을 찾을 수 없습니다!", p.Name))
-						break
-					}
-				}
 				healAmount := 30
 				if p.Skills != nil {
 					healAmount += p.Skills.GetSkillPower(p.Class) / 2
@@ -272,9 +250,28 @@ func (s *GameSession) resolvePlayerActions() {
 				if s.HardMode {
 					healAmount = int(float64(healAmount) * s.cfg.Difficulty.HardModeHealMult)
 				}
-				before := target.HP
-				target.Heal(healAmount)
-				s.addLog(fmt.Sprintf("%s이(가) %s에게 HP %d 회복", p.Name, target.Name, target.HP-before))
+				if target := s.pickHealTarget(action.TargetIdx); target != nil {
+					before := target.HP
+					target.Heal(healAmount)
+					s.addLog(fmt.Sprintf("%s이(가) %s에게 HP %d 회복", p.Name, target.Name, target.HP-before))
+				} else if mIdx := s.firstAliveMonsterIdx(); mIdx >= 0 {
+					// Nobody needs healing — channel the heal into a holy smite so
+					// solo healers (who are usually at full HP) have a damage
+					// outlet and runs aren't a 200+ turn slog. Heal power doubles
+					// as ATK and flows through the normal attack pipeline.
+					intents = append(intents, combat.AttackIntent{
+						PlayerATK:  healAmount,
+						TargetIdx:  mIdx,
+						Multiplier: 1.0,
+						IsAoE:      false,
+					})
+					intentOwners = append(intentOwners, p.Name)
+					s.addLog(fmt.Sprintf("✦ %s 치유할 대상이 없어 신성 일격을 가합니다!", p.Name))
+				} else {
+					// No heal target and no live monster — refund the skill use.
+					p.SkillUses++
+					s.addLog(fmt.Sprintf("%s 회복 대상을 찾을 수 없습니다!", p.Name))
+				}
 			case entity.ClassRogue:
 				currentRoom := s.state.Floor.Rooms[s.state.Floor.CurrentRoom]
 				for _, neighborIdx := range currentRoom.Neighbors {
@@ -705,6 +702,42 @@ func (s *GameSession) resolveMonsterActions() {
 		s.state.GameOver = true
 		s.addLog("파티가 전멸했습니다!")
 	}
+}
+
+// pickHealTarget returns the player a heal should land on: the explicitly
+// chosen ally if it is alive and actually wounded, otherwise the most-wounded
+// alive ally. Returns nil when no alive player needs healing — the caller then
+// converts the heal into an offensive smite.
+func (s *GameSession) pickHealTarget(chosenIdx int) *entity.Player {
+	if chosenIdx >= 0 && chosenIdx < len(s.state.Players) {
+		c := s.state.Players[chosenIdx]
+		if !c.IsOut() && c.HP < c.MaxHP {
+			return c
+		}
+	}
+	var best *entity.Player
+	bestMissing := 0
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		if missing := p.MaxHP - p.HP; missing > bestMissing {
+			bestMissing = missing
+			best = p
+		}
+	}
+	return best
+}
+
+// firstAliveMonsterIdx returns the index of the first living monster, or -1 if
+// none are alive.
+func (s *GameSession) firstAliveMonsterIdx() int {
+	for i, m := range s.state.Monsters {
+		if !m.IsDead() {
+			return i
+		}
+	}
+	return -1
 }
 
 // applyDamageMods reduces incoming damage by coop reductions, returns 0 if
