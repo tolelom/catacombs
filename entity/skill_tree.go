@@ -6,7 +6,7 @@ import "errors"
 type SkillEffect int
 
 const (
-	EffectATKBoost    SkillEffect = iota
+	EffectATKBoost SkillEffect = iota
 	EffectDEFBoost
 	EffectMaxHPBoost
 	EffectSkillPower
@@ -14,24 +14,46 @@ const (
 	EffectHealBoost
 )
 
-// SkillNode is a single node in a skill branch.
+// SkillNode is a single node in a skill tree.
 type SkillNode struct {
 	Name   string
 	Effect SkillEffect
 	Value  int
 }
 
-// SkillBranch is a named sequence of 4 skill nodes (3 base tiers + 1 capstone).
-type SkillBranch struct {
-	Name  string
-	Nodes [4]SkillNode
+// SkillTree is one branch's diamond-shaped skill tree:
+//
+//	    T1 (auto)
+//	     |
+//	  /     \
+//	T2A    T2B    (first fork)
+//	  \     /
+//	    T3 (auto)
+//	     |
+//	  /     \
+//	T4A    T4B    (capstone fork)
+//
+// Index 0 of T2/T4 is the 'A' choice; index 1 is 'B'.
+type SkillTree struct {
+	Name string
+	T1   SkillNode
+	T2   [2]SkillNode
+	T3   SkillNode
+	T4   [2]SkillNode
 }
 
 // PlayerSkills tracks a player's skill tree state for the current run.
+//
+// Allocated is the count of skill points spent in the chosen branch (0..4).
+// Choices is the recorded fork selections: empty before T2, length 1 between
+// T2 and T4, length 2 after the capstone. Each char is 'A' or 'B'.
+//
+// Invariant: len(Choices) == 0 when Allocated < 2; 1 when Allocated 2 or 3; 2 when Allocated == 4.
 type PlayerSkills struct {
-	BranchIndex int // -1 = not chosen, 0 or 1
-	Points      int // total points earned (1 per floor clear)
-	Allocated   int // points spent in chosen branch (max 3)
+	BranchIndex int    // -1 = not chosen, 0 or 1
+	Points      int    // total points earned this run
+	Allocated   int    // points spent in chosen branch (0..4)
+	Choices     string // fork choices, 0..2 chars, each 'A' or 'B'
 }
 
 // NewPlayerSkills returns an initialized PlayerSkills with no branch chosen.
@@ -39,102 +61,139 @@ func NewPlayerSkills() *PlayerSkills {
 	return &PlayerSkills{BranchIndex: -1}
 }
 
-// branchDefs holds 2 branches per class. Tier 4 (Nodes[3]) is the capstone.
-// Allocate enforces the points-spent prerequisite (3 prior tiers in this
-// branch) but does NOT gate on floor — players who buy the StartSkillPts
-// perma-upgrade can land the capstone within the first few floors.
-var branchDefs = map[Class][2]SkillBranch{
+// branchTrees holds the two trees for each class. Tier 1 and Tier 3 are
+// unconditional; Tier 2 and Tier 4 are forks (A at index 0, B at index 1).
+//
+// Design intent per spec: T2[A] keeps each branch's stay-on-theme identity
+// (i.e. extends the original linear progression). T2[B] dips into a
+// complementary stat. T4 doubles down on whichever sub-identity was chosen.
+var branchTrees = map[Class][2]SkillTree{
 	ClassWarrior: {
 		{
 			Name: "Tank",
-			Nodes: [4]SkillNode{
-				{"Iron Skin", EffectDEFBoost, 3},
+			T1:   SkillNode{"Iron Skin", EffectDEFBoost, 3},
+			T2: [2]SkillNode{
 				{"Fortitude", EffectMaxHPBoost, 20},
-				{"Bastion", EffectDEFBoost, 5},
+				{"Spike Mail", EffectDEFBoost, 3},
+			},
+			T3: SkillNode{"Bastion", EffectDEFBoost, 5},
+			T4: [2]SkillNode{
 				{"Unbreakable", EffectMaxHPBoost, 50},
+				{"Last Stand", EffectATKBoost, 12},
 			},
 		},
 		{
 			Name: "Berserker",
-			Nodes: [4]SkillNode{
-				{"Fury", EffectATKBoost, 4},
+			T1:   SkillNode{"Fury", EffectATKBoost, 4},
+			T2: [2]SkillNode{
 				{"Wrath", EffectSkillPower, 20},
-				{"Rampage", EffectATKBoost, 6},
+				{"Reckless", EffectATKBoost, 5},
+			},
+			T3: SkillNode{"Rampage", EffectATKBoost, 6},
+			T4: [2]SkillNode{
 				{"Bloodthirst", EffectATKBoost, 12},
+				{"Unending Rage", EffectMaxHPBoost, 40},
 			},
 		},
 	},
 	ClassMage: {
 		{
 			Name: "Elementalist",
-			Nodes: [4]SkillNode{
-				{"Arcane Focus", EffectSkillPower, 15},
+			T1:   SkillNode{"Arcane Focus", EffectSkillPower, 15},
+			T2: [2]SkillNode{
 				{"Elemental Fury", EffectATKBoost, 5},
-				{"Overload", EffectSkillPower, 25},
+				{"Mana Surge", EffectSkillPower, 15},
+			},
+			T3: SkillNode{"Overload", EffectSkillPower, 25},
+			T4: [2]SkillNode{
 				{"Cataclysm", EffectSkillPower, 50},
+				{"Pyroclasm", EffectATKBoost, 14},
 			},
 		},
 		{
 			Name: "Chronomancer",
-			Nodes: [4]SkillNode{
-				{"Temporal Shield", EffectDEFBoost, 3},
+			T1:   SkillNode{"Temporal Shield", EffectDEFBoost, 3},
+			T2: [2]SkillNode{
 				{"Time Warp", EffectATKBoost, 3},
-				{"Stasis", EffectMaxHPBoost, 15},
+				{"Slow Field", EffectDEFBoost, 3},
+			},
+			T3: SkillNode{"Stasis", EffectMaxHPBoost, 15},
+			T4: [2]SkillNode{
 				{"Eternity", EffectMaxHPBoost, 40},
+				{"Aeon Strike", EffectATKBoost, 12},
 			},
 		},
 	},
 	ClassHealer: {
 		{
 			Name: "Guardian",
-			Nodes: [4]SkillNode{
-				{"Blessing", EffectHealBoost, 20},
+			T1:   SkillNode{"Blessing", EffectHealBoost, 20},
+			T2: [2]SkillNode{
 				{"Divine Armor", EffectDEFBoost, 4},
-				{"Miracle", EffectHealBoost, 30},
+				{"Aegis", EffectMaxHPBoost, 20},
+			},
+			T3: SkillNode{"Miracle", EffectHealBoost, 30},
+			T4: [2]SkillNode{
 				{"Resurrection", EffectHealBoost, 60},
+				{"Sanctum", EffectDEFBoost, 8},
 			},
 		},
 		{
 			Name: "Priest",
-			Nodes: [4]SkillNode{
-				{"Smite", EffectATKBoost, 5},
+			T1:   SkillNode{"Smite", EffectATKBoost, 5},
+			T2: [2]SkillNode{
 				{"Holy Power", EffectSkillPower, 20},
-				{"Judgment", EffectATKBoost, 7},
+				{"Vow", EffectATKBoost, 4},
+			},
+			T3: SkillNode{"Judgment", EffectATKBoost, 7},
+			T4: [2]SkillNode{
 				{"Wrath of God", EffectATKBoost, 14},
+				{"Crusade", EffectSkillPower, 40},
 			},
 		},
 	},
 	ClassRogue: {
 		{
 			Name: "Assassin",
-			Nodes: [4]SkillNode{
-				{"Backstab", EffectATKBoost, 5},
+			T1:   SkillNode{"Backstab", EffectATKBoost, 5},
+			T2: [2]SkillNode{
 				{"Precision", EffectCritChance, 15},
-				{"Execute", EffectATKBoost, 8},
+				{"Shadow Step", EffectATKBoost, 4},
+			},
+			T3: SkillNode{"Execute", EffectATKBoost, 8},
+			T4: [2]SkillNode{
 				{"Death Mark", EffectCritChance, 30},
+				{"Bloodletter", EffectATKBoost, 14},
 			},
 		},
 		{
 			Name: "Alchemist",
-			Nodes: [4]SkillNode{
-				{"Tonic", EffectHealBoost, 15},
+			T1:   SkillNode{"Tonic", EffectHealBoost, 15},
+			T2: [2]SkillNode{
 				{"Brew", EffectSkillPower, 20},
-				{"Elixir", EffectMaxHPBoost, 25},
+				{"Bitter Tonic", EffectHealBoost, 15},
+			},
+			T3: SkillNode{"Elixir", EffectMaxHPBoost, 25},
+			T4: [2]SkillNode{
 				{"Panacea", EffectMaxHPBoost, 60},
+				{"Universal Solvent", EffectHealBoost, 50},
 			},
 		},
 	},
 }
 
-// GetBranches returns the 2 skill branches for the given class.
-func GetBranches(class Class) [2]SkillBranch {
-	return branchDefs[class]
+// GetBranches returns the two skill trees for the given class.
+func GetBranches(class Class) [2]SkillTree {
+	return branchTrees[class]
 }
 
-// Allocate spends one skill point into the given branch. Returns an error if
-// the player tries to switch branches after first allocation or has already
-// allocated the maximum of 4 points (3 base + 1 capstone).
-func (ps *PlayerSkills) Allocate(branchIdx int, class Class) error {
+// Allocate spends one skill point. choice is interpreted only at fork tiers
+// (T2 and T4); it is ignored at auto tiers (T1 and T3). At a fork, choice
+// must be 'A' or 'B'.
+//
+// Returns errors for: invalid branchIdx, no points available, mid-run branch
+// switch, fully allocated, or fork tier with missing/invalid choice byte.
+func (ps *PlayerSkills) Allocate(branchIdx int, class Class, choice byte) error {
 	if ps == nil {
 		return errors.New("skills not initialized")
 	}
@@ -150,22 +209,104 @@ func (ps *PlayerSkills) Allocate(branchIdx int, class Class) error {
 	if ps.BranchIndex != -1 && ps.BranchIndex != branchIdx {
 		return errors.New("cannot switch branch after first allocation")
 	}
-	ps.BranchIndex = branchIdx
-	ps.Allocated++
+	// Bind branch on first allocation.
+	if ps.BranchIndex == -1 {
+		ps.BranchIndex = branchIdx
+	}
+	// Advance based on current Allocated count.
+	switch ps.Allocated {
+	case 0:
+		// T1 auto.
+		ps.Allocated = 1
+	case 1:
+		// T2 fork.
+		if choice != 'A' && choice != 'B' {
+			return errors.New("T2 requires choice 'A' or 'B'")
+		}
+		ps.Choices += string(choice)
+		ps.Allocated = 2
+	case 2:
+		// T3 auto.
+		ps.Allocated = 3
+	case 3:
+		// T4 capstone fork.
+		if choice != 'A' && choice != 'B' {
+			return errors.New("T4 capstone requires choice 'A' or 'B'")
+		}
+		ps.Choices += string(choice)
+		ps.Allocated = 4
+	}
 	return nil
 }
 
-// allocatedNodes returns the slice of nodes the player has unlocked.
+// NextIsBranch reports whether the next Allocate call will land on a fork
+// (T2 or T4). The UI uses this to decide whether to prompt for an A/B
+// choice or treat both keys equivalently.
+func (ps *PlayerSkills) NextIsBranch() bool {
+	if ps == nil || ps.Allocated >= 4 {
+		return false
+	}
+	return ps.Allocated == 1 || ps.Allocated == 3
+}
+
+// NextStepLabel returns a short Korean label describing what the next
+// allocation will be. Empty string if nothing further can be allocated.
+func (ps *PlayerSkills) NextStepLabel(class Class) string {
+	if ps == nil || ps.Allocated >= 4 {
+		return ""
+	}
+	if ps.BranchIndex < 0 {
+		branches := GetBranches(class)
+		return "분기 선택: " + branches[0].Name + " or " + branches[1].Name
+	}
+	branches := GetBranches(class)
+	tree := branches[ps.BranchIndex]
+	switch ps.Allocated {
+	case 0:
+		return "T1 자동: " + tree.T1.Name
+	case 1:
+		return "T2 선택: " + tree.T2[0].Name + " or " + tree.T2[1].Name
+	case 2:
+		return "T3 자동: " + tree.T3.Name
+	case 3:
+		return "T4 캡스톤: " + tree.T4[0].Name + " or " + tree.T4[1].Name
+	}
+	return ""
+}
+
+// choiceToIdx maps a recorded choice byte to the array index of the chosen
+// fork node. 'A' -> 0, 'B' -> 1.
+func choiceToIdx(c byte) int {
+	if c == 'B' {
+		return 1
+	}
+	return 0
+}
+
+// allocatedNodes returns the nodes the player has unlocked in their chosen
+// branch, walking the tree path defined by Choices.
 func (ps *PlayerSkills) allocatedNodes(class Class) []SkillNode {
 	if ps == nil || ps.BranchIndex < 0 || ps.Allocated == 0 {
 		return nil
 	}
 	branches := GetBranches(class)
-	branch := branches[ps.BranchIndex]
-	return branch.Nodes[:ps.Allocated]
+	tree := branches[ps.BranchIndex]
+	out := make([]SkillNode, 0, 4)
+	if ps.Allocated >= 1 {
+		out = append(out, tree.T1)
+	}
+	if ps.Allocated >= 2 && len(ps.Choices) >= 1 {
+		out = append(out, tree.T2[choiceToIdx(ps.Choices[0])])
+	}
+	if ps.Allocated >= 3 {
+		out = append(out, tree.T3)
+	}
+	if ps.Allocated >= 4 && len(ps.Choices) >= 2 {
+		out = append(out, tree.T4[choiceToIdx(ps.Choices[1])])
+	}
+	return out
 }
 
-// sumEffect sums values of nodes matching the given effect.
 func (ps *PlayerSkills) sumEffect(class Class, effect SkillEffect) int {
 	total := 0
 	for _, node := range ps.allocatedNodes(class) {

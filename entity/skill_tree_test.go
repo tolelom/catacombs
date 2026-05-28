@@ -2,6 +2,8 @@ package entity
 
 import "testing"
 
+// TestGetBranches verifies every class has two well-formed trees with
+// non-empty node names. Replaces the old test that walked Nodes[j].
 func TestGetBranches(t *testing.T) {
 	classes := []Class{ClassWarrior, ClassMage, ClassHealer, ClassRogue}
 	for _, c := range classes {
@@ -9,29 +11,45 @@ func TestGetBranches(t *testing.T) {
 		if len(branches) != 2 {
 			t.Errorf("expected 2 branches for %s, got %d", c, len(branches))
 		}
-		for i, b := range branches {
-			if b.Name == "" {
+		for i, tree := range branches {
+			if tree.Name == "" {
 				t.Errorf("branch %d for %s has empty name", i, c)
 			}
-			for j, node := range b.Nodes {
-				if node.Name == "" {
-					t.Errorf("node %d in branch %d for %s has empty name", j, i, c)
+			if tree.T1.Name == "" {
+				t.Errorf("T1 in branch %d for %s has empty name", i, c)
+			}
+			if tree.T3.Name == "" {
+				t.Errorf("T3 in branch %d for %s has empty name", i, c)
+			}
+			for j := 0; j < 2; j++ {
+				if tree.T2[j].Name == "" {
+					t.Errorf("T2[%d] in branch %d for %s has empty name", j, i, c)
 				}
-				if node.Value <= 0 {
-					t.Errorf("node %d in branch %d for %s has non-positive value %d", j, i, c, node.Value)
+				if tree.T4[j].Name == "" {
+					t.Errorf("T4[%d] in branch %d for %s has empty name", j, i, c)
+				}
+			}
+			if tree.T1.Value <= 0 || tree.T3.Value <= 0 {
+				t.Errorf("auto nodes in branch %d for %s must have positive values", i, c)
+			}
+			for j := 0; j < 2; j++ {
+				if tree.T2[j].Value <= 0 {
+					t.Errorf("T2[%d] in branch %d for %s has non-positive value", j, i, c)
+				}
+				if tree.T4[j].Value <= 0 {
+					t.Errorf("T4[%d] in branch %d for %s has non-positive value", j, i, c)
 				}
 			}
 		}
 	}
 }
 
-func TestAllocateSkillPoint(t *testing.T) {
+func TestAllocate_T1IsAutoAndIgnoresChoice(t *testing.T) {
 	ps := NewPlayerSkills()
 	ps.Points = 1
-
-	err := ps.Allocate(0, ClassWarrior)
-	if err != nil {
-		t.Fatalf("unexpected error on first allocation: %v", err)
+	// choice byte is irrelevant on first allocation; pass 0 deliberately.
+	if err := ps.Allocate(0, ClassWarrior, 0); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if ps.BranchIndex != 0 {
 		t.Errorf("expected BranchIndex 0, got %d", ps.BranchIndex)
@@ -39,110 +57,193 @@ func TestAllocateSkillPoint(t *testing.T) {
 	if ps.Allocated != 1 {
 		t.Errorf("expected Allocated 1, got %d", ps.Allocated)
 	}
+	if ps.Choices != "" {
+		t.Errorf("expected Choices '', got %q", ps.Choices)
+	}
 }
 
-func TestCannotSwitchBranch(t *testing.T) {
+func TestAllocate_T2RequiresChoice(t *testing.T) {
 	ps := NewPlayerSkills()
 	ps.Points = 2
+	_ = ps.Allocate(0, ClassWarrior, 0) // T1 auto
+	err := ps.Allocate(0, ClassWarrior, 0)
+	if err == nil {
+		t.Error("expected error when T2 receives no choice")
+	}
+}
 
-	err := ps.Allocate(0, ClassWarrior)
-	if err != nil {
+func TestAllocate_T2AppendsChoice(t *testing.T) {
+	ps := NewPlayerSkills()
+	ps.Points = 2
+	_ = ps.Allocate(0, ClassWarrior, 0) // T1
+	if err := ps.Allocate(0, ClassWarrior, 'B'); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	err = ps.Allocate(1, ClassWarrior)
-	if err == nil {
-		t.Fatal("expected error when switching branch, got nil")
+	if ps.Choices != "B" {
+		t.Errorf("expected Choices 'B', got %q", ps.Choices)
+	}
+	if ps.Allocated != 2 {
+		t.Errorf("expected Allocated 2, got %d", ps.Allocated)
 	}
 }
 
-func TestCannotAllocateWithoutPoints(t *testing.T) {
-	ps := NewPlayerSkills()
-	ps.Points = 0
-
-	err := ps.Allocate(0, ClassWarrior)
-	if err == nil {
-		t.Fatal("expected error when no points available, got nil")
-	}
-}
-
-func TestFullyAllocated(t *testing.T) {
-	ps := NewPlayerSkills()
-	ps.Points = 5
-
-	for i := 0; i < 4; i++ {
-		err := ps.Allocate(0, ClassWarrior)
-		if err != nil {
-			t.Fatalf("unexpected error on allocation %d: %v", i+1, err)
-		}
-	}
-
-	err := ps.Allocate(0, ClassWarrior)
-	if err == nil {
-		t.Fatal("expected error when fully allocated, got nil")
-	}
-}
-
-func TestSkillBonuses(t *testing.T) {
-	// Warrior Tank branch: DEF+3, MaxHP+20, DEF+5
+func TestAllocate_T3IsAutoAndIgnoresChoice(t *testing.T) {
 	ps := NewPlayerSkills()
 	ps.Points = 3
-	for i := 0; i < 3; i++ {
-		if err := ps.Allocate(0, ClassWarrior); err != nil {
-			t.Fatalf("allocate error: %v", err)
+	_ = ps.Allocate(0, ClassWarrior, 0)
+	_ = ps.Allocate(0, ClassWarrior, 'A')
+	if err := ps.Allocate(0, ClassWarrior, 0); err != nil {
+		t.Fatalf("unexpected error on T3: %v", err)
+	}
+	if ps.Allocated != 3 {
+		t.Errorf("expected Allocated 3, got %d", ps.Allocated)
+	}
+	if ps.Choices != "A" {
+		t.Errorf("expected Choices 'A' (unchanged at T3), got %q", ps.Choices)
+	}
+}
+
+func TestAllocate_T4Capstone(t *testing.T) {
+	ps := NewPlayerSkills()
+	ps.Points = 4
+	_ = ps.Allocate(0, ClassWarrior, 0)
+	_ = ps.Allocate(0, ClassWarrior, 'B')
+	_ = ps.Allocate(0, ClassWarrior, 0)
+	if err := ps.Allocate(0, ClassWarrior, 'A'); err != nil {
+		t.Fatalf("unexpected error on T4: %v", err)
+	}
+	if ps.Choices != "BA" {
+		t.Errorf("expected Choices 'BA', got %q", ps.Choices)
+	}
+	if ps.Allocated != 4 {
+		t.Errorf("expected Allocated 4, got %d", ps.Allocated)
+	}
+}
+
+func TestAllocate_LocksBranchAfterFirstAllocation(t *testing.T) {
+	ps := NewPlayerSkills()
+	ps.Points = 2
+	if err := ps.Allocate(0, ClassWarrior, 0); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := ps.Allocate(1, ClassWarrior, 'A'); err == nil {
+		t.Error("expected error when switching branches mid-run")
+	}
+}
+
+func TestAllocate_LocksFifthAllocation(t *testing.T) {
+	ps := NewPlayerSkills()
+	ps.Points = 5
+	_ = ps.Allocate(0, ClassWarrior, 0)
+	_ = ps.Allocate(0, ClassWarrior, 'A')
+	_ = ps.Allocate(0, ClassWarrior, 0)
+	_ = ps.Allocate(0, ClassWarrior, 'A')
+	if err := ps.Allocate(0, ClassWarrior, 'A'); err == nil {
+		t.Error("expected error when allocating beyond capstone")
+	}
+}
+
+func TestAllocate_NoPointsAvailable(t *testing.T) {
+	ps := NewPlayerSkills()
+	// Points stays 0
+	if err := ps.Allocate(0, ClassWarrior, 0); err == nil {
+		t.Error("expected error when no points are available")
+	}
+}
+
+func TestAllocatedNodes_PathTraversal(t *testing.T) {
+	ps := NewPlayerSkills()
+	ps.Points = 4
+	_ = ps.Allocate(0, ClassWarrior, 0)   // T1 = Iron Skin
+	_ = ps.Allocate(0, ClassWarrior, 'A') // T2A = Fortitude
+	_ = ps.Allocate(0, ClassWarrior, 0)   // T3 = Bastion
+	_ = ps.Allocate(0, ClassWarrior, 'B') // T4B = Last Stand
+
+	nodes := ps.allocatedNodes(ClassWarrior)
+	want := []string{"Iron Skin", "Fortitude", "Bastion", "Last Stand"}
+	if len(nodes) != len(want) {
+		t.Fatalf("expected %d nodes, got %d", len(want), len(nodes))
+	}
+	for i, n := range nodes {
+		if n.Name != want[i] {
+			t.Errorf("node %d: expected %q, got %q", i, want[i], n.Name)
 		}
 	}
+}
 
-	if got := ps.GetDEFBonus(ClassWarrior); got != 8 {
-		t.Errorf("expected DEF bonus 8 (3+5), got %d", got)
-	}
-	if got := ps.GetMaxHPBonus(ClassWarrior); got != 20 {
-		t.Errorf("expected MaxHP bonus 20, got %d", got)
-	}
-	if got := ps.GetATKBonus(ClassWarrior); got != 0 {
-		t.Errorf("expected ATK bonus 0 for Tank, got %d", got)
-	}
+func TestGetATKBonus_SumsAcrossPath(t *testing.T) {
+	// Warrior Berserker full path with Choices "BB":
+	//   T1 = Fury (ATK +4)
+	//   T2B = Reckless (ATK +5)
+	//   T3 = Rampage (ATK +6)
+	//   T4B = Unending Rage (MaxHP +40, NOT ATK)
+	// Expected ATK bonus: 4 + 5 + 6 = 15.
+	ps := NewPlayerSkills()
+	ps.Points = 4
+	_ = ps.Allocate(1, ClassWarrior, 0)
+	_ = ps.Allocate(1, ClassWarrior, 'B')
+	_ = ps.Allocate(1, ClassWarrior, 0)
+	_ = ps.Allocate(1, ClassWarrior, 'B')
 
-	// Warrior Berserker branch: ATK+4, SkillPower+20, ATK+6
-	ps2 := NewPlayerSkills()
-	ps2.Points = 3
-	for i := 0; i < 3; i++ {
-		if err := ps2.Allocate(1, ClassWarrior); err != nil {
-			t.Fatalf("allocate error: %v", err)
-		}
+	got := ps.GetATKBonus(ClassWarrior)
+	if got != 15 {
+		t.Errorf("expected ATK bonus 15 for Berserker 'BB', got %d", got)
 	}
-	if got := ps2.GetATKBonus(ClassWarrior); got != 10 {
-		t.Errorf("expected ATK bonus 10 (4+6), got %d", got)
+	gotHP := ps.GetMaxHPBonus(ClassWarrior)
+	if gotHP != 40 {
+		t.Errorf("expected MaxHP bonus 40 for Berserker 'BB', got %d", gotHP)
 	}
-	if got := ps2.GetSkillPower(ClassWarrior); got != 20 {
-		t.Errorf("expected SkillPower bonus 20, got %d", got)
+}
+
+func TestNextIsBranch_TrueAtForksOnly(t *testing.T) {
+	ps := NewPlayerSkills()
+	// Allocated 0: false (next is T1 auto)
+	if ps.NextIsBranch() {
+		t.Error("Allocated=0 should report false (T1 is auto)")
+	}
+	ps.Points = 4
+	_ = ps.Allocate(0, ClassWarrior, 0) // Allocated=1
+	if !ps.NextIsBranch() {
+		t.Error("Allocated=1 should report true (next is T2 fork)")
+	}
+	_ = ps.Allocate(0, ClassWarrior, 'A') // Allocated=2
+	if ps.NextIsBranch() {
+		t.Error("Allocated=2 should report false (T3 is auto)")
+	}
+	_ = ps.Allocate(0, ClassWarrior, 0) // Allocated=3
+	if !ps.NextIsBranch() {
+		t.Error("Allocated=3 should report true (next is T4 fork)")
+	}
+	_ = ps.Allocate(0, ClassWarrior, 'A') // Allocated=4
+	if ps.NextIsBranch() {
+		t.Error("Allocated=4 should report false (no further allocation)")
 	}
 }
 
 func TestNilPlayerSkillsBonuses(t *testing.T) {
 	var ps *PlayerSkills
 	if got := ps.GetATKBonus(ClassWarrior); got != 0 {
-		t.Errorf("expected 0 ATK bonus from nil skills, got %d", got)
+		t.Errorf("nil skills should return 0 ATK bonus, got %d", got)
 	}
-	if got := ps.GetDEFBonus(ClassWarrior); got != 0 {
-		t.Errorf("expected 0 DEF bonus from nil skills, got %d", got)
+	if got := ps.GetMaxHPBonus(ClassWarrior); got != 0 {
+		t.Errorf("nil skills should return 0 MaxHP bonus, got %d", got)
+	}
+	if ps.NextIsBranch() {
+		t.Error("nil skills should report NextIsBranch=false")
+	}
+	if ps.NextStepLabel(ClassWarrior) != "" {
+		t.Error("nil skills should return empty NextStepLabel")
 	}
 }
 
-func TestPartialAllocation(t *testing.T) {
-	// Rogue Assassin: ATK+5, CritChance+15, ATK+8
-	// Allocate only 2 points: should get ATK+5 and CritChance+15
+func TestPartialAllocation_ReturnsPrefixOnly(t *testing.T) {
 	ps := NewPlayerSkills()
 	ps.Points = 2
-	for i := 0; i < 2; i++ {
-		if err := ps.Allocate(0, ClassRogue); err != nil {
-			t.Fatalf("allocate error: %v", err)
-		}
-	}
-	if got := ps.GetATKBonus(ClassRogue); got != 5 {
-		t.Errorf("expected ATK bonus 5, got %d", got)
-	}
-	if got := ps.GetCritChance(ClassRogue); got != 15 {
-		t.Errorf("expected CritChance bonus 15, got %d", got)
+	_ = ps.Allocate(0, ClassWarrior, 0)
+	_ = ps.Allocate(0, ClassWarrior, 'A')
+
+	nodes := ps.allocatedNodes(ClassWarrior)
+	if len(nodes) != 2 {
+		t.Fatalf("expected 2 nodes for partial allocation, got %d", len(nodes))
 	}
 }

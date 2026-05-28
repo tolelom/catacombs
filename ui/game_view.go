@@ -778,7 +778,9 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 				}
 			}
 		}
-		// Show skill tree allocation UI if player has unspent points
+		// Show skill tree allocation UI if player has unspent points.
+		// Minimal placeholder rendering — Task 3 replaces this with rich
+		// tree-aware display.
 		for _, p := range state.Players {
 			if p.Fingerprint == fingerprint && p.Skills != nil && p.Skills.Points > p.Skills.Allocated && p.Skills.Allocated < 4 {
 				branches := entity.GetBranches(p.Class)
@@ -786,21 +788,15 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 				skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
 				sb.WriteString(skillStyle.Render(fmt.Sprintf("  스킬 포인트 사용 가능! (미사용: %d)", p.Skills.Points-p.Skills.Allocated)))
 				sb.WriteString("\n")
-				for i, branch := range branches {
+				for i, tree := range branches {
 					key := "["
 					if i == 1 {
 						key = "]"
 					}
-					nextNode := p.Skills.Allocated
 					if p.Skills.BranchIndex >= 0 && p.Skills.BranchIndex != i {
-						fmt.Fprintf(&sb, "    [%s] %s (잠김)\n", key, branch.Name)
-					} else if nextNode < 4 {
-						node := branch.Nodes[nextNode]
-						capstoneTag := ""
-						if nextNode == 3 {
-							capstoneTag = " ★ 캡스톤"
-						}
-						fmt.Fprintf(&sb, "    [%s] %s -> %s%s\n", key, branch.Name, node.Name, capstoneTag)
+						fmt.Fprintf(&sb, "    [%s] %s (잠김)\n", key, tree.Name)
+					} else {
+						fmt.Fprintf(&sb, "    [%s] %s\n", key, tree.Name)
 					}
 				}
 				break

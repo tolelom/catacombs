@@ -842,7 +842,7 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) erro
 				return fmt.Errorf("스킬 포인트가 없습니다")
 			}
 			before := p.Skills.GetMaxHPBonus(p.Class)
-			if err := p.Skills.Allocate(branchIdx, p.Class); err != nil {
+			if err := p.Skills.Allocate(branchIdx, p.Class, 0); err != nil {
 				return err
 			}
 			// MaxHPBoost nodes raise both MaxHP and current HP by the delta.

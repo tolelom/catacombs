@@ -570,27 +570,31 @@ func TestAllocateSkillPointAppliesMaxHPBoost(t *testing.T) {
 	p.Fingerprint = "fp-w"
 	s.AddPlayer(p)
 
-	// Tank branch order: Iron Skin (DEF), Fortitude (MaxHP+20), Bastion (DEF)
+	// Tank branch T1: Iron Skin (DEF+3). T2 is a fork requiring a choice byte,
+	// which is not yet plumbed through AllocateSkillPoint — Task 2 adds that.
+	// This test covers T1 allocation only and verifies the branch is locked.
 	s.mu.Lock()
 	for _, pl := range s.state.Players {
-		pl.Skills.Points = 3
+		pl.Skills.Points = 1
 	}
 	beforeMax := s.state.Players[0].MaxHP
 	beforeHP := s.state.Players[0].HP
 	s.mu.Unlock()
 
 	if err := s.AllocateSkillPoint("fp-w", 0); err != nil {
-		t.Fatalf("allocate 1 failed: %v", err)
-	}
-	if err := s.AllocateSkillPoint("fp-w", 0); err != nil {
-		t.Fatalf("allocate 2 failed: %v", err)
+		t.Fatalf("allocate T1 failed: %v", err)
 	}
 	st := s.GetState()
-	if got := st.Players[0].MaxHP; got != beforeMax+20 {
-		t.Errorf("expected MaxHP +20 from Fortitude, got %d (was %d)", got, beforeMax)
+	// Iron Skin is DEF-only; MaxHP and HP must not change at T1.
+	if got := st.Players[0].MaxHP; got != beforeMax {
+		t.Errorf("expected MaxHP unchanged after T1 DEF node, got %d (was %d)", got, beforeMax)
 	}
-	if got := st.Players[0].HP; got != beforeHP+20 {
-		t.Errorf("expected HP +20 from Fortitude, got %d (was %d)", got, beforeHP)
+	if got := st.Players[0].HP; got != beforeHP {
+		t.Errorf("expected HP unchanged after T1 DEF node, got %d (was %d)", got, beforeHP)
+	}
+	// Branch must be locked to Tank (0).
+	if got := st.Players[0].Skills.BranchIndex; got != 0 {
+		t.Errorf("expected BranchIndex 0 after T1, got %d", got)
 	}
 }
 
