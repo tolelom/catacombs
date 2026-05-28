@@ -331,35 +331,10 @@ func (s *GameSession) combatLoop() {
 				s.mu.Unlock()
 				return
 			}
-			// Sweep stale event-vote entries for players we just removed, and
-			// if the session is parked in PhaseEvent re-check quorum so a
-			// disconnected voter can't deadlock the rest of the party.
-			if s.state.Phase == PhaseEvent {
-				alive := make(map[string]bool, len(s.state.Players))
-				for _, p := range s.state.Players {
-					if !p.IsOut() && p.Fingerprint != "" {
-						alive[p.Fingerprint] = true
-					}
-				}
-				for fp := range s.eventVotes {
-					if !alive[fp] {
-						delete(s.eventVotes, fp)
-						delete(s.state.EventVotes, fp)
-					}
-				}
-				aliveCount := len(alive)
-				voteCount := 0
-				for fp := range alive {
-					if _, ok := s.eventVotes[fp]; ok {
-						voteCount++
-					}
-				}
-				if aliveCount > 0 && voteCount >= aliveCount {
-					s.resolveEventVoteLocked()
-				} else if aliveCount == 0 {
-					s.clearPendingEventLocked(true)
-				}
-			}
+			// One or more disconnected players were swept — re-check the
+			// active phase's quorum so the party isn't stranded on a vote
+			// that will never complete.
+			s.recheckPhaseQuorumLocked()
 		}
 		s.mu.Unlock()
 

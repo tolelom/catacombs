@@ -410,9 +410,9 @@ func TestInactivitySweepReleasesEventDeadlock(t *testing.T) {
 		t.Fatal("phase should still be PhaseEvent (fp-c hasn't voted)")
 	}
 
-	// Manually drop fp-c from Players the way the inactivity sweep does
-	// (direct mutation, NOT via RemovePlayer), then invoke the same cleanup
-	// the sweep does inline.
+	// Manually drop fp-c the way the inactivity sweep does (direct
+	// mutation, NOT via RemovePlayer), then invoke recheckPhaseQuorumLocked
+	// — that is exactly what the live sweep now calls.
 	s.mu.Lock()
 	kept := make([]*entity.Player, 0, len(s.state.Players))
 	for _, p := range s.state.Players {
@@ -421,32 +421,7 @@ func TestInactivitySweepReleasesEventDeadlock(t *testing.T) {
 		}
 	}
 	s.state.Players = kept
-
-	// Replicate the inline cleanup from combatLoop.
-	if s.state.Phase == PhaseEvent {
-		alive := make(map[string]bool, len(s.state.Players))
-		for _, p := range s.state.Players {
-			if !p.IsOut() && p.Fingerprint != "" {
-				alive[p.Fingerprint] = true
-			}
-		}
-		for fp := range s.eventVotes {
-			if !alive[fp] {
-				delete(s.eventVotes, fp)
-				delete(s.state.EventVotes, fp)
-			}
-		}
-		aliveCount := len(alive)
-		voteCount := 0
-		for fp := range alive {
-			if _, ok := s.eventVotes[fp]; ok {
-				voteCount++
-			}
-		}
-		if aliveCount > 0 && voteCount >= aliveCount {
-			s.resolveEventVoteLocked()
-		}
-	}
+	s.recheckPhaseQuorumLocked()
 	s.mu.Unlock()
 
 	if s.GetState().Phase != PhaseExploring {
