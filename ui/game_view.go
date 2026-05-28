@@ -313,6 +313,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		}
 		return NewResultScreen(s.gameState, s.rankingSaved), nil
 	}
+	if s.gameState.Phase == game.PhaseEvent {
+		es := NewEventScreen(s.gameState)
+		return es, es.pollState()
+	}
 	if s.gameState.Phase == game.PhaseShop {
 		ss := NewShopScreen(s.gameState)
 		return ss, ss.pollState()
