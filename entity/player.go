@@ -113,13 +113,23 @@ func (p *Player) Revive(hpPercent float64) {
 	}
 }
 
-func (p *Player) EffectiveATK() int {
-	atk := p.ATK
-	for _, item := range p.Inventory {
-		if item.Type == ItemWeapon {
-			atk += item.Bonus
+// bestBonus returns the highest Bonus among inventory items of the given type,
+// or 0 if none. Only the single best weapon/armor contributes its raw bonus —
+// stacking spares does not add stats, so hoarding duplicates is not a dominant
+// strategy. (Item sets are a separate mechanic handled by SetBonus*.)
+func bestBonus(inv []Item, t ItemType) int {
+	best := 0
+	for _, item := range inv {
+		if item.Type == t && item.Bonus > best {
+			best = item.Bonus
 		}
 	}
+	return best
+}
+
+func (p *Player) EffectiveATK() int {
+	atk := p.ATK
+	atk += bestBonus(p.Inventory, ItemWeapon)
 	for _, r := range p.Relics {
 		if r.Effect == RelicATKBoost {
 			atk += r.Value
@@ -132,11 +142,7 @@ func (p *Player) EffectiveATK() int {
 
 func (p *Player) EffectiveDEF() int {
 	def := p.DEF
-	for _, item := range p.Inventory {
-		if item.Type == ItemArmor {
-			def += item.Bonus
-		}
-	}
+	def += bestBonus(p.Inventory, ItemArmor)
 	for _, r := range p.Relics {
 		if r.Effect == RelicDEFBoost {
 			def += r.Value

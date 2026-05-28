@@ -107,20 +107,34 @@ func TestHealCap(t *testing.T) {
 	}
 }
 
-func TestEffectiveATKWithItems(t *testing.T) {
+func TestEffectiveATKUsesBestWeaponOnly(t *testing.T) {
+	// Only the single highest-bonus weapon counts — weapons do NOT stack.
+	// This removes the "hoard 10 weapons" dominant strategy; carrying a
+	// weaker spare must not add ATK.
 	p := NewPlayer("test", ClassWarrior) // base ATK 12
 	p.Inventory = append(p.Inventory, Item{Name: "Sword", Type: ItemWeapon, Bonus: 5})
-	p.Inventory = append(p.Inventory, Item{Name: "Sword2", Type: ItemWeapon, Bonus: 3})
-	if p.EffectiveATK() != 20 { // 12 + 5 + 3
-		t.Errorf("ATK should be 20, got %d", p.EffectiveATK())
+	p.Inventory = append(p.Inventory, Item{Name: "Dagger", Type: ItemWeapon, Bonus: 3})
+	if p.EffectiveATK() != 17 { // 12 + max(5, 3)
+		t.Errorf("ATK should be 17 (base + best weapon only), got %d", p.EffectiveATK())
 	}
 }
 
-func TestEffectiveDEFWithItems(t *testing.T) {
+func TestEffectiveATKWeaponOrderIndependent(t *testing.T) {
+	// Best-weapon selection must not depend on pickup order.
+	p := NewPlayer("test", ClassWarrior) // base ATK 12
+	p.Inventory = append(p.Inventory, Item{Name: "Big", Type: ItemWeapon, Bonus: 9})
+	p.Inventory = append(p.Inventory, Item{Name: "Small", Type: ItemWeapon, Bonus: 2})
+	if p.EffectiveATK() != 21 { // 12 + 9 regardless of order
+		t.Errorf("ATK should be 21, got %d", p.EffectiveATK())
+	}
+}
+
+func TestEffectiveDEFUsesBestArmorOnly(t *testing.T) {
 	p := NewPlayer("test", ClassWarrior) // base DEF 8
 	p.Inventory = append(p.Inventory, Item{Name: "Shield", Type: ItemArmor, Bonus: 4})
-	if p.EffectiveDEF() != 12 { // 8 + 4
-		t.Errorf("DEF should be 12, got %d", p.EffectiveDEF())
+	p.Inventory = append(p.Inventory, Item{Name: "Buckler", Type: ItemArmor, Bonus: 2})
+	if p.EffectiveDEF() != 12 { // 8 + max(4, 2)
+		t.Errorf("DEF should be 12 (base + best armor only), got %d", p.EffectiveDEF())
 	}
 }
 
