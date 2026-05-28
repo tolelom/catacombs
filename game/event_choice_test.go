@@ -507,3 +507,33 @@ func TestEventDamageLogsDeath(t *testing.T) {
 		t.Errorf("expected a 쓰러졌습니다 log for Doomed, got %v", logs)
 	}
 }
+
+// TestResetPerCombatStateClearsTimeGlass — adding any per-combat flag
+// must clear from a single helper, so an extraActionNext entry pre-set
+// before the helper runs must be wiped afterward. Regression guard for
+// the historical "handleMimic forgot to clear Time Glass" drift.
+func TestResetPerCombatStateClearsTimeGlass(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("Bearer", entity.ClassWarrior)
+	p.Fingerprint = "fp-bearer"
+	s.AddPlayer(p)
+
+	s.mu.Lock()
+	s.extraActionNext = map[string]bool{"fp-bearer": true}
+	s.coopUsedThisCombat = map[string]bool{"fp-bearer": true}
+	s.activeRelicUsed = map[string]bool{"fp-bearer": true}
+	s.resetPerCombatStateLocked()
+	s.mu.Unlock()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.extraActionNext) != 0 {
+		t.Errorf("extraActionNext should be empty after reset, got %v", s.extraActionNext)
+	}
+	if len(s.coopUsedThisCombat) != 0 {
+		t.Errorf("coopUsedThisCombat should be empty after reset, got %v", s.coopUsedThisCombat)
+	}
+	if len(s.activeRelicUsed) != 0 {
+		t.Errorf("activeRelicUsed should be empty after reset, got %v", s.activeRelicUsed)
+	}
+}
