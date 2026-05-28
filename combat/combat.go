@@ -19,10 +19,26 @@ func rngOrDefault(rng *rand.Rand) *rand.Rand {
 
 var defaultRng = rand.New(rand.NewSource(1))
 
-// CalcDamage: max(1, ATK * multiplier - DEF) * random(0.85~1.15)
+// MinDamageFraction guarantees an attacker always lands at least this fraction
+// of its raw attack power (ATK*multiplier) regardless of the target's defense.
+//
+// Without it, the subtractive formula floors out-DEF'd damage at 1, and because
+// monster DEF scales exponentially (1.15x/floor) while player gear grows only
+// linearly, time-to-kill exploded super-linearly on late floors — a difficulty
+// cliff. With this floor, under-geared damage degrades gracefully instead.
+// Normal engagements (DEF below ~85% of ATK*mult) are unaffected: the
+// subtractive term dominates there, so existing balance is fully preserved.
+const MinDamageFraction = 0.15
+
+// CalcDamage: max(ATK*mult*MinDamageFraction, ATK*mult - DEF), never below 1,
+// then * random(0.85~1.15).
 func CalcDamage(rng *rand.Rand, atk, def int, multiplier float64) int {
 	r := rngOrDefault(rng)
-	base := float64(atk)*multiplier - float64(def)
+	raw := float64(atk) * multiplier
+	base := raw - float64(def)
+	if floorDmg := raw * MinDamageFraction; base < floorDmg {
+		base = floorDmg
+	}
 	if base < 1 {
 		base = 1
 	}

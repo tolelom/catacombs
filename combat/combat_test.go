@@ -204,3 +204,28 @@ func TestCalcDamageHighDEF(t *testing.T) {
 		t.Errorf("expected minimum damage 1, got %d", dmg)
 	}
 }
+
+func TestCalcDamageFloorScalesWithATK(t *testing.T) {
+	// Severely out-DEF'd but high raw attack: ATK 60 vs DEF 200. The subtractive
+	// term is deeply negative, yet the attacker must still land at least
+	// MinDamageFraction of its raw attack (60*0.15 = 9), NOT collapse to 1.
+	// This is what prevents the late-floor difficulty cliff where under-geared
+	// damage flatlines and time-to-kill explodes.
+	got := CalcDamage(nil, 60, 200, 1.0)
+	if got < 7 || got > 11 { // 9 * (0.85..1.15) ≈ 8..10
+		t.Errorf("expected ATK-scaled minimum ~9 (range 7-11), got %d", got)
+	}
+}
+
+func TestCalcDamageNormalRangeUnchanged(t *testing.T) {
+	// Regression guard: at typical gear levels (DEF well below ATK*mult) the
+	// ATK floor must NOT engage — the subtractive term governs exactly as before
+	// so existing balance is preserved. ATK 30 vs DEF 10, mult 1.0 → base 20,
+	// floor 30*0.15=4.5 (inactive). Range 20*(0.85..1.15) = 17..23.
+	for i := 0; i < 50; i++ {
+		got := CalcDamage(nil, 30, 10, 1.0)
+		if got < 16 || got > 24 {
+			t.Errorf("normal-range damage %d out of expected 17-23 (floor must not engage)", got)
+		}
+	}
+}
