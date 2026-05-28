@@ -801,8 +801,7 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 			}
 		}
 		// Show skill tree allocation UI if player has unspent points.
-		// Minimal placeholder rendering — Task 3 replaces this with rich
-		// tree-aware display.
+		// Display adapts to which tier is next: branch-select / T2 fork / T3 auto / T4 capstone.
 		for _, p := range state.Players {
 			if p.Fingerprint == fingerprint && p.Skills != nil && p.Skills.Points > p.Skills.Allocated && p.Skills.Allocated < 4 {
 				branches := entity.GetBranches(p.Class)
@@ -810,15 +809,37 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 				skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
 				sb.WriteString(skillStyle.Render(fmt.Sprintf("  스킬 포인트 사용 가능! (미사용: %d)", p.Skills.Points-p.Skills.Allocated)))
 				sb.WriteString("\n")
-				for i, tree := range branches {
-					key := "["
-					if i == 1 {
-						key = "]"
+				if p.Skills.BranchIndex == -1 {
+					// Branch-select stage: each key picks a branch (and auto-takes T1).
+					for i, tree := range branches {
+						key := "["
+						if i == 1 {
+							key = "]"
+						}
+						fmt.Fprintf(&sb, "    [%s] %s -> %s\n", key, tree.Name, tree.T1.Name)
 					}
-					if p.Skills.BranchIndex >= 0 && p.Skills.BranchIndex != i {
-						fmt.Fprintf(&sb, "    [%s] %s (잠김)\n", key, tree.Name)
-					} else {
-						fmt.Fprintf(&sb, "    [%s] %s\n", key, tree.Name)
+				} else {
+					tree := branches[p.Skills.BranchIndex]
+					otherTree := branches[1-p.Skills.BranchIndex]
+					otherKey := "["
+					if p.Skills.BranchIndex == 0 {
+						otherKey = "]"
+					}
+					// Show the locked branch line.
+					fmt.Fprintf(&sb, "    [%s] %s (잠김)\n", otherKey, otherTree.Name)
+					// Determine fork or auto next.
+					switch p.Skills.Allocated {
+					case 1:
+						// T2 fork
+						fmt.Fprintf(&sb, "    [[] %s -> %s\n", tree.Name, tree.T2[0].Name)
+						fmt.Fprintf(&sb, "    []] %s -> %s\n", tree.Name, tree.T2[1].Name)
+					case 2:
+						// T3 auto — both keys do the same.
+						fmt.Fprintf(&sb, "    [[/]] %s -> %s (자동)\n", tree.Name, tree.T3.Name)
+					case 3:
+						// T4 capstone fork
+						fmt.Fprintf(&sb, "    [[] %s -> %s ★ 캡스톤\n", tree.Name, tree.T4[0].Name)
+						fmt.Fprintf(&sb, "    []] %s -> %s ★ 캡스톤\n", tree.Name, tree.T4[1].Name)
 					}
 				}
 				break
