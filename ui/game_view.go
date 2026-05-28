@@ -382,14 +382,36 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					return s, nil
 				}
 			}
-			// Skill point allocation
+			// Skill point allocation. The meaning of [ and ] depends on the next
+			// allocation step: at a fork (T2 or T4), they're A/B choice; otherwise
+			// they're branch index. We resolve that here by reading NextIsBranch
+			// from the local player.
 			if isKey(key, "[") || isKey(key, "]") {
 				if ctx.Session != nil {
-					branchIdx := 0
-					if isKey(key, "]") {
-						branchIdx = 1
+					var localSkills *entity.PlayerSkills
+					for _, p := range s.gameState.Players {
+						if p.Fingerprint == ctx.Fingerprint && p.Skills != nil {
+							localSkills = p.Skills
+							break
+						}
 					}
-					if err := ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx); err != nil {
+					branchIdx := 0
+					var choice byte
+					if localSkills != nil && localSkills.BranchIndex != -1 && localSkills.NextIsBranch() {
+						// At T2/T4 fork: keys mean A or B, branch already locked.
+						branchIdx = localSkills.BranchIndex
+						if isKey(key, "[") {
+							choice = 'A'
+						} else {
+							choice = 'B'
+						}
+					} else {
+						// Branch-select stage (or T3 auto): keys mean branch index.
+						if isKey(key, "]") {
+							branchIdx = 1
+						}
+					}
+					if err := ctx.Session.AllocateSkillPoint(ctx.Fingerprint, branchIdx, choice); err != nil {
 						s.skillMsg = err.Error()
 					} else {
 						s.skillMsg = ""

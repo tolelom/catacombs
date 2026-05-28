@@ -833,7 +833,7 @@ func (s *GameSession) TouchActivity(fingerprint string) {
 }
 
 // AllocateSkillPoint spends one skill point into the given branch for the player.
-func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) error {
+func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int, choice byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, p := range s.state.Players {
@@ -842,7 +842,7 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int) erro
 				return fmt.Errorf("스킬 포인트가 없습니다")
 			}
 			before := p.Skills.GetMaxHPBonus(p.Class)
-			if err := p.Skills.Allocate(branchIdx, p.Class, 0); err != nil {
+			if err := p.Skills.Allocate(branchIdx, p.Class, choice); err != nil {
 				return err
 			}
 			// MaxHPBoost nodes raise both MaxHP and current HP by the delta.

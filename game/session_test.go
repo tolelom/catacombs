@@ -581,7 +581,7 @@ func TestAllocateSkillPointAppliesMaxHPBoost(t *testing.T) {
 	beforeHP := s.state.Players[0].HP
 	s.mu.Unlock()
 
-	if err := s.AllocateSkillPoint("fp-w", 0); err != nil {
+	if err := s.AllocateSkillPoint("fp-w", 0, 0); err != nil {
 		t.Fatalf("allocate T1 failed: %v", err)
 	}
 	st := s.GetState()
@@ -646,5 +646,28 @@ func TestRemovePlayerClearsShopLeavers(t *testing.T) {
 	s.mu.Unlock()
 	if exists {
 		t.Error("RemovePlayer should clear the leaving player's shopLeavers entry")
+	}
+}
+
+// TestAllocateSkillPoint_ForwardsChoiceToEntity ensures a Bravo choice at
+// T2 records 'B' in the player's Skills.Choices, proving the session
+// faithfully forwards the choice byte to the entity layer.
+func TestAllocateSkillPoint_ForwardsChoiceToEntity(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("A", entity.ClassWarrior)
+	p.Fingerprint = "fp-a"
+	p.Skills = entity.NewPlayerSkills()
+	p.Skills.Points = 2
+	s.AddPlayer(p)
+
+	if err := s.AllocateSkillPoint("fp-a", 0, 0); err != nil {
+		t.Fatalf("T1 allocation should succeed, got %v", err)
+	}
+	if err := s.AllocateSkillPoint("fp-a", 0, 'B'); err != nil {
+		t.Fatalf("T2 allocation with choice 'B' should succeed, got %v", err)
+	}
+	got := s.GetState().Players[0].Skills.Choices
+	if got != "B" {
+		t.Errorf("expected Choices 'B' after T2 with choice B, got %q", got)
 	}
 }
