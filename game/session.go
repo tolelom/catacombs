@@ -572,6 +572,32 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
+	// Copy event votes
+	var eventVotesCopy map[string]int
+	if s.state.EventVotes != nil {
+		n := len(s.state.EventVotes)
+		eventVotesCopy = make(map[string]int, n)
+		for k, v := range s.state.EventVotes {
+			eventVotesCopy[k] = v
+		}
+	}
+
+	// Copy pending event view (deep — Choices slice + per-Choice Tags slice)
+	var pendingEventCopy *PendingEventView
+	if src := s.state.PendingEvent; src != nil {
+		choices := make([]EventChoiceView, len(src.Choices))
+		for i, c := range src.Choices {
+			tags := make([]ChoiceTag, len(c.Tags))
+			copy(tags, c.Tags)
+			choices[i] = EventChoiceView{Label: c.Label, Tags: tags}
+		}
+		pendingEventCopy = &PendingEventView{
+			Name:        src.Name,
+			Description: src.Description,
+			Choices:     choices,
+		}
+	}
+
 	// Mirror shopLeavers for the UI's "N/M ready to leave" display.
 	var shopLeaversCopy map[string]bool
 	if n := len(s.shopLeavers); n > 0 {
@@ -624,8 +650,8 @@ func (s *GameSession) GetState() GameState {
 		StartingPartySize: s.state.StartingPartySize,
 		LastEventName:    s.state.LastEventName,
 		MoveVotes:        moveVotesCopy,
-		PendingEvent:     s.state.PendingEvent,
-		EventVotes:       s.state.EventVotes,
+		PendingEvent:     pendingEventCopy,
+		EventVotes:       eventVotesCopy,
 		ShopLeavers:        shopLeaversCopy,
 		NextRoomPreview:    s.nextRoomPreview,
 		CoopAvailable:      s.computeCoopAvailable(),

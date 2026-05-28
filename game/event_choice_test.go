@@ -77,3 +77,34 @@ func TestTriggerEventTransitionsToPhaseEvent(t *testing.T) {
 		t.Error("room should not be cleared yet (waiting for vote)")
 	}
 }
+
+// TestPendingEventDeepCopyIsolation ensures that mutating the snapshot's
+// EventVotes map does not affect the session's internal state.
+func TestPendingEventDeepCopyIsolation(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	p := entity.NewPlayer("A", entity.ClassWarrior)
+	p.Fingerprint = "fp-a"
+	s.AddPlayer(p)
+
+	s.mu.Lock()
+	s.state.Floor = &dungeon.Floor{
+		Rooms:       []*dungeon.Room{{Type: dungeon.RoomEvent}},
+		CurrentRoom: 0,
+	}
+	s.state.FloorNum = 1
+	s.state.Phase = PhaseExploring
+	s.mu.Unlock()
+
+	s.EnterRoom(0)
+
+	snap1 := s.GetState()
+	if snap1.EventVotes == nil {
+		t.Fatal("snapshot EventVotes should be a non-nil map after entry")
+	}
+	snap1.EventVotes["mutator"] = 999
+
+	snap2 := s.GetState()
+	if _, leaked := snap2.EventVotes["mutator"]; leaked {
+		t.Error("mutation on snapshot must not leak into session state")
+	}
+}
