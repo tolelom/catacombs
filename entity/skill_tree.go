@@ -249,31 +249,6 @@ func (ps *PlayerSkills) NextIsBranch() bool {
 	return ps.Allocated == 1 || ps.Allocated == 3
 }
 
-// NextStepLabel returns a short Korean label describing what the next
-// allocation will be. Empty string if nothing further can be allocated.
-func (ps *PlayerSkills) NextStepLabel(class Class) string {
-	if ps == nil || ps.Allocated >= 4 {
-		return ""
-	}
-	if ps.BranchIndex < 0 {
-		branches := GetBranches(class)
-		return "분기 선택: " + branches[0].Name + " or " + branches[1].Name
-	}
-	branches := GetBranches(class)
-	tree := branches[ps.BranchIndex]
-	switch ps.Allocated {
-	case 0:
-		return "T1 자동: " + tree.T1.Name
-	case 1:
-		return "T2 선택: " + tree.T2[0].Name + " or " + tree.T2[1].Name
-	case 2:
-		return "T3 자동: " + tree.T3.Name
-	case 3:
-		return "T4 캡스톤: " + tree.T4[0].Name + " or " + tree.T4[1].Name
-	}
-	return ""
-}
-
 // choiceToIdx maps a recorded choice byte to the array index of the chosen
 // fork node. 'A' -> 0, 'B' -> 1.
 func choiceToIdx(c byte) int {

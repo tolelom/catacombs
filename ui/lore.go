@@ -68,6 +68,14 @@ func eventLore(name string) string {
 		return "흐린 형체가 손짓한다. 도와줄까."
 	case "mushroom":
 		return "발광하는 버섯. 먹어볼까."
+	case "gravekeeper":
+		return "묘지기는 말이 없다. 무덤은 더 말이 없다."
+	case "forge":
+		return "망치 소리가 멎은 지 오래. 잔불만 남았다."
+	case "toll_bridge":
+		return "트롤의 다리. 요금은 협상 불가."
+	case "feast":
+		return "주인 없는 만찬. 초대받은 적 없는 손님."
 	}
 	return ""
 }

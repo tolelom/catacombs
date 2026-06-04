@@ -231,9 +231,6 @@ func TestNilPlayerSkillsBonuses(t *testing.T) {
 	if ps.NextIsBranch() {
 		t.Error("nil skills should report NextIsBranch=false")
 	}
-	if ps.NextStepLabel(ClassWarrior) != "" {
-		t.Error("nil skills should return empty NextStepLabel")
-	}
 }
 
 func TestPartialAllocation_ReturnsPrefixOnly(t *testing.T) {

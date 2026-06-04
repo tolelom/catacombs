@@ -529,8 +529,22 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		}
 	}
 
-	// Item drop: one rolled item per alive; skip if their inventory is full.
-	if o.ItemDrop {
+	// Concrete item grant: each alive player gets their own copy. Full
+	// inventories convert to bonus*5 gold — same invariant as
+	// applyOutcomeToPlayer. Mutually exclusive with ItemDrop so an outcome
+	// accidentally setting both can't double-grant.
+	if o.Item != nil {
+		for _, p := range alive {
+			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+				p.Inventory = append(p.Inventory, *o.Item)
+				s.addLog(fmt.Sprintf("  %s %s 획득", p.Name, o.Item.Name))
+			} else {
+				comp := o.Item.Bonus * 5
+				p.Gold += comp
+				s.addLog(fmt.Sprintf("  %s 인벤토리 가득 → +%dG로 전환", p.Name, comp))
+			}
+		}
+	} else if o.ItemDrop {
 		floor := s.state.FloorNum
 		for _, p := range alive {
 			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {

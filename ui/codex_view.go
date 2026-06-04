@@ -33,9 +33,12 @@ var allItems = []string{
 	"Antidote Charm", "Flame Guard", "Life Siphon",
 }
 
+// allEvents must stay in sync with the Name fields in game.GetRandomEvents —
+// codex completion counts len(allEvents) and entries are recorded by name.
 var allEvents = []string{
 	"altar", "fountain", "merchant", "trap_room",
 	"shrine", "chest", "ghost", "mushroom",
+	"gravekeeper", "forge", "toll_bridge", "feast",
 }
 
 // bossNames is the codex-display order for the boss trophy tab. Kept here so
