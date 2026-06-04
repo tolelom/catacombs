@@ -90,9 +90,12 @@ func (e *EventScreen) submitVote(ctx *Context, idx int) {
 	if ctx.Session == nil {
 		return
 	}
+	perPlayer := e.gameState.PendingEvent != nil && e.gameState.PendingEvent.PerPlayer
 	if ctx.Session.SubmitEventVote(ctx.Fingerprint, idx) {
 		// Vote triggered resolution; the next tick will follow phase out.
 		e.statusMsg = "결정되었습니다..."
+	} else if perPlayer {
+		e.statusMsg = fmt.Sprintf("선택지 %d 선택 완료 — 다른 플레이어 대기 중", idx+1)
 	} else {
 		e.statusMsg = fmt.Sprintf("선택지 %d에 투표 — 다른 플레이어 대기 중", idx+1)
 	}
@@ -105,7 +108,11 @@ func (e *EventScreen) View(ctx *Context) string {
 	}
 	ev := e.gameState.PendingEvent
 
-	header := lipgloss.NewStyle().Bold(true).Render(fmt.Sprintf("이벤트: %s", ev.Name))
+	headerText := fmt.Sprintf("이벤트: %s", ev.Name)
+	if ev.PerPlayer {
+		headerText = "보물 발견!"
+	}
+	header := lipgloss.NewStyle().Bold(true).Render(headerText)
 	desc := ev.Description
 
 	var lines []string
@@ -126,7 +133,11 @@ func (e *EventScreen) View(ctx *Context) string {
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, "투표 현황:")
+	if ev.PerPlayer {
+		lines = append(lines, "선택 현황:")
+	} else {
+		lines = append(lines, "투표 현황:")
+	}
 	for _, p := range e.gameState.Players {
 		if p.IsOut() {
 			continue
@@ -143,7 +154,11 @@ func (e *EventScreen) View(ctx *Context) string {
 		lines = append(lines, e.statusMsg)
 	}
 	lines = append(lines, "")
-	lines = append(lines, "[1/2/3] 즉시 선택   [↑/↓] 커서   [Enter] 투표")
+	if ev.PerPlayer {
+		lines = append(lines, "[1/2/3] 즉시 선택   [↑/↓] 커서   [Enter] 선택")
+	} else {
+		lines = append(lines, "[1/2/3] 즉시 선택   [↑/↓] 커서   [Enter] 투표")
+	}
 
 	return strings.Join(lines, "\n")
 }

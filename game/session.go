@@ -35,6 +35,7 @@ type EventChoiceView struct {
 type PendingEventView struct {
 	Name        string
 	Description string
+	PerPlayer   bool // true for loot picks: each player's own choice applies to them
 	Choices     []EventChoiceView
 }
 
@@ -133,6 +134,7 @@ type GameSession struct {
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	eventVotes     map[string]int       // fingerprint → choice index
 	pendingEvent   *RandomEvent         // typed event with Resolve funcs; not snapshotted
+	eventPerPlayer bool                 // pendingEvent resolves per player (loot) vs party majority
 	rng            *rand.Rand           // session-scoped RNG; deterministic for daily runs
 
 	// Coop ability state — all maps keyed by player fingerprint.
@@ -629,6 +631,7 @@ func (s *GameSession) GetState() GameState {
 		pendingEventCopy = &PendingEventView{
 			Name:        src.Name,
 			Description: src.Description,
+			PerPlayer:   src.PerPlayer,
 			Choices:     choices,
 		}
 	}
@@ -1103,6 +1106,7 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 // the current event room as cleared. Caller holds s.mu.
 func (s *GameSession) clearPendingEventLocked(markRoomCleared bool) {
 	s.pendingEvent = nil
+	s.eventPerPlayer = false
 	s.state.PendingEvent = nil
 	s.state.EventVotes = nil
 	s.eventVotes = nil

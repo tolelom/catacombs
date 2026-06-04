@@ -56,8 +56,8 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 		s.generateShopItems()
 		s.state.Phase = PhaseShop
 	case dungeon.RoomTreasure:
-		s.grantTreasure()
-		room.Cleared = true
+		s.triggerLoot()
+		// room.Cleared flipped after all picks resolve in resolveEventVote
 	case dungeon.RoomEvent:
 		s.triggerEvent()
 		// room.Cleared flipped after vote quorum in resolveEventVote
@@ -527,11 +527,16 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 
 // resolveEventVoteLocked tallies eventVotes, picks the winning choice (lowest
 // index breaks ties), runs Resolve, applies the outcome party-wide, and
-// returns the session to PhaseExploring with the room cleared. Caller holds
-// s.mu and has verified quorum.
+// returns the session to PhaseExploring with the room cleared. Per-player
+// pending events (loot picks) skip the tally and resolve each player's own
+// choice individually. Caller holds s.mu and has verified quorum.
 func (s *GameSession) resolveEventVoteLocked() {
 	if s.pendingEvent == nil {
 		s.clearPendingEventLocked(true)
+		return
+	}
+	if s.eventPerPlayer {
+		s.resolveLootPicksLocked()
 		return
 	}
 	// Tally
@@ -581,14 +586,44 @@ func (s *GameSession) triggerEvent() {
 		return
 	}
 
-	// Stash typed event for Resolve at quorum time.
+	s.startEventPhaseLocked(event, false)
+}
+
+// triggerLoot presents the treasure-room loot table and parks the session in
+// PhaseEvent with per-player resolution: each player's own pick applies to
+// them only. Mirrors triggerEvent's zero-alive guard. Caller holds s.mu.
+func (s *GameSession) triggerLoot() {
+	alive := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			alive++
+		}
+	}
+	if alive == 0 {
+		if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
+			s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+		}
+		return
+	}
+
+	event := BuildLootEvent(s.state.FloorNum, s.rng)
+	s.addLog("보물 발견! 각자 하나를 선택하세요.")
+	s.startEventPhaseLocked(event, true)
+}
+
+// startEventPhaseLocked stashes the typed event, builds the snapshot-safe
+// view, and parks the session in PhaseEvent awaiting player input. perPlayer
+// selects individual resolution (loot picks) over party majority (random
+// events). Caller holds s.mu and has verified at least one alive player.
+func (s *GameSession) startEventPhaseLocked(event RandomEvent, perPlayer bool) {
 	ev := event
 	s.pendingEvent = &ev
+	s.eventPerPlayer = perPlayer
 
-	// Build snapshot-safe view for the UI.
 	view := &PendingEventView{
 		Name:        event.Name,
 		Description: event.Description,
+		PerPlayer:   perPlayer,
 		Choices:     make([]EventChoiceView, 0, len(event.Choices)),
 	}
 	for _, c := range event.Choices {
@@ -600,6 +635,73 @@ func (s *GameSession) triggerEvent() {
 	s.state.EventVotes = make(map[string]int)
 	s.eventVotes = make(map[string]int)
 	s.state.Phase = PhaseEvent
+}
+
+// resolveLootPicksLocked applies each alive player's own pick. Iterates
+// s.state.Players (not the vote map) so RNG consumption order is deterministic
+// for daily runs. Voteless alive players (disconnect-sweep edge) are skipped.
+// Caller holds s.mu.
+func (s *GameSession) resolveLootPicksLocked() {
+	floor := s.state.FloorNum
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		idx, ok := s.eventVotes[p.Fingerprint]
+		if !ok || idx < 0 || idx >= len(s.pendingEvent.Choices) {
+			continue
+		}
+		choice := s.pendingEvent.Choices[idx]
+		outcome := choice.Resolve(floor, s.rng)
+		s.addLog(fmt.Sprintf("  %s → %s", p.Name, outcome.Description))
+		s.applyOutcomeToPlayer(p, outcome)
+	}
+	s.clearPendingEventLocked(true)
+}
+
+// applyOutcomeToPlayer applies a loot outcome to a single player. Unlike
+// applyEventOutcome (party-wide), gold goes entirely to the picker, and a
+// concrete Item grant converts to bonus*5 gold when the inventory is full
+// (mirrors handleGamble's jackpot fallback; consistent with the shop price
+// formula 40+bonus*5). Loot outcomes always carry concrete items (o.Item),
+// never deferred ItemDrop rolls — see buildRotatingLootChoice. A player
+// killed by the HP cost still receives the item/gold: pick and price are one
+// transaction, and a revive keeps the loot. Caller holds s.mu.
+func (s *GameSession) applyOutcomeToPlayer(p *entity.Player, o EventOutcome) {
+	if o.HPChange > 0 {
+		before := p.HP
+		p.Heal(o.HPChange)
+		s.addLog(fmt.Sprintf("  %s HP %d 회복", p.Name, p.HP-before))
+	} else if o.HPChange < 0 {
+		p.TakeDamage(-o.HPChange)
+		if p.Dead {
+			s.state.AnyPlayerDied = true
+		}
+		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, -o.HPChange))
+	}
+
+	if o.GoldChange != 0 {
+		p.Gold += o.GoldChange
+		if p.Gold < 0 {
+			p.Gold = 0
+		}
+		if o.GoldChange > 0 {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, o.GoldChange))
+		} else {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -o.GoldChange))
+		}
+	}
+
+	if o.Item != nil {
+		if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+			p.Inventory = append(p.Inventory, *o.Item)
+			s.addLog(fmt.Sprintf("  %s %s 획득", p.Name, o.Item.Name))
+		} else {
+			comp := o.Item.Bonus * 5
+			p.Gold += comp
+			s.addLog(fmt.Sprintf("  %s 인벤토리 가득 → +%dG로 전환", p.Name, comp))
+		}
+	}
 }
 
 func (s *GameSession) grantSecretTreasure() {

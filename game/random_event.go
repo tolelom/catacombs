@@ -1,6 +1,10 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/tolelom/catacombs/entity"
+)
 
 // ChoiceTag classifies an event choice's possible outcomes for UI hints.
 // One choice can carry multiple tags (e.g. altar pray = Heal + Harm + Gamble).
@@ -20,7 +24,8 @@ const (
 type EventOutcome struct {
 	HPChange    int
 	GoldChange  int
-	ItemDrop    bool
+	ItemDrop    bool         // roll a random gear item per recipient
+	Item        *entity.Item // grant this specific item (loot picks reveal values up front)
 	Description string
 }
 

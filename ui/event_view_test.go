@@ -31,3 +31,31 @@ func TestEventScreenViewIncludesChoices(t *testing.T) {
 		}
 	}
 }
+
+// TestEventScreenPerPlayerWording — loot picks (PerPlayer) swap the party-vote
+// wording for individual-choice wording.
+func TestEventScreenPerPlayerWording(t *testing.T) {
+	state := game.GameState{
+		Phase: game.PhaseEvent,
+		PendingEvent: &game.PendingEventView{
+			Name:      "treasure",
+			PerPlayer: true,
+			Choices: []game.EventChoiceView{
+				{Label: "Iron Sword (ATK+5)", Tags: []game.ChoiceTag{game.TagItem}},
+				{Label: "Iron Shield (DEF+3)", Tags: []game.ChoiceTag{game.TagItem}},
+			},
+		},
+	}
+	es := NewEventScreen(state)
+	ctx := &Context{Width: 80, Height: 24}
+	out := es.View(ctx)
+	if !strings.Contains(out, "보물 발견!") {
+		t.Error("PerPlayer view should use the treasure header")
+	}
+	if !strings.Contains(out, "선택 현황:") {
+		t.Error("PerPlayer view should label picks, not votes")
+	}
+	if strings.Contains(out, "투표 현황:") {
+		t.Error("PerPlayer view must not use party-vote wording")
+	}
+}
