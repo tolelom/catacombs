@@ -3,6 +3,7 @@ package web
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
@@ -141,7 +142,10 @@ func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Han
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(stats)
+		if err := json.NewEncoder(w).Encode(stats); err != nil {
+			// Headers are already sent; all we can do is leave a trace.
+			slog.Error("admin stats encode failed", "error", err)
+		}
 	})
 }
 

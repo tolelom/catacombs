@@ -89,15 +89,19 @@ func TestCodexIncludesLuckyCharm(t *testing.T) {
 	}
 }
 
-// TestNoOrphanMonsterLore — every monster with lore must exist in the codex
-// list; orphaned lore (e.g. the removed Mimic) is dead content.
-func TestNoOrphanMonsterLore(t *testing.T) {
-	if monsterLore("Mimic") != "" {
-		t.Error("Mimic lore should be removed (not in allMonsters)")
-	}
+// TestAllCodexMonstersHaveLore — every codex monster needs lore, and Mimic
+// (a real spawn from mimic rooms, recorded on combat entry) must be listed.
+func TestAllCodexMonstersHaveLore(t *testing.T) {
+	foundMimic := false
 	for _, name := range allMonsters {
+		if name == "Mimic" {
+			foundMimic = true
+		}
 		if monsterLore(name) == "" {
 			t.Errorf("monster %q in codex has no lore", name)
 		}
+	}
+	if !foundMimic {
+		t.Error("allMonsters should include Mimic (it spawns from mimic rooms)")
 	}
 }

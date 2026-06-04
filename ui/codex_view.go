@@ -13,8 +13,8 @@ import (
 // entity.Monster.BaseName, items match Item.Name and Relic.Name as written
 // in event.go/turn.go, and events use RandomEvent.Name from random_event.go.
 var allMonsters = []string{
-	// Regular
-	"Slime", "Skeleton", "Orc", "Dark Knight",
+	// Regular (Mimic spawns from mimic rooms — 50% ambush)
+	"Slime", "Skeleton", "Orc", "Dark Knight", "Mimic",
 	// Mini-bosses (floors 4/9/14/19)
 	"Guardian's Herald", "Warden's Shadow", "Overlord's Lieutenant", "Archlich's Harbinger",
 	// Bosses (floors 5/10/15/20)

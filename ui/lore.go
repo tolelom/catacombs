@@ -20,6 +20,8 @@ func monsterLore(name string) string {
 		return "3대 보스. 빙하 협곡의 군주. 시간을 동결시킨다."
 	case "Archlich":
 		return "최종 보스. 카타콤의 진짜 주인. 죽음 자체."
+	case "Mimic":
+		return "보물 상자로 위장한 포식자. 욕심 많은 자만 잡힌다."
 	case "Guardian's Herald":
 		return "수호자의 전령. 주인의 늪 냄새를 먼저 풍긴다."
 	case "Warden's Shadow":

@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -109,7 +110,9 @@ func (d *DB) GetUpgrades(fingerprint string) (map[PermaUpgrade]int, error) {
 		if v == nil {
 			return nil
 		}
-		_ = json.Unmarshal(v, &out)
+		if err := json.Unmarshal(v, &out); err != nil {
+			return fmt.Errorf("corrupted upgrade data for %s: %w", fingerprint, err)
+		}
 		return nil
 	})
 	return out, err
@@ -140,7 +143,12 @@ func (d *DB) BuyUpgrade(fingerprint string, id PermaUpgrade) (int, error) {
 		}
 		levels := make(map[PermaUpgrade]int)
 		if v := ub.Get([]byte(fingerprint)); v != nil {
-			_ = json.Unmarshal(v, &levels)
+			// Corrupted data must abort the buy: proceeding with zeroed
+			// levels would let the player re-buy from level 0 and then
+			// overwrite their real progression on Put.
+			if err := json.Unmarshal(v, &levels); err != nil {
+				return fmt.Errorf("corrupted upgrade data for %s: %w", fingerprint, err)
+			}
 		}
 		if levels[id] >= def.MaxLevel {
 			return errAtMaxLevel

@@ -951,9 +951,10 @@ func (s *GameSession) LeaveShop(fingerprint string) bool {
 	if s.shopLeavers == nil {
 		s.shopLeavers = make(map[string]bool)
 	}
-	if fingerprint != "" {
-		s.shopLeavers[fingerprint] = true
-	}
+	// Empty-fingerprint players (legacy/test path) signal under the "" key,
+	// mirroring move votes — excluding them entirely would make their quorum
+	// slot unfillable and deadlock the shop for the whole party.
+	s.shopLeavers[fingerprint] = true
 	available := 0
 	ready := 0
 	for _, p := range s.state.Players {
@@ -961,14 +962,11 @@ func (s *GameSession) LeaveShop(fingerprint string) bool {
 			continue
 		}
 		available++
-		if p.Fingerprint != "" && s.shopLeavers[p.Fingerprint] {
+		if s.shopLeavers[p.Fingerprint] {
 			ready++
 		}
 	}
-	// Solo or empty-fingerprint test runs: act immediately.
-	if available == 0 || (available == 1 && fingerprint == "") {
-		ready = available
-	}
+	// available == 0 (everyone out) falls through and transitions immediately.
 	if ready < available {
 		return false
 	}
