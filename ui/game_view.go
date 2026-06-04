@@ -614,6 +614,28 @@ func renderMap(floor *dungeon.Floor) string {
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
+// soloChainHint renders the one-line solo-chain status for the combat HUD,
+// or "" when nothing is armed. Nil chain (party mode / out of combat) shows
+// nothing.
+func soloChainHint(chain *game.SoloChainView) string {
+	if chain == nil {
+		return ""
+	}
+	switch {
+	case chain.LastAction == "skill":
+		return "⛓ 연계 준비: 공격 시 잔향 일격(1.4×)!"
+	case chain.LastAction == "coop":
+		return "⛓ 연계 준비: 공격 시 반격 태세(크리 확정)!"
+	case chain.AttackStreak >= 3:
+		return fmt.Sprintf("⛓ 연속 공세 지속 중 (%d연타, 1.25×)", chain.AttackStreak)
+	case chain.AttackStreak == 2:
+		return "⛓ 연계 준비: 공격 시 연속 공세(1.25×)!"
+	case chain.AttackStreak == 1:
+		return "⛓ 공격 1연타 (3연타부터 연속 공세)"
+	}
+	return ""
+}
+
 func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCursor int, relicCursor int, fingerprint string) string {
 	var sb strings.Builder
 	border := lipgloss.NewStyle().
@@ -697,6 +719,12 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 			sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(relicHint+" [Tab]대상 [/]채팅"))
 		}
 		sb.WriteString("\n")
+
+		// Solo chain hint — shows the chain the next attack would trigger.
+		if hint := soloChainHint(state.SoloChain); hint != "" {
+			sb.WriteString(styleSystem.Render(hint))
+			sb.WriteString("\n")
+		}
 
 		// Timer
 		if !state.TurnDeadline.IsZero() {

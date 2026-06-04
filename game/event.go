@@ -101,18 +101,8 @@ func (s *GameSession) handleMimic(room *dungeon.Room) {
 		s.state.Monsters = []*entity.Monster{mimic}
 		s.state.Phase = PhaseCombat
 		s.state.CombatTurn = 0
-		// Match other combat-start sites: reset every per-combat map and
-		// apply pending Venomous Edge poison. Without this, Time Glass's
-		// extraActionNext would carry over from the prior combat into the
-		// mimic fight (free attack), and Venomous Edge would skip the mimic.
-		s.coopUsedThisCombat = make(map[string]bool)
-		s.activeRelicUsed = make(map[string]bool)
-		s.extraActionNext = make(map[string]bool)
-		s.applyPoisonNextCombatIfPending()
+		s.resetPerCombatStateLocked()
 		s.signalCombat()
-		for _, p := range s.state.Players {
-			p.SkillUses = s.effectiveSkillUses()
-		}
 	} else {
 		s.addLog("진짜 보물 상자였습니다!")
 		s.grantTreasure()
@@ -295,13 +285,23 @@ func (s *GameSession) spawnMonsters() {
 		s.state.Monsters[i] = m
 	}
 
-	// Reset skill uses for all players at combat start
+	s.resetPerCombatStateLocked()
+}
+
+// resetPerCombatStateLocked re-arms all per-combat state at combat start:
+// skill uses, coop and active-relic cooldowns, Time Glass carryover, the solo
+// chain sequence, and any pending Venomous Edge poison. Without the
+// extraActionNext reset, Time Glass would carry a free attack from the prior
+// combat into this one. Caller holds s.mu.
+func (s *GameSession) resetPerCombatStateLocked() {
 	for _, p := range s.state.Players {
 		p.SkillUses = s.effectiveSkillUses()
 	}
 	s.coopUsedThisCombat = make(map[string]bool)
 	s.activeRelicUsed = make(map[string]bool)
 	s.extraActionNext = make(map[string]bool)
+	s.soloLastAction = ""
+	s.soloAttackStreak = 0
 	s.applyPoisonNextCombatIfPending()
 }
 
@@ -334,14 +334,7 @@ func (s *GameSession) spawnBoss() {
 	s.applyDifficultyMods(boss)
 	s.state.Monsters = []*entity.Monster{boss}
 
-	// Reset skill uses for all players at combat start
-	for _, p := range s.state.Players {
-		p.SkillUses = s.effectiveSkillUses()
-	}
-	s.coopUsedThisCombat = make(map[string]bool)
-	s.activeRelicUsed = make(map[string]bool)
-	s.extraActionNext = make(map[string]bool)
-	s.applyPoisonNextCombatIfPending()
+	s.resetPerCombatStateLocked()
 }
 
 // applyPoisonNextCombatIfPending applies the Venomous Edge combo's effect at
@@ -765,14 +758,7 @@ func (s *GameSession) spawnMiniBoss() {
 	s.state.Monsters = []*entity.Monster{miniBoss}
 	s.addLog(fmt.Sprintf("미니보스 등장: %s!", miniBoss.Name))
 
-	// Reset skill uses for all players at combat start
-	for _, p := range s.state.Players {
-		p.SkillUses = s.effectiveSkillUses()
-	}
-	s.coopUsedThisCombat = make(map[string]bool)
-	s.activeRelicUsed = make(map[string]bool)
-	s.extraActionNext = make(map[string]bool)
-	s.applyPoisonNextCombatIfPending()
+	s.resetPerCombatStateLocked()
 }
 
 // applyDifficultyMods scales a monster's HP/ATK by HardMode, NG+ level, and

@@ -32,6 +32,30 @@ func TestEventScreenViewIncludesChoices(t *testing.T) {
 	}
 }
 
+// TestSoloChainHint — the combat HUD chain hint reflects the armed chain.
+func TestSoloChainHint(t *testing.T) {
+	cases := []struct {
+		chain *game.SoloChainView
+		want  string
+	}{
+		{nil, ""},
+		{&game.SoloChainView{}, ""},
+		{&game.SoloChainView{LastAction: "skill"}, "잔향 일격"},
+		{&game.SoloChainView{LastAction: "coop"}, "반격 태세"},
+		{&game.SoloChainView{LastAction: "attack", AttackStreak: 1}, "1연타"},
+		{&game.SoloChainView{LastAction: "attack", AttackStreak: 3}, "연속 공세"},
+	}
+	for i, tc := range cases {
+		got := soloChainHint(tc.chain)
+		if tc.want == "" && got != "" {
+			t.Errorf("case %d: expected empty hint, got %q", i, got)
+		}
+		if tc.want != "" && !strings.Contains(got, tc.want) {
+			t.Errorf("case %d: hint %q should contain %q", i, got, tc.want)
+		}
+	}
+}
+
 // TestEventScreenPerPlayerWording — loot picks (PerPlayer) swap the party-vote
 // wording for individual-choice wording.
 func TestEventScreenPerPlayerWording(t *testing.T) {

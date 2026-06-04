@@ -30,6 +30,13 @@ type EventChoiceView struct {
 	Tags  []ChoiceTag
 }
 
+// SoloChainView surfaces the solo-chain sequence state for the HUD.
+// Populated only during solo-mode combat; nil otherwise.
+type SoloChainView struct {
+	LastAction   string
+	AttackStreak int
+}
+
 // PendingEventView is a snapshot-safe view of the active event, populated
 // while Phase == PhaseEvent and nil otherwise.
 type PendingEventView struct {
@@ -95,6 +102,7 @@ type GameState struct {
 	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
 	NextRoomPreview  *RoomPreview    // populated when Foresight has been used
 	CoopAvailable    map[string]bool // fingerprint → can use coop now (HUD display)
+	SoloChain        *SoloChainView  // solo-mode combat chain state (HUD display)
 	// Run-scoped event flags (drives polish achievements at GameOver)
 	CombosFiredThisRun map[string]bool // combo name → fired at least once this run
 	BossPhase2Reached  bool            // any boss reached Phase 2
@@ -151,6 +159,11 @@ type GameSession struct {
 	critGuaranteedNext  bool               // next turn party crit (Expose Weakness combo)
 	enemyMissNextTurn   bool               // next turn 50% enemy attacks miss (Mirage)
 	poisonNextCombat    bool               // next combat starts enemies poisoned (Venomous Edge)
+
+	// Solo chain state — per-combat action sequence for SoloMode chains
+	// (the solo replacement for cross-class party combos).
+	soloLastAction   string // previous turn's successful action ("" breaks chains)
+	soloAttackStreak int    // consecutive attacks so far this combat
 
 	// The fields below are set during session construction (inside an
 	// EnsureSession init callback under Lobby.mu) and are not mutated
@@ -693,12 +706,25 @@ func (s *GameSession) GetState() GameState {
 		ShopLeavers:        shopLeaversCopy,
 		NextRoomPreview:    s.nextRoomPreview,
 		CoopAvailable:      s.computeCoopAvailable(),
+		SoloChain:          s.soloChainView(),
 		CombosFiredThisRun: copyStringBoolMap(s.state.CombosFiredThisRun),
 		BossPhase2Reached:  s.state.BossPhase2Reached,
 		MimicKilled:        s.state.MimicKilled,
 		AltarUsedThisRun:   s.state.AltarUsedThisRun,
 		RevivesThisRun:     s.state.RevivesThisRun,
 		BossesKilledThisRun: copyStringBoolMap(s.state.BossesKilledThisRun),
+	}
+}
+
+// soloChainView builds the HUD snapshot of the solo-chain state, or nil when
+// it doesn't apply (party mode or out of combat). Caller holds s.mu.
+func (s *GameSession) soloChainView() *SoloChainView {
+	if !s.state.SoloMode || s.state.Phase != PhaseCombat {
+		return nil
+	}
+	return &SoloChainView{
+		LastAction:   s.soloLastAction,
+		AttackStreak: s.soloAttackStreak,
 	}
 }
 
