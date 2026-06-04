@@ -849,7 +849,7 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 						if i == 1 {
 							key = "]"
 						}
-						fmt.Fprintf(&sb, "    [%s] %s -> %s\n", key, tree.Name, tree.T1.Name)
+						fmt.Fprintf(&sb, "    [%s] %s -> %s (%s)\n", key, tree.Name, tree.T1.Name, tree.T1.EffectLabel())
 					}
 				} else {
 					tree := branches[p.Skills.BranchIndex]
@@ -864,15 +864,15 @@ func renderHUD(state game.GameState, targetCursor int, allyCursor int, moveCurso
 					switch p.Skills.Allocated {
 					case 1:
 						// T2 fork
-						fmt.Fprintf(&sb, "    [[] %s -> %s\n", tree.Name, tree.T2[0].Name)
-						fmt.Fprintf(&sb, "    []] %s -> %s\n", tree.Name, tree.T2[1].Name)
+						fmt.Fprintf(&sb, "    [[] %s -> %s (%s)\n", tree.Name, tree.T2[0].Name, tree.T2[0].EffectLabel())
+						fmt.Fprintf(&sb, "    []] %s -> %s (%s)\n", tree.Name, tree.T2[1].Name, tree.T2[1].EffectLabel())
 					case 2:
 						// T3 auto — both keys do the same.
-						fmt.Fprintf(&sb, "    [[/]] %s -> %s (자동)\n", tree.Name, tree.T3.Name)
+						fmt.Fprintf(&sb, "    [[/]] %s -> %s (%s, 자동)\n", tree.Name, tree.T3.Name, tree.T3.EffectLabel())
 					case 3:
 						// T4 capstone fork
-						fmt.Fprintf(&sb, "    [[] %s -> %s ★ 캡스톤\n", tree.Name, tree.T4[0].Name)
-						fmt.Fprintf(&sb, "    []] %s -> %s ★ 캡스톤\n", tree.Name, tree.T4[1].Name)
+						fmt.Fprintf(&sb, "    [[] %s -> %s (%s) ★ 캡스톤\n", tree.Name, tree.T4[0].Name, tree.T4[0].EffectLabel())
+						fmt.Fprintf(&sb, "    []] %s -> %s (%s) ★ 캡스톤\n", tree.Name, tree.T4[1].Name, tree.T4[1].EffectLabel())
 					}
 				}
 				break

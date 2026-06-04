@@ -244,3 +244,39 @@ func TestPartialAllocation_ReturnsPrefixOnly(t *testing.T) {
 		t.Fatalf("expected 2 nodes for partial allocation, got %d", len(nodes))
 	}
 }
+
+// TestEffectLabel pins the HUD label for every effect type so fork previews
+// stay readable and no effect renders as an empty string.
+func TestEffectLabel(t *testing.T) {
+	cases := []struct {
+		node SkillNode
+		want string
+	}{
+		{SkillNode{"a", EffectATKBoost, 12}, "+12 ATK"},
+		{SkillNode{"d", EffectDEFBoost, 3}, "+3 DEF"},
+		{SkillNode{"h", EffectMaxHPBoost, 20}, "+20 최대HP"},
+		{SkillNode{"s", EffectSkillPower, 25}, "스킬위력 +25"},
+		{SkillNode{"c", EffectCritChance, 15}, "치명타 +15%"},
+		{SkillNode{"hb", EffectHealBoost, 30}, "힐 +30"},
+	}
+	for _, tc := range cases {
+		if got := tc.node.EffectLabel(); got != tc.want {
+			t.Errorf("EffectLabel(%v) = %q, want %q", tc.node.Effect, got, tc.want)
+		}
+	}
+}
+
+// TestEffectLabelNeverEmpty walks every real tree node — a new effect type
+// without a label would silently render blank in the skill HUD.
+func TestEffectLabelNeverEmpty(t *testing.T) {
+	for _, c := range []Class{ClassWarrior, ClassMage, ClassHealer, ClassRogue} {
+		for _, tree := range GetBranches(c) {
+			nodes := []SkillNode{tree.T1, tree.T2[0], tree.T2[1], tree.T3, tree.T4[0], tree.T4[1]}
+			for _, n := range nodes {
+				if n.EffectLabel() == "" {
+					t.Errorf("%s/%s node %q has empty effect label", c, tree.Name, n.Name)
+				}
+			}
+		}
+	}
+}

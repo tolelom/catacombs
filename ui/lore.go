@@ -20,8 +20,14 @@ func monsterLore(name string) string {
 		return "3대 보스. 빙하 협곡의 군주. 시간을 동결시킨다."
 	case "Archlich":
 		return "최종 보스. 카타콤의 진짜 주인. 죽음 자체."
-	case "Mimic":
-		return "보물 상자로 위장한 포식자. 욕심 많은 자만 잡힌다."
+	case "Guardian's Herald":
+		return "수호자의 전령. 주인의 늪 냄새를 먼저 풍긴다."
+	case "Warden's Shadow":
+		return "간수의 그림자. 본체보다 먼저 채찍 소리가 들린다."
+	case "Overlord's Lieutenant":
+		return "군주의 부관. 빙벽 너머에서 명령을 기다린다."
+	case "Archlich's Harbinger":
+		return "리치의 예고자. 이것을 본 자는 끝이 가깝다는 뜻."
 	}
 	return ""
 }
@@ -31,6 +37,8 @@ func itemLore(name string) string {
 	switch name {
 	case "HP Potion":
 		return "약초와 강물. 응급용."
+	case "행운 부적":
+		return "도박꾼의 마지막 보루. 불운을 한 번 삼킨다."
 	case "Vampiric Ring":
 		return "한 모금의 피로 상처를 봉합한다."
 	case "Power Amulet":

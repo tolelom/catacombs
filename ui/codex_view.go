@@ -26,8 +26,8 @@ var allItems = []string{
 	"Iron Sword", "Bronze Sword", "Steel Sword", "Mythril Blade",
 	// Armor by tier
 	"Iron Shield", "Bronze Shield", "Steel Shield", "Mythril Shield",
-	// Consumable
-	"HP Potion",
+	// Consumables / charms (shop entries are codex-recorded on shop entry)
+	"HP Potion", "행운 부적",
 	// Relics (boss drops)
 	"Vampiric Ring", "Power Amulet", "Iron Ward", "Gold Charm",
 	"Antidote Charm", "Flame Guard", "Life Siphon",

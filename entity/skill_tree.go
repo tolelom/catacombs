@@ -1,6 +1,9 @@
 package entity
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // SkillEffect represents the type of bonus a skill node provides.
 type SkillEffect int
@@ -19,6 +22,28 @@ type SkillNode struct {
 	Name   string
 	Effect SkillEffect
 	Value  int
+}
+
+// EffectLabel renders the node's bonus as a short HUD string (e.g. "+3 DEF",
+// "치명타 +15%") so fork choices can be compared at a glance.
+func (n SkillNode) EffectLabel() string {
+	switch n.Effect {
+	case EffectATKBoost:
+		return fmt.Sprintf("+%d ATK", n.Value)
+	case EffectDEFBoost:
+		return fmt.Sprintf("+%d DEF", n.Value)
+	case EffectMaxHPBoost:
+		return fmt.Sprintf("+%d 최대HP", n.Value)
+	case EffectSkillPower:
+		return fmt.Sprintf("스킬위력 +%d", n.Value)
+	case EffectCritChance:
+		return fmt.Sprintf("치명타 +%d%%", n.Value)
+	case EffectHealBoost:
+		return fmt.Sprintf("힐 +%d", n.Value)
+	}
+	// Unknown effect (new SkillEffect without a label): show the raw value so
+	// the HUD never renders an empty "()" pair.
+	return fmt.Sprintf("+%d", n.Value)
 }
 
 // SkillTree is one branch's diamond-shaped skill tree:
