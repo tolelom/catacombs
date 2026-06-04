@@ -124,7 +124,12 @@ func (s *GameSession) handleGamble() {
 		roll := s.rng.Float64()
 		switch {
 		case roll < 0.50:
-			s.addLog(fmt.Sprintf("%s 베팅 실패! -50G", p.Name))
+			if p.ConsumeCharm() {
+				p.Gold += 50
+				s.addLog(fmt.Sprintf("🍀 %s의 행운 부적이 베팅 금액을 지켜냈다!", p.Name))
+			} else {
+				s.addLog(fmt.Sprintf("%s 베팅 실패! -50G", p.Name))
+			}
 		case roll < 0.80:
 			p.Gold += 100
 			s.addLog(fmt.Sprintf("%s 베팅 성공! +50G", p.Name))
@@ -180,10 +185,14 @@ func (s *GameSession) handleWanderingMerchant() {
 	armorPrice := (30 + armorBonus*5) * 2
 	potionPrice := (20 + floor/2) * 2
 
+	charm := entity.NewLuckyCharm(floor)
+	charm.Price *= 2
+
 	s.state.ShopItems = []entity.Item{
 		{Name: "Greater HP Potion", Type: entity.ItemConsumable, Bonus: 60 + floor*2, Price: potionPrice},
 		{Name: "Rare " + weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
 		{Name: "Rare " + armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
+		charm,
 	}
 	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
 	s.addLog("방랑상인이 희귀 아이템을 들고 나타났습니다! (가격 2배)")
@@ -399,17 +408,20 @@ func (s *GameSession) generateShopItems() {
 	// Potion heals more on higher floors
 	potionHeal := 30 + floor
 	potionPrice := 20 + floor/2
+	charm := entity.NewLuckyCharm(floor)
 
 	if s.HardMode {
 		mult := s.cfg.Difficulty.HardModeShopMult
 		potionPrice = int(float64(potionPrice) * mult)
 		weaponPrice = int(float64(weaponPrice) * mult)
 		armorPrice = int(float64(armorPrice) * mult)
+		charm.Price = int(float64(charm.Price) * mult)
 	}
 	s.state.ShopItems = []entity.Item{
 		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: potionHeal, Price: potionPrice},
 		{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
 		{Name: armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
+		charm,
 	}
 	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
 }
@@ -455,6 +467,20 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		return
 	}
 
+	// Lucky charm: one charm voids ALL of a player's losses from a single
+	// gambled outcome (one result = one insurance claim — same invariant as
+	// applyOutcomeToPlayer). Consumed once here, then both the HP and gold
+	// loss branches honor the protection.
+	charmProtected := make(map[string]bool)
+	if o.Gambled && (o.HPChange < 0 || o.GoldChange < 0) {
+		for _, p := range alive {
+			if p.ConsumeCharm() {
+				charmProtected[p.Fingerprint] = true
+				s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
+			}
+		}
+	}
+
 	// HP change: each alive player heals/takes damage of the full amount.
 	if o.HPChange > 0 {
 		for _, p := range alive {
@@ -465,6 +491,9 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 	} else if o.HPChange < 0 {
 		dmg := -o.HPChange
 		for _, p := range alive {
+			if charmProtected[p.Fingerprint] {
+				continue
+			}
 			p.TakeDamage(dmg)
 			if p.Dead {
 				s.state.AnyPlayerDied = true
@@ -482,6 +511,11 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 			delta := share
 			if i == 0 {
 				delta += remainder
+			}
+			// Charm holders skip their share of a gambled gold loss (their
+			// remainder portion is voided, not redistributed).
+			if delta < 0 && charmProtected[p.Fingerprint] {
+				continue
 			}
 			p.Gold += delta
 			if p.Gold < 0 {
@@ -551,6 +585,7 @@ func (s *GameSession) resolveEventVoteLocked() {
 	}
 	choice := s.pendingEvent.Choices[winnerIdx]
 	outcome := choice.Resolve(s.state.FloorNum, s.rng)
+	outcome.Gambled = tagsContain(choice.Tags, TagGamble)
 	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
 
 	s.applyEventOutcome(outcome)
@@ -646,6 +681,7 @@ func (s *GameSession) resolveLootPicksLocked() {
 		}
 		choice := s.pendingEvent.Choices[idx]
 		outcome := choice.Resolve(floor, s.rng)
+		outcome.Gambled = tagsContain(choice.Tags, TagGamble)
 		s.addLog(fmt.Sprintf("  %s → %s", p.Name, outcome.Description))
 		s.applyOutcomeToPlayer(p, outcome)
 	}
@@ -661,27 +697,40 @@ func (s *GameSession) resolveLootPicksLocked() {
 // killed by the HP cost still receives the item/gold: pick and price are one
 // transaction, and a revive keeps the loot. Caller holds s.mu.
 func (s *GameSession) applyOutcomeToPlayer(p *entity.Player, o EventOutcome) {
-	if o.HPChange > 0 {
+	hpChange, goldChange := o.HPChange, o.GoldChange
+	// Lucky charm: one charm voids ALL losses of a single gambled outcome
+	// (one result = one insurance claim). Fixed costs pass through.
+	if o.Gambled && (hpChange < 0 || goldChange < 0) && p.ConsumeCharm() {
+		s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
+		if hpChange < 0 {
+			hpChange = 0
+		}
+		if goldChange < 0 {
+			goldChange = 0
+		}
+	}
+
+	if hpChange > 0 {
 		before := p.HP
-		p.Heal(o.HPChange)
+		p.Heal(hpChange)
 		s.addLog(fmt.Sprintf("  %s HP %d 회복", p.Name, p.HP-before))
-	} else if o.HPChange < 0 {
-		p.TakeDamage(-o.HPChange)
+	} else if hpChange < 0 {
+		p.TakeDamage(-hpChange)
 		if p.Dead {
 			s.state.AnyPlayerDied = true
 		}
-		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, -o.HPChange))
+		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, -hpChange))
 	}
 
-	if o.GoldChange != 0 {
-		p.Gold += o.GoldChange
+	if goldChange != 0 {
+		p.Gold += goldChange
 		if p.Gold < 0 {
 			p.Gold = 0
 		}
-		if o.GoldChange > 0 {
-			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, o.GoldChange))
+		if goldChange > 0 {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, goldChange))
 		} else {
-			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -o.GoldChange))
+			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -goldChange))
 		}
 	}
 

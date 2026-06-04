@@ -43,7 +43,7 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
-		case "1", "2", "3":
+		case "1", "2", "3", "4":
 			if ctx.Session != nil {
 				idx := int(key.String()[0] - '1')
 				switch ctx.Session.BuyItem(ctx.Fingerprint, idx) {
@@ -95,6 +95,8 @@ func itemTypeLabel(item entity.Item) string {
 		return fmt.Sprintf("[DEF+%d]", item.Bonus)
 	case entity.ItemConsumable:
 		return fmt.Sprintf("[HP+%d]", item.Bonus)
+	case entity.ItemCharm:
+		return "[불운 1회 방어]"
 	default:
 		return fmt.Sprintf("[+%d]", item.Bonus)
 	}
@@ -131,7 +133,7 @@ func renderShop(state game.GameState, width, height int, shopMsg string) string 
 		}
 	}
 
-	menu := "[1-3] 구매  [Q] 상점 나가기"
+	menu := "[1-4] 구매  [Q] 상점 나가기"
 
 	parts := []string{header, "", goldLine, items, "", menu}
 	if shopMsg != "" {

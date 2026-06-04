@@ -317,6 +317,8 @@ func (s *GameSession) resolvePlayerActions() {
 		case ActionItem:
 			found := false
 			for i, item := range p.Inventory {
+				// ItemCharm is passive insurance (auto-triggers on gambled
+				// losses) — intentionally not usable via the item action.
 				if item.Type == entity.ItemConsumable {
 					before := p.HP
 					healAmt := item.Bonus

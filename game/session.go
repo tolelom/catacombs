@@ -98,7 +98,7 @@ type GameState struct {
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
 	PendingEvent     *PendingEventView // active event during PhaseEvent
 	EventVotes       map[string]int    // fingerprint → choice index
-	ShopSold         []bool            // parallel to ShopItems; true once a non-consumable slot is sold
+	ShopSold         []bool            // parallel to ShopItems; true once a weapon/armor slot is sold (consumables and charms restock freely)
 	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
 	NextRoomPreview  *RoomPreview    // populated when Foresight has been used
 	CoopAvailable    map[string]bool // fingerprint → can use coop now (HUD display)
@@ -917,7 +917,8 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) BuyResult {
 			}
 			p.Gold -= item.Price
 			p.Inventory = append(p.Inventory, item)
-			if item.Type != entity.ItemConsumable && itemIdx < len(s.state.ShopSold) {
+			// Only gear sells out — potions and charms restock freely.
+			if (item.Type == entity.ItemWeapon || item.Type == entity.ItemArmor) && itemIdx < len(s.state.ShopSold) {
 				s.state.ShopSold[itemIdx] = true
 			}
 			return BuyOK

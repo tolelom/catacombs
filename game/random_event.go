@@ -26,7 +26,18 @@ type EventOutcome struct {
 	GoldChange  int
 	ItemDrop    bool         // roll a random gear item per recipient
 	Item        *entity.Item // grant this specific item (loot picks reveal values up front)
+	Gambled     bool         // outcome came from a TagGamble choice — lucky charms block its losses
 	Description string
+}
+
+// tagsContain reports whether want appears in tags.
+func tagsContain(tags []ChoiceTag, want ChoiceTag) bool {
+	for _, t := range tags {
+		if t == want {
+			return true
+		}
+	}
+	return false
 }
 
 // EventChoice represents a single choice the player can make during an event.

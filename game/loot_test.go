@@ -74,13 +74,13 @@ func TestBuildLootEventRotatingSlotVariants(t *testing.T) {
 		ev := BuildLootEvent(5, rand.New(rand.NewSource(seed)))
 		c := ev.Choices[2]
 		switch {
-		case hasTag(c.Tags, TagGoldGain):
+		case tagsContain(c.Tags, TagGoldGain):
 			seen["gold"] = true
-		case hasTag(c.Tags, TagHeal):
+		case tagsContain(c.Tags, TagHeal):
 			seen["heal"] = true
-		case hasTag(c.Tags, TagHarm):
+		case tagsContain(c.Tags, TagHarm):
 			seen["cursed"] = true
-		case hasTag(c.Tags, TagGamble):
+		case tagsContain(c.Tags, TagGamble):
 			seen["mystery"] = true
 		}
 	}
@@ -89,15 +89,6 @@ func TestBuildLootEventRotatingSlotVariants(t *testing.T) {
 			t.Errorf("rotating slot variant %q never generated in 200 seeds", variant)
 		}
 	}
-}
-
-func hasTag(tags []ChoiceTag, want ChoiceTag) bool {
-	for _, tg := range tags {
-		if tg == want {
-			return true
-		}
-	}
-	return false
 }
 
 // TestLootOutcomesNeverDeferItemRolls — every loot Resolve must return a
@@ -124,7 +115,7 @@ func TestCursedWeaponOutcome(t *testing.T) {
 		rng := rand.New(rand.NewSource(seed))
 		ev := BuildLootEvent(5, rng)
 		c := ev.Choices[2]
-		if !hasTag(c.Tags, TagHarm) || !hasTag(c.Tags, TagItem) {
+		if !tagsContain(c.Tags, TagHarm) || !tagsContain(c.Tags, TagItem) {
 			continue
 		}
 		out := c.Resolve(5, rng)

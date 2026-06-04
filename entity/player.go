@@ -113,6 +113,19 @@ func (p *Player) Revive(hpPercent float64) {
 	}
 }
 
+// ConsumeCharm removes one lucky charm from the inventory and reports whether
+// one was found. Charms are auto-triggered insurance — callers invoke this at
+// the moment a gambled loss would land.
+func (p *Player) ConsumeCharm() bool {
+	for i, item := range p.Inventory {
+		if item.Type == ItemCharm {
+			p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 // bestBonus returns the highest Bonus among inventory items of the given type,
 // or 0 if none. Only the single best weapon/armor contributes its raw bonus —
 // stacking spares does not add stats, so hoarding duplicates is not a dominant
