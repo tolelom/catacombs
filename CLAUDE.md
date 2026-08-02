@@ -86,7 +86,7 @@ docker restart server-caddy-1    # only needed if Caddyfile changed
 | `game/` | `Lobby` (room management, player tracking, reconnection, `EnsureSession` / `LeaveSession` / `StopAllSessions`), `GameSession` (turn-based state, per-session deterministic `*rand.Rand`), turn execution with `cfg.Game.TurnTimeoutSec` action timeout, room events (combat/shop/treasure/event), weekly `Mutation` consulted at runtime via `effectiveSkillUses` / `effectiveTurnTimeout` (no shared-config mutation) |
 | `ui/` | Bubble Tea state machine. Screens (each in its own file): `title` → `nickname` → `lobby` → `class_view` → `waiting` → `game_view` → `shop_view` → `result_view`, plus `help`, `stats`, `leaderboard`, `achievements`, `codex`. `model.go` is the thin top-level dispatcher (~170 lines). `Context` carries shared deps (Lobby, Store, Session, Fingerprint, PlayerName, RoomCode, HardMode) |
 | `dungeon/` | BSP tree procedural generation (60×20 maps), ASCII rendering with floor themes, room visibility / corridor flood-fill. `GenerateFloor` accepts the session RNG for daily-challenge determinism |
-| `entity/` | `Player` (4 classes: Warrior/Mage/Healer/Rogue), `Monster` (4 regular + 4 mini-bosses + 4 bosses; `BaseName()` strips elite prefixes for codex), Items, Relics, `PlayerSkills` tree (2 branches × 3 nodes per class) |
+| `entity/` | `Player` (4 classes: Warrior/Mage/Healer/Rogue), `Monster` (4 regular + 4 mini-bosses + 4 bosses; `BaseName()` strips elite prefixes for codex), Items, Relics, `PlayerSkills` diamond trees (2 branches per class; T1 auto → T2 fork → T3 auto → T4 fork) |
 | `combat/` | `CalcDamage`, `MonsterAI`, `ResolveAttacks`, `AttemptFlee`, `Combos`. All RNG-consuming entry points take a leading `*rand.Rand` (nil falls back to a process-global) so daily runs stay deterministic |
 | `store/` | BoltDB persistence: profiles, rankings, achievements (10 IDs), unlocks, titles, codex, daily records, passwords. `Backup` snapshots and `PruneBackups(dir, keep)` rotates them |
 | `server/` | Wish SSH server. Public-key clients hash to `SHA256:...` fingerprint; the web bridge has no key, so the middleware mints a per-connection `anon:<random hex>` so lobby bookkeeping doesn't collide |
@@ -111,4 +111,4 @@ docker restart server-caddy-1    # only needed if Caddyfile changed
 - Solo mode halves enemy HP and DEF
 - Cooperative bonus: +10% damage on the second-or-later attacker against the same target
 - Inventory limit: 10 items per player; 3 skill uses per combat (mutated to 0 by the `no_skills` weekly mutation)
-- Boss drops grant a random relic (7 types: HealOnKill / ATKBoost / DEFBoost / GoldBoost / PoisonImmunity / BurnResist / LifeSteal)
+- Boss drops grant a random relic (10 types: 7 passive — HealOnKill / ATKBoost / DEFBoost / GoldBoost / PoisonImmunity / BurnResist / LifeSteal — + 3 active via `ActionUseRelic`, once per combat: SmokeBomb / Bloodstone / TimeGlass)
