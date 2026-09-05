@@ -121,7 +121,12 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if isKey(key, "c") {
 			if ctx.Lobby != nil {
 				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 방")
-				_ = ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint)
+				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
+					// Joining a room we just created shouldn't fail, but if it
+					// does the player must see why instead of a ghost lobby.
+					s.errMsg = "방 참가 실패: " + err.Error()
+					return s, nil
+				}
 				ctx.RoomCode = code
 				return NewClassSelectScreen(), nil
 			}

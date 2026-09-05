@@ -810,3 +810,30 @@ func TestRemovePlayerResolvesEventVote(t *testing.T) {
 		t.Error("PendingEvent must be cleared after auto-resolve")
 	}
 }
+
+// TestLeaveShopEmptyFingerprintCannotDeadlock — a party containing an
+// empty-fingerprint player (legacy/test path) must still be able to leave the
+// shop: the "" player signals under the "" key like move votes do, instead of
+// being silently untrackable and blocking quorum forever.
+func TestLeaveShopEmptyFingerprintCannotDeadlock(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	a := entity.NewPlayer("A", entity.ClassWarrior)
+	a.Fingerprint = "fp-a"
+	anon := entity.NewPlayer("Anon", entity.ClassMage) // Fingerprint == ""
+	s.AddPlayer(a)
+	s.AddPlayer(anon)
+	s.mu.Lock()
+	s.state.Phase = PhaseShop
+	s.state.Floor = nil
+	s.mu.Unlock()
+
+	if s.LeaveShop("fp-a") {
+		t.Error("should still wait for the anon player")
+	}
+	if !s.LeaveShop("") {
+		t.Error("anon leave should complete the quorum and transition")
+	}
+	if s.GetState().Phase != PhaseExploring {
+		t.Errorf("phase should be PhaseExploring, got %v", s.GetState().Phase)
+	}
+}

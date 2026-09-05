@@ -56,8 +56,8 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 		s.generateShopItems()
 		s.state.Phase = PhaseShop
 	case dungeon.RoomTreasure:
-		s.grantTreasure()
-		room.Cleared = true
+		s.triggerLoot()
+		// room.Cleared flipped after all picks resolve in resolveEventVote
 	case dungeon.RoomEvent:
 		s.triggerEvent()
 		// room.Cleared flipped after vote quorum in resolveEventVote
@@ -124,7 +124,12 @@ func (s *GameSession) handleGamble() {
 		roll := s.rng.Float64()
 		switch {
 		case roll < 0.50:
-			s.addLog(fmt.Sprintf("%s 베팅 실패! -50G", p.Name))
+			if p.ConsumeCharm() {
+				p.Gold += 50
+				s.addLog(fmt.Sprintf("🍀 %s의 행운 부적이 베팅 금액을 지켜냈다!", p.Name))
+			} else {
+				s.addLog(fmt.Sprintf("%s 베팅 실패! -50G", p.Name))
+			}
 		case roll < 0.80:
 			p.Gold += 100
 			s.addLog(fmt.Sprintf("%s 베팅 성공! +50G", p.Name))
@@ -180,10 +185,14 @@ func (s *GameSession) handleWanderingMerchant() {
 	armorPrice := (30 + armorBonus*5) * 2
 	potionPrice := (20 + floor/2) * 2
 
+	charm := entity.NewLuckyCharm(floor)
+	charm.Price *= 2
+
 	s.state.ShopItems = []entity.Item{
 		{Name: "Greater HP Potion", Type: entity.ItemConsumable, Bonus: 60 + floor*2, Price: potionPrice},
 		{Name: "Rare " + weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
 		{Name: "Rare " + armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
+		charm,
 	}
 	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
 	s.addLog("방랑상인이 희귀 아이템을 들고 나타났습니다! (가격 2배)")
@@ -249,10 +258,12 @@ func (s *GameSession) applyEarlyThreat(m *entity.Monster, floor int) {
 
 // resetPerCombatStateLocked refreshes every map and flag scoped to a
 // single combat encounter: skill uses, coop-used, active-relic-used,
-// Time Glass extra actions, plus the pending Venomous Edge poison
-// application. Every combat-entry site (spawnMonsters, spawnBoss,
-// spawnMiniBoss, handleMimic) calls this so adding a new per-combat
-// flag means editing one place, not four. Caller holds s.mu.
+// Time Glass extra actions, the solo chain sequence, plus the pending
+// Venomous Edge poison application. Without the extraActionNext reset,
+// Time Glass would carry a free attack from the prior combat into this
+// one. Every combat-entry site (spawnMonsters, spawnBoss, spawnMiniBoss,
+// handleMimic) calls this so adding a new per-combat flag means editing
+// one place, not four. Caller holds s.mu.
 func (s *GameSession) resetPerCombatStateLocked() {
 	for _, p := range s.state.Players {
 		p.SkillUses = s.effectiveSkillUses()
@@ -260,6 +271,8 @@ func (s *GameSession) resetPerCombatStateLocked() {
 	s.coopUsedThisCombat = make(map[string]bool)
 	s.activeRelicUsed = make(map[string]bool)
 	s.extraActionNext = make(map[string]bool)
+	s.soloLastAction = ""
+	s.soloAttackStreak = 0
 	s.applyPoisonNextCombatIfPending()
 }
 
@@ -398,17 +411,20 @@ func (s *GameSession) generateShopItems() {
 	// Potion heals more on higher floors
 	potionHeal := 30 + floor
 	potionPrice := 20 + floor/2
+	charm := entity.NewLuckyCharm(floor)
 
 	if s.HardMode {
 		mult := s.cfg.Difficulty.HardModeShopMult
 		potionPrice = int(float64(potionPrice) * mult)
 		weaponPrice = int(float64(weaponPrice) * mult)
 		armorPrice = int(float64(armorPrice) * mult)
+		charm.Price = int(float64(charm.Price) * mult)
 	}
 	s.state.ShopItems = []entity.Item{
 		{Name: "HP Potion", Type: entity.ItemConsumable, Bonus: potionHeal, Price: potionPrice},
 		{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: weaponBonus, Price: weaponPrice},
 		{Name: armorName(floor), Type: entity.ItemArmor, Bonus: armorBonus, Price: armorPrice},
+		charm,
 	}
 	s.state.ShopSold = make([]bool, len(s.state.ShopItems))
 }
@@ -454,6 +470,20 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		return
 	}
 
+	// Lucky charm: one charm voids ALL of a player's losses from a single
+	// gambled outcome (one result = one insurance claim — same invariant as
+	// applyOutcomeToPlayer). Consumed once here, then both the HP and gold
+	// loss branches honor the protection.
+	charmProtected := make(map[string]bool)
+	if o.Gambled && (o.HPChange < 0 || o.GoldChange < 0) {
+		for _, p := range alive {
+			if p.ConsumeCharm() {
+				charmProtected[p.Fingerprint] = true
+				s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
+			}
+		}
+	}
+
 	// HP change: each alive player heals/takes damage of the full amount.
 	if o.HPChange > 0 {
 		for _, p := range alive {
@@ -464,6 +494,9 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 	} else if o.HPChange < 0 {
 		dmg := -o.HPChange
 		for _, p := range alive {
+			if charmProtected[p.Fingerprint] {
+				continue
+			}
 			p.TakeDamage(dmg)
 			s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
 			if p.IsDead() {
@@ -484,6 +517,11 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 			if i == 0 {
 				delta += remainder
 			}
+			// Charm holders skip their share of a gambled gold loss (their
+			// remainder portion is voided, not redistributed).
+			if delta < 0 && charmProtected[p.Fingerprint] {
+				continue
+			}
 			p.Gold += delta
 			if p.Gold < 0 {
 				p.Gold = 0
@@ -496,8 +534,22 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		}
 	}
 
-	// Item drop: one rolled item per alive; skip if their inventory is full.
-	if o.ItemDrop {
+	// Concrete item grant: each alive player gets their own copy. Full
+	// inventories convert to bonus*5 gold — same invariant as
+	// applyOutcomeToPlayer. Mutually exclusive with ItemDrop so an outcome
+	// accidentally setting both can't double-grant.
+	if o.Item != nil {
+		for _, p := range alive {
+			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+				p.Inventory = append(p.Inventory, *o.Item)
+				s.addLog(fmt.Sprintf("  %s %s 획득", p.Name, o.Item.Name))
+			} else {
+				comp := o.Item.Bonus * 5
+				p.Gold += comp
+				s.addLog(fmt.Sprintf("  %s 인벤토리 가득 → +%dG로 전환", p.Name, comp))
+			}
+		}
+	} else if o.ItemDrop {
 		floor := s.state.FloorNum
 		for _, p := range alive {
 			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
@@ -521,11 +573,16 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 
 // resolveEventVoteLocked tallies eventVotes, picks the winning choice (lowest
 // index breaks ties), runs Resolve, applies the outcome party-wide, and
-// returns the session to PhaseExploring with the room cleared. Caller holds
-// s.mu and has verified quorum.
+// returns the session to PhaseExploring with the room cleared. Per-player
+// pending events (loot picks) skip the tally and resolve each player's own
+// choice individually. Caller holds s.mu and has verified quorum.
 func (s *GameSession) resolveEventVoteLocked() {
 	if s.pendingEvent == nil {
 		s.clearPendingEventLocked(true)
+		return
+	}
+	if s.eventPerPlayer {
+		s.resolveLootPicksLocked()
 		return
 	}
 	// Tally
@@ -547,6 +604,7 @@ func (s *GameSession) resolveEventVoteLocked() {
 	}
 	choice := s.pendingEvent.Choices[winnerIdx]
 	outcome := choice.Resolve(s.state.FloorNum, s.rng)
+	outcome.Gambled = tagsContain(choice.Tags, TagGamble)
 	s.addLog(fmt.Sprintf("  → %s: %s", choice.Label, outcome.Description))
 
 	s.applyEventOutcome(outcome)
@@ -575,14 +633,44 @@ func (s *GameSession) triggerEvent() {
 		return
 	}
 
-	// Stash typed event for Resolve at quorum time.
+	s.startEventPhaseLocked(event, false)
+}
+
+// triggerLoot presents the treasure-room loot table and parks the session in
+// PhaseEvent with per-player resolution: each player's own pick applies to
+// them only. Mirrors triggerEvent's zero-alive guard. Caller holds s.mu.
+func (s *GameSession) triggerLoot() {
+	alive := 0
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			alive++
+		}
+	}
+	if alive == 0 {
+		if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
+			s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+		}
+		return
+	}
+
+	event := BuildLootEvent(s.state.FloorNum, s.rng)
+	s.addLog("보물 발견! 각자 하나를 선택하세요.")
+	s.startEventPhaseLocked(event, true)
+}
+
+// startEventPhaseLocked stashes the typed event, builds the snapshot-safe
+// view, and parks the session in PhaseEvent awaiting player input. perPlayer
+// selects individual resolution (loot picks) over party majority (random
+// events). Caller holds s.mu and has verified at least one alive player.
+func (s *GameSession) startEventPhaseLocked(event RandomEvent, perPlayer bool) {
 	ev := event
 	s.pendingEvent = &ev
+	s.eventPerPlayer = perPlayer
 
-	// Build snapshot-safe view for the UI.
 	view := &PendingEventView{
 		Name:        event.Name,
 		Description: event.Description,
+		PerPlayer:   perPlayer,
 		Choices:     make([]EventChoiceView, 0, len(event.Choices)),
 	}
 	for _, c := range event.Choices {
@@ -594,6 +682,87 @@ func (s *GameSession) triggerEvent() {
 	s.state.EventVotes = make(map[string]int)
 	s.eventVotes = make(map[string]int)
 	s.state.Phase = PhaseEvent
+}
+
+// resolveLootPicksLocked applies each alive player's own pick. Iterates
+// s.state.Players (not the vote map) so RNG consumption order is deterministic
+// for daily runs. Voteless alive players (disconnect-sweep edge) are skipped.
+// Caller holds s.mu.
+func (s *GameSession) resolveLootPicksLocked() {
+	floor := s.state.FloorNum
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		idx, ok := s.eventVotes[p.Fingerprint]
+		if !ok || idx < 0 || idx >= len(s.pendingEvent.Choices) {
+			continue
+		}
+		choice := s.pendingEvent.Choices[idx]
+		outcome := choice.Resolve(floor, s.rng)
+		outcome.Gambled = tagsContain(choice.Tags, TagGamble)
+		s.addLog(fmt.Sprintf("  %s → %s", p.Name, outcome.Description))
+		s.applyOutcomeToPlayer(p, outcome)
+	}
+	s.clearPendingEventLocked(true)
+}
+
+// applyOutcomeToPlayer applies a loot outcome to a single player. Unlike
+// applyEventOutcome (party-wide), gold goes entirely to the picker, and a
+// concrete Item grant converts to bonus*5 gold when the inventory is full
+// (mirrors handleGamble's jackpot fallback; consistent with the shop price
+// formula 40+bonus*5). Loot outcomes always carry concrete items (o.Item),
+// never deferred ItemDrop rolls — see buildRotatingLootChoice. A player
+// killed by the HP cost still receives the item/gold: pick and price are one
+// transaction, and a revive keeps the loot. Caller holds s.mu.
+func (s *GameSession) applyOutcomeToPlayer(p *entity.Player, o EventOutcome) {
+	hpChange, goldChange := o.HPChange, o.GoldChange
+	// Lucky charm: one charm voids ALL losses of a single gambled outcome
+	// (one result = one insurance claim). Fixed costs pass through.
+	if o.Gambled && (hpChange < 0 || goldChange < 0) && p.ConsumeCharm() {
+		s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
+		if hpChange < 0 {
+			hpChange = 0
+		}
+		if goldChange < 0 {
+			goldChange = 0
+		}
+	}
+
+	if hpChange > 0 {
+		before := p.HP
+		p.Heal(hpChange)
+		s.addLog(fmt.Sprintf("  %s HP %d 회복", p.Name, p.HP-before))
+	} else if hpChange < 0 {
+		p.TakeDamage(-hpChange)
+		if p.Dead {
+			s.state.AnyPlayerDied = true
+		}
+		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, -hpChange))
+	}
+
+	if goldChange != 0 {
+		p.Gold += goldChange
+		if p.Gold < 0 {
+			p.Gold = 0
+		}
+		if goldChange > 0 {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, goldChange))
+		} else {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -goldChange))
+		}
+	}
+
+	if o.Item != nil {
+		if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+			p.Inventory = append(p.Inventory, *o.Item)
+			s.addLog(fmt.Sprintf("  %s %s 획득", p.Name, o.Item.Name))
+		} else {
+			comp := o.Item.Bonus * 5
+			p.Gold += comp
+			s.addLog(fmt.Sprintf("  %s 인벤토리 가득 → +%dG로 전환", p.Name, comp))
+		}
+	}
 }
 
 func (s *GameSession) grantSecretTreasure() {

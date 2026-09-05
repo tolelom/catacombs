@@ -180,38 +180,67 @@ func (s *GameSession) resolvePlayerActions() {
 		// Frozen players skip their action
 		if frozenPlayers[p.Fingerprint] {
 			s.addLog(fmt.Sprintf("%s 동결되어 행동할 수 없습니다!", p.Name))
+			s.recordSoloAction("")
 			continue
 		}
 		action, ok := s.actions[p.Fingerprint]
 		if !ok {
+			// Unreachable in production (RunTurn defaults absentees to
+			// ActionWait) but direct test callers may leave gaps.
+			s.recordSoloAction("")
 			continue
 		}
 
 		switch action.Type {
 		case ActionAttack:
 			multiplier := 1.0
+			crit := false
 			if s.critGuaranteedNext {
 				multiplier = 2.0
+				crit = true
 				s.addLog(fmt.Sprintf("%s 급소 노출 치명타!", p.Name))
 			} else if p.Skills != nil {
 				if pct := p.Skills.GetCritChance(p.Class); pct > 0 && s.rng.Intn(100) < pct {
 					multiplier = 2.0
+					crit = true
 					s.addLog(fmt.Sprintf("%s 치명타!", p.Name))
 				}
 			}
+			// Solo chains: the previous turn's action can upgrade this attack
+			// (the solo replacement for cross-class party combos).
+			bonusATK := 0
+			if s.state.SoloMode {
+				if chain := combat.DetectSoloChain(s.soloLastAction, s.soloAttackStreak); chain != nil {
+					s.addLog(chain.Message)
+					if chain.GuaranteeCrit && !crit {
+						multiplier *= 2.0
+					}
+					if chain.DamageMultiplier > 0 {
+						multiplier *= chain.DamageMultiplier
+					}
+					bonusATK = chain.BonusDamage
+					if s.state.CombosFiredThisRun == nil {
+						s.state.CombosFiredThisRun = make(map[string]bool)
+					}
+					s.state.CombosFiredThisRun[chain.Name] = true
+				}
+			}
 			intents = append(intents, combat.AttackIntent{
-				PlayerATK:  p.EffectiveATK(),
+				PlayerATK:  p.EffectiveATK() + bonusATK,
 				TargetIdx:  action.TargetIdx,
 				Multiplier: multiplier,
 				IsAoE:      false,
 			})
 			intentOwners = append(intentOwners, p.Name)
+			s.recordSoloAction("attack")
 		case ActionSkill:
 			if p.SkillUses <= 0 {
 				s.addLog(fmt.Sprintf("%s 스킬 사용 횟수가 없습니다!", p.Name))
+				s.recordSoloAction("")
 				break
 			}
 			p.SkillUses--
+			skillExecuted := true
 			switch p.Class {
 			case entity.ClassWarrior:
 				for _, m := range s.state.Monsters {
@@ -263,6 +292,7 @@ func (s *GameSession) resolvePlayerActions() {
 				} else {
 					// No heal target and no live monster — refund the skill use.
 					p.SkillUses++
+					skillExecuted = false
 					s.addLog(fmt.Sprintf("%s 회복 대상을 찾을 수 없습니다!", p.Name))
 				}
 			case entity.ClassRogue:
@@ -272,9 +302,16 @@ func (s *GameSession) resolvePlayerActions() {
 				}
 				s.addLog(fmt.Sprintf("%s 주변 방을 정찰했습니다!", p.Name))
 			}
+			if skillExecuted {
+				s.recordSoloAction("skill")
+			} else {
+				s.recordSoloAction("")
+			}
 		case ActionItem:
 			found := false
 			for i, item := range p.Inventory {
+				// ItemCharm is passive insurance (auto-triggers on gambled
+				// losses) — intentionally not usable via the item action.
 				if item.Type == entity.ItemConsumable {
 					before := p.HP
 					healAmt := item.Bonus
@@ -291,8 +328,11 @@ func (s *GameSession) resolvePlayerActions() {
 					break
 				}
 			}
-			if !found {
+			if found {
+				s.recordSoloAction("item")
+			} else {
 				s.addLog(fmt.Sprintf("%s 사용할 아이템이 없습니다!", p.Name))
+				s.recordSoloAction("")
 			}
 		case ActionFlee:
 			if combat.AttemptFlee(s.rng, s.cfg.Combat.FleeChance) {
@@ -303,15 +343,27 @@ func (s *GameSession) resolvePlayerActions() {
 					return
 				}
 				p.Fled = true
+				s.recordSoloAction("")
 			} else {
 				s.addLog(fmt.Sprintf("%s 도주에 실패했습니다!", p.Name))
+				s.recordSoloAction("")
 			}
 		case ActionWait:
 			s.addLog(fmt.Sprintf("%s 방어 중", p.Name))
+			s.recordSoloAction("")
 		case ActionCoop:
+			// A coop only arms Counter Stance when it actually fires — rogue
+			// scouting and second uses are refusals.
+			coopOK := p.Class != entity.ClassRogue && !s.coopUsedThisCombat[p.Fingerprint]
 			s.applyCoopAbility(p)
+			if coopOK {
+				s.recordSoloAction("coop")
+			} else {
+				s.recordSoloAction("")
+			}
 		case ActionRelic:
 			s.applyActiveRelic(p, action.TargetIdx)
+			s.recordSoloAction("")
 		}
 	}
 
@@ -902,6 +954,23 @@ func (s *GameSession) applyCoopAbility(p *entity.Player) {
 		}
 	}
 	s.coopUsedThisCombat[p.Fingerprint] = true
+}
+
+// recordSoloAction updates the solo-chain sequence state after a player's
+// combat action resolves. actionType must reflect what actually happened —
+// failed skills/coops, items-with-empty-bag, waits, freezes, and relic uses
+// record "" and break every chain. No-op outside solo mode (party combos own
+// that space). Caller holds s.mu.
+func (s *GameSession) recordSoloAction(actionType string) {
+	if !s.state.SoloMode {
+		return
+	}
+	if actionType == "attack" {
+		s.soloAttackStreak++
+	} else {
+		s.soloAttackStreak = 0
+	}
+	s.soloLastAction = actionType
 }
 
 // mergeCoopReduction merges incoming damage-reduction multipliers into the

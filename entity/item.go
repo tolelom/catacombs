@@ -6,6 +6,7 @@ const (
 	ItemWeapon ItemType = iota
 	ItemArmor
 	ItemConsumable
+	ItemCharm // one-shot insurance: auto-blocks one gambled loss while held
 )
 
 // ItemSet identifies a 2-piece set; 0 = no set.
@@ -177,4 +178,12 @@ type Relic struct {
 
 func NewHPPotion() Item {
 	return Item{Name: "HP Potion", Type: ItemConsumable, Bonus: 30, Price: 20}
+}
+
+// NewLuckyCharm rolls the shop's RNG-hedge consumable: while held, it
+// auto-blocks one gambled loss (TagGamble event outcomes, gambling-den bets)
+// and is consumed. Fixed trade-off costs are prices, not gambles — the charm
+// ignores them.
+func NewLuckyCharm(floor int) Item {
+	return Item{Name: "행운 부적", Type: ItemCharm, Price: 30 + floor}
 }

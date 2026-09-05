@@ -22,6 +22,14 @@ func monsterLore(name string) string {
 		return "최종 보스. 카타콤의 진짜 주인. 죽음 자체."
 	case "Mimic":
 		return "보물 상자로 위장한 포식자. 욕심 많은 자만 잡힌다."
+	case "Guardian's Herald":
+		return "수호자의 전령. 주인의 늪 냄새를 먼저 풍긴다."
+	case "Warden's Shadow":
+		return "간수의 그림자. 본체보다 먼저 채찍 소리가 들린다."
+	case "Overlord's Lieutenant":
+		return "군주의 부관. 빙벽 너머에서 명령을 기다린다."
+	case "Archlich's Harbinger":
+		return "리치의 예고자. 이것을 본 자는 끝이 가깝다는 뜻."
 	}
 	return ""
 }
@@ -31,6 +39,8 @@ func itemLore(name string) string {
 	switch name {
 	case "HP Potion":
 		return "약초와 강물. 응급용."
+	case "행운 부적":
+		return "도박꾼의 마지막 보루. 불운을 한 번 삼킨다."
 	case "Vampiric Ring":
 		return "한 모금의 피로 상처를 봉합한다."
 	case "Power Amulet":
@@ -68,6 +78,14 @@ func eventLore(name string) string {
 		return "흐린 형체가 손짓한다. 도와줄까."
 	case "mushroom":
 		return "발광하는 버섯. 먹어볼까."
+	case "gravekeeper":
+		return "묘지기는 말이 없다. 무덤은 더 말이 없다."
+	case "forge":
+		return "망치 소리가 멎은 지 오래. 잔불만 남았다."
+	case "toll_bridge":
+		return "트롤의 다리. 요금은 협상 불가."
+	case "feast":
+		return "주인 없는 만찬. 초대받은 적 없는 손님."
 	}
 	return ""
 }

@@ -160,14 +160,20 @@ func TestRenderHelpDynamic(t *testing.T) {
 	cfg.Game.TurnTimeoutSec = 7
 	cfg.Game.SkillUses = 5
 	cfg.Game.MaxPlayers = 6
-	out := renderHelp(80, 24, cfg)
-	for _, want := range []string{"턴당 7초", "5회 사용", "최대 6명"} {
+	// Dynamic numbers live on specific pages now: timeout on the controls
+	// page, skill uses and player cap on the combat page.
+	out := renderHelp(80, 24, cfg, 0)
+	if !strings.Contains(out, "턴당 7초") {
+		t.Error("expected controls page to contain 턴당 7초")
+	}
+	out = renderHelp(80, 24, cfg, 1)
+	for _, want := range []string{"5회 사용", "최대 6명"} {
 		if !strings.Contains(out, want) {
-			t.Errorf("expected help output to contain %q", want)
+			t.Errorf("expected combat page to contain %q", want)
 		}
 	}
 	// Nil cfg should still produce something sensible (defaults).
-	out = renderHelp(80, 24, nil)
+	out = renderHelp(80, 24, nil, 0)
 	if !strings.Contains(out, "턴당 10초") {
 		t.Error("nil cfg should fall back to default 10초")
 	}

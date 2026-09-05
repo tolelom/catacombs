@@ -4,6 +4,8 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+
+	bolt "go.etcd.io/bbolt"
 )
 
 func openTestDB(t *testing.T) *DB {
@@ -80,5 +82,30 @@ func TestBuyUpgradeUnknownID(t *testing.T) {
 	_, err := d.BuyUpgrade("fp1", PermaUpgrade("nonsense"))
 	if !errors.Is(err, ErrMissingUpgrade) {
 		t.Errorf("expected ErrMissingUpgrade, got %v", err)
+	}
+}
+
+// TestGetUpgradesCorruptedJSON — corrupted upgrade data must surface as an
+// error, not silently return an empty map (which would let costs reset).
+func TestGetUpgradesCorruptedJSON(t *testing.T) {
+	db := openTestDB(t)
+
+	// Write garbage directly into the upgrades bucket.
+	err := db.db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists(bucketUpgrades)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte("fp-corrupt"), []byte("{not json"))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := db.GetUpgrades("fp-corrupt"); err == nil {
+		t.Error("GetUpgrades should return an error for corrupted JSON")
+	}
+	if _, err := db.BuyUpgrade("fp-corrupt", UpgradeStartGold); err == nil {
+		t.Error("BuyUpgrade should return an error for corrupted JSON")
 	}
 }

@@ -13,8 +13,8 @@ import (
 // entity.Monster.BaseName, items match Item.Name and Relic.Name as written
 // in event.go/turn.go, and events use RandomEvent.Name from random_event.go.
 var allMonsters = []string{
-	// Regular
-	"Slime", "Skeleton", "Orc", "Dark Knight",
+	// Regular (Mimic spawns from mimic rooms — 50% ambush)
+	"Slime", "Skeleton", "Orc", "Dark Knight", "Mimic",
 	// Mini-bosses (floors 4/9/14/19)
 	"Guardian's Herald", "Warden's Shadow", "Overlord's Lieutenant", "Archlich's Harbinger",
 	// Bosses (floors 5/10/15/20)
@@ -26,16 +26,19 @@ var allItems = []string{
 	"Iron Sword", "Bronze Sword", "Steel Sword", "Mythril Blade",
 	// Armor by tier
 	"Iron Shield", "Bronze Shield", "Steel Shield", "Mythril Shield",
-	// Consumable
-	"HP Potion",
+	// Consumables / charms (shop entries are codex-recorded on shop entry)
+	"HP Potion", "행운 부적",
 	// Relics (boss drops)
 	"Vampiric Ring", "Power Amulet", "Iron Ward", "Gold Charm",
 	"Antidote Charm", "Flame Guard", "Life Siphon",
 }
 
+// allEvents must stay in sync with the Name fields in game.GetRandomEvents —
+// codex completion counts len(allEvents) and entries are recorded by name.
 var allEvents = []string{
 	"altar", "fountain", "merchant", "trap_room",
 	"shrine", "chest", "ghost", "mushroom",
+	"gravekeeper", "forge", "toll_bridge", "feast",
 }
 
 // bossNames is the codex-display order for the boss trophy tab. Kept here so

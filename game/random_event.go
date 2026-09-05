@@ -1,6 +1,10 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/tolelom/catacombs/entity"
+)
 
 // ChoiceTag classifies an event choice's possible outcomes for UI hints.
 // One choice can carry multiple tags (e.g. altar pray = Heal + Harm + Gamble).
@@ -20,8 +24,20 @@ const (
 type EventOutcome struct {
 	HPChange    int
 	GoldChange  int
-	ItemDrop    bool
+	ItemDrop    bool         // roll a random gear item per recipient
+	Item        *entity.Item // grant this specific item (loot picks reveal values up front)
+	Gambled     bool         // outcome came from a TagGamble choice — lucky charms block its losses
 	Description string
+}
+
+// tagsContain reports whether want appears in tags.
+func tagsContain(tags []ChoiceTag, want ChoiceTag) bool {
+	for _, t := range tags {
+		if t == want {
+			return true
+		}
+	}
+	return false
 }
 
 // EventChoice represents a single choice the player can make during an event.
@@ -270,6 +286,151 @@ func GetRandomEvents() []RandomEvent {
 					Tags:  []ChoiceTag{TagSkip},
 					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
 						return EventOutcome{Description: "의문의 균류를 현명하게 피합니다."}
+					},
+				},
+			},
+		},
+		{
+			Name:        "gravekeeper",
+			Description: "이끼 낀 무덤들 사이에 늙은 묘지기가 서 있습니다.",
+			Choices: []EventChoice{
+				{
+					Label: "무덤 파헤치기",
+					Tags:  []ChoiceTag{TagItem, TagHarm, TagGamble},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						if rng.Float64() < 0.5 {
+							item := randomSetItem(rng, floor)
+							return EventOutcome{Item: &item, Description: "관 속에서 세트 아이템을 발견했습니다!"}
+						}
+						dmg := 15 + floor
+						return EventOutcome{HPChange: -dmg, Description: "분노한 영혼이 당신을 할퀴고 갑니다!"}
+					},
+				},
+				{
+					Label: "묘비 정리하기",
+					Tags:  []ChoiceTag{TagGoldGain},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						gold := 8 + floor
+						return EventOutcome{GoldChange: gold, Description: "묘지기가 수고비를 건넵니다."}
+					},
+				},
+				{
+					Label: "명복 빌기",
+					Tags:  []ChoiceTag{TagHeal},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						heal := 12 + floor
+						return EventOutcome{HPChange: heal, Description: "고요한 평화가 상처를 어루만집니다."}
+					},
+				},
+			},
+		},
+		{
+			Name:        "forge",
+			Description: "버려진 대장간. 용광로에 아직 잔불이 남아 있습니다.",
+			Choices: []EventChoice{
+				{
+					Label: "용광로 뒤지기",
+					Tags:  []ChoiceTag{TagItem, TagHarm, TagGamble},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						if rng.Float64() < 0.6 {
+							// Premium roll: base bonus floor +2 above the
+							// regular ItemDrop weapon formula (3+...).
+							item := entity.Item{
+								Name:  "대장장이의 " + weaponName(floor),
+								Type:  entity.ItemWeapon,
+								Bonus: 5 + rng.Intn(6) + floor/3,
+							}
+							return EventOutcome{Item: &item, Description: "재 속에서 명품 무기를 건졌습니다!"}
+						}
+						dmg := 12 + floor
+						return EventOutcome{HPChange: -dmg, Description: "잔불에 손을 데였습니다!"}
+					},
+				},
+				{
+					Label: "고철 모아 팔기",
+					Tags:  []ChoiceTag{TagGoldGain},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						gold := 12 + floor*2
+						return EventOutcome{GoldChange: gold, Description: "쓸 만한 고철을 챙겼습니다."}
+					},
+				},
+				{
+					Label: "지나가기",
+					Tags:  []ChoiceTag{TagSkip},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						return EventOutcome{Description: "식은 용광로를 뒤로하고 떠납니다."}
+					},
+				},
+			},
+		},
+		{
+			Name:        "toll_bridge",
+			Description: "낡은 다리 앞을 트롤이 가로막고 있습니다. \"통행료!\"",
+			Choices: []EventChoice{
+				{
+					Label: "통행료 내기",
+					Tags:  []ChoiceTag{TagGoldCost},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						cost := 15 + floor
+						return EventOutcome{GoldChange: -cost, Description: "트롤이 흡족하게 길을 비킵니다."}
+					},
+				},
+				{
+					Label: "몰래 건너기",
+					Tags:  []ChoiceTag{TagHarm, TagGamble},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						if rng.Float64() < 0.6 {
+							return EventOutcome{Description: "트롤이 조는 사이 무사히 건넜습니다!"}
+						}
+						dmg := 20 + floor
+						return EventOutcome{HPChange: -dmg, Description: "들켰습니다! 트롤이 다리 밑으로 내던집니다!"}
+					},
+				},
+				{
+					Label: "다리 밑 뒤지기",
+					Tags:  []ChoiceTag{TagGoldGain, TagHarm, TagGamble},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						if rng.Float64() < 0.5 {
+							gold := 30 + floor*2
+							return EventOutcome{GoldChange: gold, Description: "트롤이 모아둔 통행료 더미를 찾았습니다!"}
+						}
+						dmg := 15 + floor
+						return EventOutcome{HPChange: -dmg, Description: "트롤의 몽둥이에 얻어맞았습니다!"}
+					},
+				},
+			},
+		},
+		{
+			Name:        "feast",
+			Description: "아무도 없는 방에 김이 나는 만찬이 차려져 있습니다.",
+			Choices: []EventChoice{
+				{
+					Label: "마음껏 먹기",
+					Tags:  []ChoiceTag{TagHeal, TagHarm, TagGamble},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						if rng.Float64() < 0.7 {
+							heal := 25 + floor*2
+							return EventOutcome{HPChange: heal, Description: "놀랍도록 맛있고 든든합니다!"}
+						}
+						dmg := 15 + floor
+						return EventOutcome{HPChange: -dmg, Description: "식중독입니다! 배를 움켜쥡니다!"}
+					},
+				},
+				{
+					Label: "음식 싸가기",
+					Tags:  []ChoiceTag{TagItem},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						// Humble snack tier: below the shop potion (30+floor) on
+						// every floor so a free pick never beats a bought one.
+						item := entity.Item{Name: "여행 도시락", Type: entity.ItemConsumable, Bonus: 20 + floor/2}
+						return EventOutcome{Item: &item, Description: "음식을 포장해 챙겼습니다."}
+					},
+				},
+				{
+					Label: "의심하며 떠나기",
+					Tags:  []ChoiceTag{TagSkip},
+					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
+						return EventOutcome{Description: "공짜 만찬은 없는 법입니다."}
 					},
 				},
 			},

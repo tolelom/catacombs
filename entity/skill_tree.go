@@ -1,6 +1,9 @@
 package entity
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // SkillEffect represents the type of bonus a skill node provides.
 type SkillEffect int
@@ -19,6 +22,28 @@ type SkillNode struct {
 	Name   string
 	Effect SkillEffect
 	Value  int
+}
+
+// EffectLabel renders the node's bonus as a short HUD string (e.g. "+3 DEF",
+// "치명타 +15%") so fork choices can be compared at a glance.
+func (n SkillNode) EffectLabel() string {
+	switch n.Effect {
+	case EffectATKBoost:
+		return fmt.Sprintf("+%d ATK", n.Value)
+	case EffectDEFBoost:
+		return fmt.Sprintf("+%d DEF", n.Value)
+	case EffectMaxHPBoost:
+		return fmt.Sprintf("+%d 최대HP", n.Value)
+	case EffectSkillPower:
+		return fmt.Sprintf("스킬위력 +%d", n.Value)
+	case EffectCritChance:
+		return fmt.Sprintf("치명타 +%d%%", n.Value)
+	case EffectHealBoost:
+		return fmt.Sprintf("힐 +%d", n.Value)
+	}
+	// Unknown effect (new SkillEffect without a label): show the raw value so
+	// the HUD never renders an empty "()" pair.
+	return fmt.Sprintf("+%d", n.Value)
 }
 
 // SkillTree is one branch's diamond-shaped skill tree:
@@ -247,31 +272,6 @@ func (ps *PlayerSkills) NextIsBranch() bool {
 		return false
 	}
 	return ps.Allocated == 1 || ps.Allocated == 3
-}
-
-// NextStepLabel returns a short Korean label describing what the next
-// allocation will be. Empty string if nothing further can be allocated.
-func (ps *PlayerSkills) NextStepLabel(class Class) string {
-	if ps == nil || ps.Allocated >= 4 {
-		return ""
-	}
-	if ps.BranchIndex < 0 {
-		branches := GetBranches(class)
-		return "분기 선택: " + branches[0].Name + " or " + branches[1].Name
-	}
-	branches := GetBranches(class)
-	tree := branches[ps.BranchIndex]
-	switch ps.Allocated {
-	case 0:
-		return "T1 자동: " + tree.T1.Name
-	case 1:
-		return "T2 선택: " + tree.T2[0].Name + " or " + tree.T2[1].Name
-	case 2:
-		return "T3 자동: " + tree.T3.Name
-	case 3:
-		return "T4 캡스톤: " + tree.T4[0].Name + " or " + tree.T4[1].Name
-	}
-	return ""
 }
 
 // choiceToIdx maps a recorded choice byte to the array index of the chosen

@@ -43,7 +43,7 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
-		case "1", "2", "3":
+		case "1", "2", "3", "4":
 			if ctx.Session != nil {
 				idx := int(key.String()[0] - '1')
 				switch ctx.Session.BuyItem(ctx.Fingerprint, idx) {
@@ -95,6 +95,8 @@ func itemTypeLabel(item entity.Item) string {
 		return fmt.Sprintf("[DEF+%d]", item.Bonus)
 	case entity.ItemConsumable:
 		return fmt.Sprintf("[HP+%d]", item.Bonus)
+	case entity.ItemCharm:
+		return "[도박 손해 1회 무효]"
 	default:
 		return fmt.Sprintf("[+%d]", item.Bonus)
 	}
@@ -131,9 +133,26 @@ func renderShop(state game.GameState, width, height int, shopMsg string) string 
 		}
 	}
 
-	menu := "[1-3] 구매  [Q] 상점 나가기"
+	// One-line explainer when a charm is on the shelf — the label alone
+	// doesn't tell players what counts as a "gamble".
+	charmHint := ""
+	for _, item := range state.ShopItems {
+		if item.Type == entity.ItemCharm {
+			// Two lines: the single-line version overflows 80-col terminals.
+			charmHint = styleSystem.Render(
+				"  행운 부적: 🎲 도박 실패 손해(HP/골드/저주)를 1회 무효화\n" +
+					"  (고정 비용·성공 보상에는 미적용)")
+			break
+		}
+	}
 
-	parts := []string{header, "", goldLine, items, "", menu}
+	menu := "[1-4] 구매  [Q] 상점 나가기"
+
+	parts := []string{header, "", goldLine, items}
+	if charmHint != "" {
+		parts = append(parts, charmHint)
+	}
+	parts = append(parts, "", menu)
 	if shopMsg != "" {
 		parts = append(parts, "", msgStyle.Render(shopMsg))
 	}

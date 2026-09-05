@@ -30,11 +30,19 @@ type EventChoiceView struct {
 	Tags  []ChoiceTag
 }
 
+// SoloChainView surfaces the solo-chain sequence state for the HUD.
+// Populated only during solo-mode combat; nil otherwise.
+type SoloChainView struct {
+	LastAction   string
+	AttackStreak int
+}
+
 // PendingEventView is a snapshot-safe view of the active event, populated
 // while Phase == PhaseEvent and nil otherwise.
 type PendingEventView struct {
 	Name        string
 	Description string
+	PerPlayer   bool // true for loot picks: each player's own choice applies to them
 	Choices     []EventChoiceView
 }
 
@@ -90,10 +98,11 @@ type GameState struct {
 	MoveVotes        map[string]int // fingerprint -> voted room index (exploration)
 	PendingEvent     *PendingEventView // active event during PhaseEvent
 	EventVotes       map[string]int    // fingerprint → choice index
-	ShopSold         []bool            // parallel to ShopItems; true once a non-consumable slot is sold
+	ShopSold         []bool            // parallel to ShopItems; true once a weapon/armor slot is sold (consumables and charms restock freely)
 	ShopLeavers      map[string]bool // fingerprint -> wants to leave the shop (UI display only)
 	NextRoomPreview  *RoomPreview    // populated when Foresight has been used
 	CoopAvailable    map[string]bool // fingerprint → can use coop now (HUD display)
+	SoloChain        *SoloChainView  // solo-mode combat chain state (HUD display)
 	// Run-scoped event flags (drives polish achievements at GameOver)
 	CombosFiredThisRun map[string]bool // combo name → fired at least once this run
 	BossPhase2Reached  bool            // any boss reached Phase 2
@@ -133,6 +142,7 @@ type GameSession struct {
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	eventVotes     map[string]int       // fingerprint → choice index
 	pendingEvent   *RandomEvent         // typed event with Resolve funcs; not snapshotted
+	eventPerPlayer bool                 // pendingEvent resolves per player (loot) vs party majority
 	rng            *rand.Rand           // session-scoped RNG; deterministic for daily runs
 
 	// Coop ability state — all maps keyed by player fingerprint.
@@ -149,6 +159,11 @@ type GameSession struct {
 	critGuaranteedNext  bool               // next turn party crit (Expose Weakness combo)
 	enemyMissNextTurn   bool               // next turn 50% enemy attacks miss (Mirage)
 	poisonNextCombat    bool               // next combat starts enemies poisoned (Venomous Edge)
+
+	// Solo chain state — per-combat action sequence for SoloMode chains
+	// (the solo replacement for cross-class party combos).
+	soloLastAction   string // previous turn's successful action ("" breaks chains)
+	soloAttackStreak int    // consecutive attacks so far this combat
 
 	// The fields below are set during session construction (inside an
 	// EnsureSession init callback under Lobby.mu) and are not mutated
@@ -656,6 +671,7 @@ func (s *GameSession) GetState() GameState {
 		pendingEventCopy = &PendingEventView{
 			Name:        src.Name,
 			Description: src.Description,
+			PerPlayer:   src.PerPlayer,
 			Choices:     choices,
 		}
 	}
@@ -717,12 +733,25 @@ func (s *GameSession) GetState() GameState {
 		ShopLeavers:        shopLeaversCopy,
 		NextRoomPreview:    s.nextRoomPreview,
 		CoopAvailable:      s.computeCoopAvailable(),
+		SoloChain:          s.soloChainView(),
 		CombosFiredThisRun: copyStringBoolMap(s.state.CombosFiredThisRun),
 		BossPhase2Reached:  s.state.BossPhase2Reached,
 		MimicKilled:        s.state.MimicKilled,
 		AltarUsedThisRun:   s.state.AltarUsedThisRun,
 		RevivesThisRun:     s.state.RevivesThisRun,
 		BossesKilledThisRun: copyStringBoolMap(s.state.BossesKilledThisRun),
+	}
+}
+
+// soloChainView builds the HUD snapshot of the solo-chain state, or nil when
+// it doesn't apply (party mode or out of combat). Caller holds s.mu.
+func (s *GameSession) soloChainView() *SoloChainView {
+	if !s.state.SoloMode || s.state.Phase != PhaseCombat {
+		return nil
+	}
+	return &SoloChainView{
+		LastAction:   s.soloLastAction,
+		AttackStreak: s.soloAttackStreak,
 	}
 }
 
@@ -915,7 +944,8 @@ func (s *GameSession) BuyItem(playerID string, itemIdx int) BuyResult {
 			}
 			p.Gold -= item.Price
 			p.Inventory = append(p.Inventory, item)
-			if item.Type != entity.ItemConsumable && itemIdx < len(s.state.ShopSold) {
+			// Only gear sells out — potions and charms restock freely.
+			if (item.Type == entity.ItemWeapon || item.Type == entity.ItemArmor) && itemIdx < len(s.state.ShopSold) {
 				s.state.ShopSold[itemIdx] = true
 			}
 			return BuyOK
@@ -938,7 +968,8 @@ func (s *GameSession) SendChat(playerName, message string) {
 // tallyShopLeaversLocked returns true when every available (non-out)
 // player has signaled they are ready to leave the shop. Treats a zero-
 // available party as ready so a wipe in the shop doesn't deadlock.
-// Caller holds s.mu.
+// Empty-fingerprint players are counted through the "" key rather than
+// skipped, so their quorum slot stays fillable. Caller holds s.mu.
 func (s *GameSession) tallyShopLeaversLocked() bool {
 	available := 0
 	ready := 0
@@ -947,7 +978,7 @@ func (s *GameSession) tallyShopLeaversLocked() bool {
 			continue
 		}
 		available++
-		if p.Fingerprint != "" && s.shopLeavers[p.Fingerprint] {
+		if s.shopLeavers[p.Fingerprint] {
 			ready++
 		}
 	}
@@ -970,27 +1001,10 @@ func (s *GameSession) LeaveShop(fingerprint string) bool {
 	if s.shopLeavers == nil {
 		s.shopLeavers = make(map[string]bool)
 	}
-	if fingerprint != "" {
-		s.shopLeavers[fingerprint] = true
-	}
-	// Anonymous solo test path: empty fingerprint with a single alive player
-	// means the caller is the only one available — treat as ready.
-	if fingerprint == "" {
-		available := 0
-		for _, p := range s.state.Players {
-			if !p.IsOut() {
-				available++
-			}
-		}
-		if available == 1 {
-			s.shopLeavers = nil
-			s.state.Phase = PhaseExploring
-			if s.state.Floor != nil && s.state.Floor.CurrentRoom >= 0 && s.state.Floor.CurrentRoom < len(s.state.Floor.Rooms) {
-				s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
-			}
-			return true
-		}
-	}
+	// Empty-fingerprint players (legacy/test path) signal under the "" key,
+	// mirroring move votes — excluding them entirely would make their quorum
+	// slot unfillable and deadlock the shop for the whole party.
+	s.shopLeavers[fingerprint] = true
 	if !s.tallyShopLeaversLocked() {
 		return false
 	}
@@ -1178,6 +1192,7 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 // the current event room as cleared. Caller holds s.mu.
 func (s *GameSession) clearPendingEventLocked(markRoomCleared bool) {
 	s.pendingEvent = nil
+	s.eventPerPlayer = false
 	s.state.PendingEvent = nil
 	s.state.EventVotes = nil
 	s.eventVotes = nil
