@@ -109,45 +109,76 @@ collecting:
 }
 
 func (s *GameSession) resolvePlayerActions() {
-	// Record frozen players BEFORE ticking effects (freeze expires on tick)
-	frozenPlayers := make(map[string]bool)
+	frozen := s.frozenPlayersLocked()
+	s.tickPlayerEffectsLocked()
+	s.tickMonsterEffectsLocked()
+	aliveBefore := s.aliveMonsterIndicesLocked()
+	plan := &attackPlan{}
+	if s.collectPlayerActions(frozen, plan) {
+		return
+	}
+	if s.endCombatIfEveryoneFled() {
+		return
+	}
+	combos := s.applyCombos(plan)
+	s.resolveAttacks(plan)
+	s.applyComboHealing(combos)
+	s.checkBossPhaseTransitions()
+	s.awardKills(aliveBefore)
+	s.removeDeadMonsters()
+	s.finishRoomIfCleared()
+}
+
+type attackPlan struct {
+	intents []combat.AttackIntent
+	owners  []string
+}
+
+func (a *attackPlan) add(intent combat.AttackIntent, owner string) {
+	a.intents = append(a.intents, intent)
+	a.owners = append(a.owners, owner)
+}
+
+func (s *GameSession) frozenPlayersLocked() map[string]bool {
+	frozen := make(map[string]bool)
 	for _, p := range s.state.Players {
 		if !p.IsOut() && p.HasEffect(entity.StatusFreeze) {
-			frozenPlayers[p.Fingerprint] = true
+			frozen[p.Fingerprint] = true
 		}
 	}
+	return frozen
+}
 
-	// Tick status effects with floor theme damage bonus
+func (s *GameSession) tickPlayerEffectsLocked() {
 	theme := dungeon.GetTheme(s.state.FloorNum)
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
-			// Snapshot effects before tick to compute theme bonus
-			effectsBefore := make([]entity.ActiveEffect, len(p.Effects))
-			copy(effectsBefore, p.Effects)
+			s.tickPlayerEffects(p, theme)
+		}
+	}
+}
 
-			msgs := p.TickEffects()
-			for _, msg := range msgs {
-				s.addLog(msg)
-			}
-
-			// Apply theme damage bonus for matching status effects
-			for _, e := range effectsBefore {
-				if e.Value > 0 && (theme.StatusBoost == entity.StatusEffect(-1) || e.Type == theme.StatusBoost) {
-					bonus := int(float64(e.Value) * (theme.DamageMult - 1.0))
-					if bonus > 0 {
-						p.TakeDamage(bonus)
-						s.addLog(fmt.Sprintf("  (%s 테마: +%d 피해)", theme.Name, bonus))
-					}
-				}
-			}
-
-			if p.IsDead() {
-				s.tryReviveSoloHealerLocked(p)
+func (s *GameSession) tickPlayerEffects(p *entity.Player, theme dungeon.ThemeModifier) {
+	effectsBefore := make([]entity.ActiveEffect, len(p.Effects))
+	copy(effectsBefore, p.Effects)
+	for _, msg := range p.TickEffects() {
+		s.addLog(msg)
+	}
+	for _, e := range effectsBefore {
+		if e.Value > 0 && (theme.StatusBoost == entity.StatusEffect(-1) || e.Type == theme.StatusBoost) {
+			bonus := int(float64(e.Value) * (theme.DamageMult - 1.0))
+			if bonus > 0 {
+				p.TakeDamage(bonus)
+				s.addLog(fmt.Sprintf("  (%s 테마: +%d 피해)", theme.Name, bonus))
 			}
 		}
 	}
+	if p.IsDead() {
+		s.tryReviveSoloHealerLocked(p)
+	}
+}
 
-	// Tick monster status effects (poison/burn/bleed) before player actions.
+func (s *GameSession) tickMonsterEffectsLocked() {
 	for _, m := range s.state.Monsters {
 		if !m.IsDead() {
 			for _, msg := range m.TickEffects() {
@@ -155,231 +186,272 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 		}
 	}
+}
 
-	var intents []combat.AttackIntent
-	var intentOwners []string // track who owns each intent
-
-	// Track which monsters were alive before this turn (for gold awards)
-	aliveBeforeTurn := make(map[int]bool)
+func (s *GameSession) aliveMonsterIndicesLocked() map[int]bool {
+	alive := make(map[int]bool)
 	for i, m := range s.state.Monsters {
 		if !m.IsDead() {
-			aliveBeforeTurn[i] = true
+			alive[i] = true
 		}
 	}
+	return alive
+}
 
+func (s *GameSession) collectPlayerActions(frozen map[string]bool, plan *attackPlan) bool {
 	for _, p := range s.state.Players {
 		if p.IsOut() {
 			continue
 		}
-		// Frozen players skip their action
-		if frozenPlayers[p.Fingerprint] {
+		if frozen[p.Fingerprint] {
 			s.addLog(fmt.Sprintf("%s 동결되어 행동할 수 없습니다!", p.Name))
 			s.recordSoloAction("")
 			continue
 		}
 		action, ok := s.actions[p.Fingerprint]
 		if !ok {
-			// Unreachable in production (RunTurn defaults absentees to
-			// ActionWait) but direct test callers may leave gaps.
 			s.recordSoloAction("")
 			continue
 		}
-
-		switch action.Type {
-		case ActionAttack:
-			multiplier := 1.0
-			crit := false
-			if s.critGuaranteedNext {
-				multiplier = 2.0
-				crit = true
-				s.addLog(fmt.Sprintf("%s 급소 노출 치명타!", p.Name))
-			} else if p.Skills != nil {
-				if pct := p.Skills.GetCritChance(p.Class); pct > 0 && s.rng.Intn(100) < pct {
-					multiplier = 2.0
-					crit = true
-					s.addLog(fmt.Sprintf("%s 치명타!", p.Name))
-				}
-			}
-			// Solo chains: the previous turn's action can upgrade this attack
-			// (the solo replacement for cross-class party combos).
-			bonusATK := 0
-			if s.state.SoloMode {
-				if chain := combat.DetectSoloChain(s.soloLastAction, s.soloAttackStreak); chain != nil {
-					s.addLog(chain.Message)
-					if chain.GuaranteeCrit && !crit {
-						multiplier *= 2.0
-					}
-					if chain.DamageMultiplier > 0 {
-						multiplier *= chain.DamageMultiplier
-					}
-					bonusATK = chain.BonusDamage
-					if s.state.CombosFiredThisRun == nil {
-						s.state.CombosFiredThisRun = make(map[string]bool)
-					}
-					s.state.CombosFiredThisRun[chain.Name] = true
-				}
-			}
-			intents = append(intents, combat.AttackIntent{
-				PlayerATK:  p.EffectiveATK() + bonusATK,
-				TargetIdx:  action.TargetIdx,
-				Multiplier: multiplier,
-				IsAoE:      false,
-			})
-			intentOwners = append(intentOwners, p.Name)
-			s.recordSoloAction("attack")
-		case ActionSkill:
-			if p.SkillUses <= 0 {
-				s.addLog(fmt.Sprintf("%s 스킬 사용 횟수가 없습니다!", p.Name))
-				s.recordSoloAction("")
-				break
-			}
-			p.SkillUses--
-			skillExecuted := true
-			switch p.Class {
-			case entity.ClassWarrior:
-				for _, m := range s.state.Monsters {
-					if !m.IsDead() {
-						m.TauntTarget = true
-						m.TauntTurns = 2
-					}
-				}
-				s.addLog(fmt.Sprintf("%s Taunt 사용! 적들이 2턴간 %s를 집중 공격합니다", p.Name, p.Name))
-			case entity.ClassMage:
-				skillPower := 0
-				if p.Skills != nil {
-					skillPower = p.Skills.GetSkillPower(p.Class)
-				}
-				multiplier := 0.8 + float64(skillPower)/100.0
-				intents = append(intents, combat.AttackIntent{
-					PlayerATK:  p.EffectiveATK(),
-					TargetIdx:  -1,
-					Multiplier: multiplier,
-					IsAoE:      true,
-				})
-				intentOwners = append(intentOwners, p.Name)
-			case entity.ClassHealer:
-				healAmount := 30
-				if p.Skills != nil {
-					healAmount += p.Skills.GetSkillPower(p.Class) / 2
-					healAmount += p.Skills.GetHealBoost(p.Class)
-				}
-				if s.HardMode {
-					healAmount = int(float64(healAmount) * s.cfg.Difficulty.HardModeHealMult)
-				}
-				if target := s.pickHealTarget(action.TargetIdx); target != nil {
-					before := target.HP
-					target.Heal(healAmount)
-					s.addLog(fmt.Sprintf("%s이(가) %s에게 HP %d 회복", p.Name, target.Name, target.HP-before))
-				} else if mIdx := s.firstAliveMonsterIdx(); mIdx >= 0 {
-					// Nobody needs healing — channel the heal into a holy smite so
-					// solo healers (who are usually at full HP) have a damage
-					// outlet and runs aren't a 200+ turn slog. Heal power doubles
-					// as ATK and flows through the normal attack pipeline.
-					intents = append(intents, combat.AttackIntent{
-						PlayerATK:  healAmount,
-						TargetIdx:  mIdx,
-						Multiplier: 1.0,
-						IsAoE:      false,
-					})
-					intentOwners = append(intentOwners, p.Name)
-					s.addLog(fmt.Sprintf("✦ %s 치유할 대상이 없어 신성 일격을 가합니다!", p.Name))
-				} else {
-					// No heal target and no live monster — refund the skill use.
-					p.SkillUses++
-					skillExecuted = false
-					s.addLog(fmt.Sprintf("%s 회복 대상을 찾을 수 없습니다!", p.Name))
-				}
-			case entity.ClassRogue:
-				currentRoom := s.state.Floor.Rooms[s.state.Floor.CurrentRoom]
-				for _, neighborIdx := range currentRoom.Neighbors {
-					s.state.Floor.Rooms[neighborIdx].Visited = true
-				}
-				s.addLog(fmt.Sprintf("%s 주변 방을 정찰했습니다!", p.Name))
-			}
-			if skillExecuted {
-				s.recordSoloAction("skill")
-			} else {
-				s.recordSoloAction("")
-			}
-		case ActionItem:
-			found := false
-			for i, item := range p.Inventory {
-				// ItemCharm is passive insurance (auto-triggers on gambled
-				// losses) — intentionally not usable via the item action.
-				if item.Type == entity.ItemConsumable {
-					before := p.HP
-					healAmt := item.Bonus
-					if p.Skills != nil {
-						healAmt += p.Skills.GetHealBoost(p.Class)
-					}
-					if s.HardMode {
-						healAmt = int(float64(healAmt) * s.cfg.Difficulty.HardModeHealMult)
-					}
-					p.Heal(healAmt)
-					p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
-					s.addLog(fmt.Sprintf("%s %s 사용, HP %d 회복", p.Name, item.Name, p.HP-before))
-					found = true
-					break
-				}
-			}
-			if found {
-				s.recordSoloAction("item")
-			} else {
-				s.addLog(fmt.Sprintf("%s 사용할 아이템이 없습니다!", p.Name))
-				s.recordSoloAction("")
-			}
-		case ActionFlee:
-			if combat.AttemptFlee(s.rng, s.cfg.Combat.FleeChance) {
-				s.addLog(fmt.Sprintf("%s 전투에서 도주했습니다!", p.Name))
-				s.state.FleeSucceeded = true
-				if s.state.SoloMode {
-					s.state.Phase = PhaseExploring
-					return
-				}
-				p.Fled = true
-				s.recordSoloAction("")
-			} else {
-				s.addLog(fmt.Sprintf("%s 도주에 실패했습니다!", p.Name))
-				s.recordSoloAction("")
-			}
-		case ActionWait:
-			s.addLog(fmt.Sprintf("%s 방어 중", p.Name))
-			s.recordSoloAction("")
-		case ActionCoop:
-			// A coop only arms Counter Stance when it actually fires — rogue
-			// scouting and second uses are refusals.
-			coopOK := p.Class != entity.ClassRogue && !s.coopUsedThisCombat[p.Fingerprint]
-			s.applyCoopAbility(p)
-			if coopOK {
-				s.recordSoloAction("coop")
-			} else {
-				s.recordSoloAction("")
-			}
-		case ActionRelic:
-			s.applyActiveRelic(p, action.TargetIdx)
-			s.recordSoloAction("")
+		if s.performAction(p, action, plan) {
+			return true
 		}
 	}
+	return false
+}
 
-	// Check if all alive players have fled
-	allFled := true
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			allFled = false
-			break
+func (s *GameSession) performAction(p *entity.Player, action PlayerAction, plan *attackPlan) bool {
+	switch action.Type {
+	case ActionAttack:
+		s.queueAttack(p, action, plan)
+	case ActionSkill:
+		s.useSkill(p, action, plan)
+	case ActionItem:
+		s.useItem(p)
+	case ActionFlee:
+		return s.attemptFlee(p)
+	case ActionWait:
+		s.addLog(fmt.Sprintf("%s 방어 중", p.Name))
+		s.recordSoloAction("")
+	case ActionCoop:
+		coopOK := p.Class != entity.ClassRogue && !s.coopUsedThisCombat[p.Fingerprint]
+		s.applyCoopAbility(p)
+		if coopOK {
+			s.recordSoloAction("coop")
+		} else {
+			s.recordSoloAction("")
+		}
+	case ActionRelic:
+		s.applyActiveRelic(p, action.TargetIdx)
+		s.recordSoloAction("")
+	}
+	return false
+}
+
+func (s *GameSession) queueAttack(p *entity.Player, action PlayerAction, plan *attackPlan) {
+	multiplier := 1.0
+	crit := false
+	if s.critGuaranteedNext {
+		multiplier = 2.0
+		crit = true
+		s.addLog(fmt.Sprintf("%s 급소 노출 치명타!", p.Name))
+	} else if p.Skills != nil {
+		if pct := p.Skills.GetCritChance(p.Class); pct > 0 && s.rng.Intn(100) < pct {
+			multiplier = 2.0
+			crit = true
+			s.addLog(fmt.Sprintf("%s 치명타!", p.Name))
 		}
 	}
-	if allFled && !s.state.SoloMode {
-		s.state.Phase = PhaseExploring
-		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
-		s.addLog("모든 플레이어가 도주했습니다!")
-		for _, p := range s.state.Players {
-			p.Fled = false
+	bonusATK := 0
+	if s.state.SoloMode {
+		if chain := combat.DetectSoloChain(s.soloLastAction, s.soloAttackStreak); chain != nil {
+			s.addLog(chain.Message)
+			if chain.GuaranteeCrit && !crit {
+				multiplier *= 2.0
+			}
+			if chain.DamageMultiplier > 0 {
+				multiplier *= chain.DamageMultiplier
+			}
+			bonusATK = chain.BonusDamage
+			if s.state.CombosFiredThisRun == nil {
+				s.state.CombosFiredThisRun = make(map[string]bool)
+			}
+			s.state.CombosFiredThisRun[chain.Name] = true
 		}
+	}
+	plan.add(combat.AttackIntent{
+		PlayerATK:  p.EffectiveATK() + bonusATK,
+		TargetIdx:  action.TargetIdx,
+		Multiplier: multiplier,
+		IsAoE:      false,
+	}, p.Name)
+	s.recordSoloAction("attack")
+}
+
+func (s *GameSession) useSkill(p *entity.Player, action PlayerAction, plan *attackPlan) {
+	if p.SkillUses <= 0 {
+		s.addLog(fmt.Sprintf("%s 스킬 사용 횟수가 없습니다!", p.Name))
+		s.recordSoloAction("")
 		return
 	}
+	p.SkillUses--
+	skillExecuted := true
+	switch p.Class {
+	case entity.ClassWarrior:
+		s.warriorTaunt(p)
+	case entity.ClassMage:
+		s.mageBlast(p, plan)
+	case entity.ClassHealer:
+		skillExecuted = s.healerSkill(p, action, plan)
+	case entity.ClassRogue:
+		s.rogueScout(p)
+	}
+	if skillExecuted {
+		s.recordSoloAction("skill")
+	} else {
+		s.recordSoloAction("")
+	}
+}
 
-	// Combo detection: build action map and apply combo effects before resolving attacks
+func (s *GameSession) warriorTaunt(p *entity.Player) {
+	for _, m := range s.state.Monsters {
+		if !m.IsDead() {
+			m.TauntTarget = true
+			m.TauntTurns = 2
+		}
+	}
+	s.addLog(fmt.Sprintf("%s Taunt 사용! 적들이 2턴간 %s를 집중 공격합니다", p.Name, p.Name))
+}
+
+func (s *GameSession) mageBlast(p *entity.Player, plan *attackPlan) {
+	skillPower := 0
+	if p.Skills != nil {
+		skillPower = p.Skills.GetSkillPower(p.Class)
+	}
+	multiplier := 0.8 + float64(skillPower)/100.0
+	plan.add(combat.AttackIntent{
+		PlayerATK:  p.EffectiveATK(),
+		TargetIdx:  -1,
+		Multiplier: multiplier,
+		IsAoE:      true,
+	}, p.Name)
+}
+
+func (s *GameSession) healerSkill(p *entity.Player, action PlayerAction, plan *attackPlan) bool {
+	healAmount := 30
+	if p.Skills != nil {
+		healAmount += p.Skills.GetSkillPower(p.Class) / 2
+		healAmount += p.Skills.GetHealBoost(p.Class)
+	}
+	if s.HardMode {
+		healAmount = int(float64(healAmount) * s.cfg.Difficulty.HardModeHealMult)
+	}
+	if target := s.pickHealTarget(action.TargetIdx); target != nil {
+		before := target.HP
+		target.Heal(healAmount)
+		s.addLog(fmt.Sprintf("%s이(가) %s에게 HP %d 회복", p.Name, target.Name, target.HP-before))
+		return true
+	}
+	if mIdx := s.firstAliveMonsterIdx(); mIdx >= 0 {
+		plan.add(combat.AttackIntent{
+			PlayerATK:  healAmount,
+			TargetIdx:  mIdx,
+			Multiplier: 1.0,
+			IsAoE:      false,
+		}, p.Name)
+		s.addLog(fmt.Sprintf("✦ %s 치유할 대상이 없어 신성 일격을 가합니다!", p.Name))
+		return true
+	}
+	p.SkillUses++
+	s.addLog(fmt.Sprintf("%s 회복 대상을 찾을 수 없습니다!", p.Name))
+	return false
+}
+
+func (s *GameSession) rogueScout(p *entity.Player) {
+	currentRoom := s.state.Floor.Rooms[s.state.Floor.CurrentRoom]
+	for _, neighborIdx := range currentRoom.Neighbors {
+		s.state.Floor.Rooms[neighborIdx].Visited = true
+	}
+	s.addLog(fmt.Sprintf("%s 주변 방을 정찰했습니다!", p.Name))
+}
+
+func (s *GameSession) useItem(p *entity.Player) {
+	for i, item := range p.Inventory {
+		if item.Type == entity.ItemConsumable {
+			before := p.HP
+			healAmt := item.Bonus
+			if p.Skills != nil {
+				healAmt += p.Skills.GetHealBoost(p.Class)
+			}
+			if s.HardMode {
+				healAmt = int(float64(healAmt) * s.cfg.Difficulty.HardModeHealMult)
+			}
+			p.Heal(healAmt)
+			p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
+			s.addLog(fmt.Sprintf("%s %s 사용, HP %d 회복", p.Name, item.Name, p.HP-before))
+			s.recordSoloAction("item")
+			return
+		}
+	}
+	s.addLog(fmt.Sprintf("%s 사용할 아이템이 없습니다!", p.Name))
+	s.recordSoloAction("")
+}
+
+func (s *GameSession) attemptFlee(p *entity.Player) bool {
+	if !combat.AttemptFlee(s.rng, s.cfg.Combat.FleeChance) {
+		s.addLog(fmt.Sprintf("%s 도주에 실패했습니다!", p.Name))
+		s.recordSoloAction("")
+		return false
+	}
+	s.addLog(fmt.Sprintf("%s 전투에서 도주했습니다!", p.Name))
+	s.state.FleeSucceeded = true
+	if s.state.SoloMode {
+		s.state.Phase = PhaseExploring
+		return true
+	}
+	p.Fled = true
+	s.recordSoloAction("")
+	return false
+}
+
+func (s *GameSession) endCombatIfEveryoneFled() bool {
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			return false
+		}
+	}
+	if s.state.SoloMode {
+		return false
+	}
+	s.state.Phase = PhaseExploring
+	s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+	s.addLog("모든 플레이어가 도주했습니다!")
+	for _, p := range s.state.Players {
+		p.Fled = false
+	}
+	return true
+}
+
+func (s *GameSession) applyCombos(plan *attackPlan) []combat.ComboDef {
+	combos := combat.DetectCombos(s.comboActionsLocked())
+	for _, combo := range combos {
+		s.addLog(combo.Effect.Message)
+		for i := range plan.intents {
+			if combo.Effect.DamageMultiplier > 0 {
+				plan.intents[i].Multiplier *= combo.Effect.DamageMultiplier
+			}
+			plan.intents[i].PlayerATK += combo.Effect.BonusDamage
+		}
+		s.applyCoopComboEffect(combo.Effect)
+		if s.state.CombosFiredThisRun == nil {
+			s.state.CombosFiredThisRun = make(map[string]bool)
+		}
+		s.state.CombosFiredThisRun[combo.Name] = true
+	}
+	return combos
+}
+
+func (s *GameSession) comboActionsLocked() map[string]combat.ComboAction {
 	comboActions := make(map[string]combat.ComboAction)
 	for _, p := range s.state.Players {
 		if p.IsOut() {
@@ -404,70 +476,66 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 		comboActions[p.Fingerprint] = combat.ComboAction{Class: p.Class, ActionType: actionType}
 	}
+	return comboActions
+}
 
-	combos := combat.DetectCombos(comboActions)
-	for _, combo := range combos {
-		s.addLog(combo.Effect.Message)
-		for i := range intents {
-			if combo.Effect.DamageMultiplier > 0 {
-				intents[i].Multiplier *= combo.Effect.DamageMultiplier
-			}
-			intents[i].PlayerATK += combo.Effect.BonusDamage
-		}
-		s.applyCoopComboEffect(combo.Effect)
-		if s.state.CombosFiredThisRun == nil {
-			s.state.CombosFiredThisRun = make(map[string]bool)
-		}
-		s.state.CombosFiredThisRun[combo.Name] = true
+func (s *GameSession) resolveAttacks(plan *attackPlan) {
+	if len(plan.intents) == 0 || len(s.state.Monsters) == 0 {
+		return
 	}
-
-	// Build name→player map for relic effects
 	playerByName := make(map[string]*entity.Player)
 	for _, p := range s.state.Players {
 		playerByName[p.Name] = p
 	}
+	results := combat.ResolveAttacks(s.rng, plan.intents, s.state.Monsters, s.cfg.Game.CoopBonus)
+	for i, r := range results {
+		owner := plan.owners[i]
+		s.logAttackResult(owner, r)
+		if r.Damage > 0 {
+			s.applyLifeSiphon(playerByName[owner], r.Damage)
+		}
+	}
+}
 
-	if len(intents) > 0 && len(s.state.Monsters) > 0 {
-		results := combat.ResolveAttacks(s.rng, intents, s.state.Monsters, s.cfg.Game.CoopBonus)
-		for i, r := range results {
-			owner := intentOwners[i]
-			if r.IsAoE {
-				coopStr := ""
-				if r.CoopApplied {
-					coopStr = " (협동!)"
-				}
-				s.addLog(fmt.Sprintf("%s 전체 적에게 총 %d 피해%s", owner, r.Damage, coopStr))
-			} else if r.Missed && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
-				s.addLog(fmt.Sprintf("%s의 공격을 %s가 회피!", owner, s.state.Monsters[r.TargetIdx].Name))
-			} else if r.Glanced && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
-				target := s.state.Monsters[r.TargetIdx]
-				s.addLog(fmt.Sprintf("%s이(가) %s에게 %d 피해 (글랜스)", owner, target.Name, r.Damage))
-			} else if r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters) {
-				target := s.state.Monsters[r.TargetIdx]
-				coopStr := ""
-				if r.CoopApplied {
-					coopStr = " (협동!)"
-				}
-				s.addLog(fmt.Sprintf("%s이(가) %s에게 %d 피해%s", owner, target.Name, r.Damage, coopStr))
-			}
-			// Apply Life Siphon relic: heal percentage of damage dealt
-			if r.Damage > 0 {
-				if p := playerByName[owner]; p != nil && !p.IsOut() {
-					for _, rel := range p.Relics {
-						if rel.Effect == entity.RelicLifeSteal {
-							heal := r.Damage * rel.Value / 100
-							if heal > 0 {
-								p.Heal(heal)
-								s.addLog(fmt.Sprintf("  %s의 Life Siphon으로 HP %d 회복", p.Name, heal))
-							}
-						}
-					}
-				}
+func (s *GameSession) logAttackResult(owner string, r combat.AttackResult) {
+	switch {
+	case r.IsAoE:
+		coopStr := ""
+		if r.CoopApplied {
+			coopStr = " (협동!)"
+		}
+		s.addLog(fmt.Sprintf("%s 전체 적에게 총 %d 피해%s", owner, r.Damage, coopStr))
+	case r.Missed && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters):
+		s.addLog(fmt.Sprintf("%s의 공격을 %s가 회피!", owner, s.state.Monsters[r.TargetIdx].Name))
+	case r.Glanced && r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters):
+		target := s.state.Monsters[r.TargetIdx]
+		s.addLog(fmt.Sprintf("%s이(가) %s에게 %d 피해 (글랜스)", owner, target.Name, r.Damage))
+	case r.TargetIdx >= 0 && r.TargetIdx < len(s.state.Monsters):
+		target := s.state.Monsters[r.TargetIdx]
+		coopStr := ""
+		if r.CoopApplied {
+			coopStr = " (협동!)"
+		}
+		s.addLog(fmt.Sprintf("%s이(가) %s에게 %d 피해%s", owner, target.Name, r.Damage, coopStr))
+	}
+}
+
+func (s *GameSession) applyLifeSiphon(p *entity.Player, damage int) {
+	if p == nil || p.IsOut() {
+		return
+	}
+	for _, rel := range p.Relics {
+		if rel.Effect == entity.RelicLifeSteal {
+			heal := damage * rel.Value / 100
+			if heal > 0 {
+				p.Heal(heal)
+				s.addLog(fmt.Sprintf("  %s의 Life Siphon으로 HP %d 회복", p.Name, heal))
 			}
 		}
 	}
+}
 
-	// Apply combo HealAll effects after attack resolution
+func (s *GameSession) applyComboHealing(combos []combat.ComboDef) {
 	for _, combo := range combos {
 		if combo.Effect.HealAll > 0 {
 			for _, p := range s.state.Players {
@@ -477,11 +545,9 @@ func (s *GameSession) resolvePlayerActions() {
 			}
 		}
 	}
+}
 
-	// Boss phase transitions (HP fell below 50% this turn)
-	s.checkBossPhaseTransitions()
-
-	// Award gold only for monsters that JUST died this turn
+func (s *GameSession) killGoldMultiplier() float64 {
 	goldMult := 1.0
 	if s.NGPlusLevel > 0 {
 		goldMult += 0.30 * float64(s.NGPlusLevel)
@@ -492,40 +558,54 @@ func (s *GameSession) resolvePlayerActions() {
 	if s.DailyMod != nil && s.DailyMod.GoldMult > 0 {
 		goldMult *= s.DailyMod.GoldMult
 	}
+	return goldMult
+}
+
+func (s *GameSession) awardKills(aliveBefore map[int]bool) {
+	goldMult := s.killGoldMultiplier()
 	for i, m := range s.state.Monsters {
-		if m.IsDead() && aliveBeforeTurn[i] {
-			if m.Name == "Mimic" {
-				s.state.MimicKilled = true
-			}
-			goldReward := int(float64(5+s.state.FloorNum*2) * goldMult)
-			for _, p := range s.state.Players {
-				if !p.IsOut() {
-					bonus := 0
-					for _, r := range p.Relics {
-						if r.Effect == entity.RelicGoldBoost {
-							bonus += r.Value
-						}
-						if r.Effect == entity.RelicHealOnKill {
-							p.Heal(r.Value)
-							s.addLog(fmt.Sprintf("%s의 유물로 HP %d 회복", p.Name, r.Value))
-						}
-					}
-					p.Gold += goldReward + bonus
-				}
-			}
-			s.addLog(fmt.Sprintf("%s 처치! +%d 골드", m.Name, goldReward))
-			if m.IsBoss {
-				s.state.BossKilled = true
-				if s.state.BossesKilledThisRun == nil {
-					s.state.BossesKilledThisRun = make(map[string]bool)
-				}
-				s.state.BossesKilledThisRun[m.Name] = true
-				s.grantBossRelic()
-			}
+		if m.IsDead() && aliveBefore[i] {
+			s.awardKill(m, goldMult)
 		}
 	}
+}
 
-	// Filter out dead monsters
+func (s *GameSession) awardKill(m *entity.Monster, goldMult float64) {
+	if m.Name == "Mimic" {
+		s.state.MimicKilled = true
+	}
+	goldReward := int(float64(5+s.state.FloorNum*2) * goldMult)
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			s.payKillReward(p, goldReward)
+		}
+	}
+	s.addLog(fmt.Sprintf("%s 처치! +%d 골드", m.Name, goldReward))
+	if m.IsBoss {
+		s.state.BossKilled = true
+		if s.state.BossesKilledThisRun == nil {
+			s.state.BossesKilledThisRun = make(map[string]bool)
+		}
+		s.state.BossesKilledThisRun[m.Name] = true
+		s.grantBossRelic()
+	}
+}
+
+func (s *GameSession) payKillReward(p *entity.Player, goldReward int) {
+	bonus := 0
+	for _, r := range p.Relics {
+		if r.Effect == entity.RelicGoldBoost {
+			bonus += r.Value
+		}
+		if r.Effect == entity.RelicHealOnKill {
+			p.Heal(r.Value)
+			s.addLog(fmt.Sprintf("%s의 유물로 HP %d 회복", p.Name, r.Value))
+		}
+	}
+	p.Gold += goldReward + bonus
+}
+
+func (s *GameSession) removeDeadMonsters() {
 	alive := make([]*entity.Monster, 0)
 	for _, m := range s.state.Monsters {
 		if !m.IsDead() {
@@ -533,19 +613,21 @@ func (s *GameSession) resolvePlayerActions() {
 		}
 	}
 	s.state.Monsters = alive
+}
 
-	// Check if combat is over
-	if len(s.state.Monsters) == 0 {
-		s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
-		s.addLog("방 클리어!")
-		for _, p := range s.state.Players {
-			p.Fled = false
-		}
-		if s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Type == dungeon.RoomBoss {
-			s.advanceFloor()
-		} else {
-			s.state.Phase = PhaseExploring
-		}
+func (s *GameSession) finishRoomIfCleared() {
+	if len(s.state.Monsters) != 0 {
+		return
+	}
+	s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
+	s.addLog("방 클리어!")
+	for _, p := range s.state.Players {
+		p.Fled = false
+	}
+	if s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Type == dungeon.RoomBoss {
+		s.advanceFloor()
+	} else {
+		s.state.Phase = PhaseExploring
 	}
 }
 
