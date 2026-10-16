@@ -142,6 +142,9 @@ type GameSession struct {
 	disconnectedAt map[string]time.Time
 	clock          func() time.Time
 	lastReveal     time.Time
+	recorder       RunRecorder
+	recordOnce     sync.Once
+	recorded       chan struct{}
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	eventVotes     map[string]int       // fingerprint → choice index
@@ -215,6 +218,7 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		playerLeftCh:        make(chan struct{}, 4),
 		done:                make(chan struct{}),
 		disconnectedAt:      make(map[string]time.Time),
+		recorded:            make(chan struct{}),
 		clock:               time.Now,
 		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
 		coopUsedThisCombat:  make(map[string]bool),
@@ -332,6 +336,7 @@ func (s *GameSession) combatLoop() {
 			// only written inside RunTurn (advanceFloor / turn.go), all on
 			// this same combatLoop goroutine.
 			slog.Info("game over", "floor", s.state.FloorNum, "victory", s.state.Victory)
+			s.recordRun()
 			return
 		}
 

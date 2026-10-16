@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tolelom/catacombs/game"
@@ -82,8 +83,13 @@ func (s *ResultScreen) loadOnce(ctx *Context) {
 		return
 	}
 	s.loaded = true
+	if ctx.Session != nil {
+		ctx.Session.WaitRecorded(recordWait)
+	}
 	s.rankings, _ = ctx.Store.TopRuns(10)
 }
+
+const recordWait = 2 * time.Second
 
 // findPlayerRank returns the 1-indexed position of the player's best run in
 // the supplied ranking slice, or 0 if they don't appear in the top N.

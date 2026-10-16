@@ -197,3 +197,49 @@ func TestConcurrentStopDoesNotPanic(t *testing.T) {
 		t.Fatal("session not stopped")
 	}
 }
+
+type countingRecorder struct {
+	mu   sync.Mutex
+	runs []RunResult
+}
+
+func (r *countingRecorder) RecordRun(result RunResult) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.runs = append(r.runs, result)
+}
+
+func (r *countingRecorder) count() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.runs)
+}
+
+func TestFinishedRunIsRecordedOnceWithoutAnyClient(t *testing.T) {
+	l := NewLobby(testConfig(t))
+	rec := &countingRecorder{}
+	l.SetRecorder(rec)
+	code := mustCreateRoom(t, l, "run")
+	session := seatInWaitingRoom(t, l, code, "A", "fp-a")
+	startPlaying(t, l, code, session)
+
+	session.mu.Lock()
+	session.state.GameOver = true
+	session.mu.Unlock()
+	session.signalCombat()
+
+	if !waitFor(t, 3*time.Second, func() bool { return rec.count() == 1 }) {
+		t.Fatalf("finished run recorded %d times, want 1", rec.count())
+	}
+	session.signalCombat()
+	time.Sleep(100 * time.Millisecond)
+	if n := rec.count(); n != 1 {
+		t.Fatalf("finished run recorded %d times, want exactly 1", n)
+	}
+	if !session.WaitRecorded(time.Second) {
+		t.Fatal("WaitRecorded did not report the recording")
+	}
+	if got := rec.runs[0].State.Players; len(got) != 1 || got[0].Fingerprint != "fp-a" {
+		t.Fatalf("recorded members: %+v", got)
+	}
+}

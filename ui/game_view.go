@@ -12,7 +12,6 @@ import (
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
 	"github.com/tolelom/catacombs/game"
-	"github.com/tolelom/catacombs/store"
 )
 
 // GameScreen handles the main gameplay: exploration, combat, and chat.
@@ -24,7 +23,6 @@ type GameScreen struct {
 	relicCursor   int // index into local player's active relics; cycled with [r]
 	chatting      bool
 	chatInput     string
-	rankingSaved  bool
 	codexRecorded map[string]bool
 	prevPhase     game.GamePhase
 	skillMsg      string
@@ -155,187 +153,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	}
 
 	if s.gameState.GameOver {
-		if ctx.Store != nil && !s.rankingSaved {
-			score := 0
-			for _, p := range s.gameState.Players {
-				score += p.Gold
-			}
-			playerClass := ""
-			var members []string
-			for _, p := range s.gameState.Players {
-				if p.Fingerprint == ctx.Fingerprint {
-					playerClass = p.Class.String()
-				}
-				members = append(members, p.Name)
-			}
-			if err := ctx.Store.SaveRun(ctx.PlayerName, s.gameState.FloorNum, score, playerClass, members); err != nil {
-				slog.Error("save run failed", "error", err, "player", ctx.PlayerName, "floor", s.gameState.FloorNum)
-			}
-			// Award souls = 10% of personal gold (rounded down). Persistent meta currency.
-			for _, p := range s.gameState.Players {
-				if p.Fingerprint == ctx.Fingerprint {
-					if soulGain := int64(p.Gold / 10); soulGain > 0 {
-						if err := ctx.Store.AddSouls(ctx.Fingerprint, soulGain); err != nil {
-							slog.Error("soul award failed", "error", err, "fp", ctx.Fingerprint, "amount", soulGain)
-						}
-					}
-					// Mastery counter: count any run that reached floor 5+
-					if s.gameState.FloorNum >= 5 {
-						incCounter(ctx, store.MasteryCounterKey(p.Class.String()), 1)
-					}
-					break
-				}
-			}
-			// Achievements are keyed by fingerprint to match unlocks/titles and
-			// to avoid cross-contamination between players sharing a nickname.
-			if s.gameState.FloorNum >= 5 {
-				unlockAchievement(ctx, ctx.Fingerprint, "first_clear")
-			}
-			if s.gameState.FloorNum >= 10 {
-				unlockAchievement(ctx, ctx.Fingerprint, "floor10")
-			}
-			if s.gameState.Victory {
-				unlockAchievement(ctx, ctx.Fingerprint, "floor20")
-			}
-			if s.gameState.SoloMode && s.gameState.FloorNum >= 5 {
-				unlockAchievement(ctx, ctx.Fingerprint, "solo_clear")
-			}
-			if s.gameState.BossKilled {
-				unlockAchievement(ctx, ctx.Fingerprint, "boss_slayer")
-			}
-			if s.gameState.FleeSucceeded {
-				unlockAchievement(ctx, ctx.Fingerprint, "flee_master")
-			}
-			// no_death awards a survival run on victory; if anyone died at any
-			// point this run, the flag is sticky and disqualifies the party.
-			if s.gameState.Victory && !s.gameState.AnyPlayerDied {
-				unlockAchievement(ctx, ctx.Fingerprint, "no_death")
-			}
-			for _, p := range s.gameState.Players {
-				if p.Fingerprint == "" {
-					continue
-				}
-				if p.Gold >= 200 {
-					unlockAchievement(ctx, p.Fingerprint, "gold_hoarder")
-				}
-				if len(p.Relics) >= 3 {
-					unlockAchievement(ctx, p.Fingerprint, "relic_collector")
-				}
-			}
-			// full_party uses the starting party size so an inactivity-removed
-			// member mid-run doesn't cost the achievement.
-			if s.gameState.StartingPartySize >= 4 {
-				unlockAchievement(ctx, ctx.Fingerprint, "full_party")
-			}
-			// Coop / content polish achievements
-			if len(s.gameState.CombosFiredThisRun) >= 1 {
-				unlockAchievement(ctx, ctx.Fingerprint, "coop_first")
-			}
-			if coopCount := countCoopCombos(s.gameState.CombosFiredThisRun); coopCount >= 6 {
-				unlockAchievement(ctx, ctx.Fingerprint, "coop_master")
-			}
-			if s.gameState.MimicKilled {
-				unlockAchievement(ctx, ctx.Fingerprint, "mimic_bait")
-			}
-			if s.gameState.BossPhase2Reached {
-				unlockAchievement(ctx, ctx.Fingerprint, "boss_phase2")
-			}
-			// Per-boss kill counters drive trophies in the codex.
-			for bossName := range s.gameState.BossesKilledThisRun {
-				incCounter(ctx, "boss_kill:"+bossName, 1)
-			}
-			// Cumulative counters → store, then check threshold
-			if s.gameState.RevivesThisRun > 0 {
-				incCounter(ctx, "revives", int64(s.gameState.RevivesThisRun))
-			}
-			if s.gameState.AltarUsedThisRun > 0 {
-				incCounter(ctx, "altars", int64(s.gameState.AltarUsedThisRun))
-			}
-			if revives, err := ctx.Store.GetCounter(ctx.Fingerprint, "revives"); err != nil {
-				slog.Error("counter read failed", "error", err, "key", "revives")
-			} else if revives >= 5 {
-				unlockAchievement(ctx, ctx.Fingerprint, "revive_5")
-			}
-			if altars, err := ctx.Store.GetCounter(ctx.Fingerprint, "altars"); err != nil {
-				slog.Error("counter read failed", "error", err, "key", "altars")
-			} else if altars >= 3 {
-				unlockAchievement(ctx, ctx.Fingerprint, "cursed_lover")
-			}
-			if souls, err := ctx.Store.GetSouls(ctx.Fingerprint); err != nil {
-				slog.Error("souls read failed", "error", err)
-			} else if souls >= 1000 {
-				unlockAchievement(ctx, ctx.Fingerprint, "soul_collector")
-			}
-			// Tier 4 unlocked check on this player's allocation
-			for _, p := range s.gameState.Players {
-				if p.Fingerprint == ctx.Fingerprint && p.Skills != nil && p.Skills.Allocated >= 4 {
-					unlockAchievement(ctx, ctx.Fingerprint, "tier4_unlocked")
-					break
-				}
-			}
-
-			// Unlock triggers
-			if s.gameState.FloorNum >= 10 {
-				unlockContent(ctx, "fifth_class")
-			}
-			if len(s.gameState.Players) >= 3 && s.gameState.FloorNum >= 5 {
-				unlockContent(ctx, "hard_mode")
-			}
-			if s.gameState.Victory {
-				unlockContent(ctx, "mutations")
-			}
-
-			// Title triggers
-			earnTitle(ctx, "novice")
-			if s.gameState.FloorNum >= 5 {
-				earnTitle(ctx, "explorer")
-			}
-			if s.gameState.FloorNum >= 10 {
-				earnTitle(ctx, "veteran")
-			}
-			if s.gameState.Victory {
-				earnTitle(ctx, "champion")
-			}
-			if s.gameState.Victory && !s.gameState.AnyPlayerDied {
-				earnTitle(ctx, "survivor")
-			}
-			// team_player rewards five completed multiplayer runs. SaveRun
-			// above just persisted the current run, so the count includes it.
-			if mp, err := ctx.Store.CountMultiplayerRuns(ctx.PlayerName); err != nil {
-				slog.Error("multiplayer run count failed", "error", err, "player", ctx.PlayerName)
-			} else if mp >= 5 {
-				earnTitle(ctx, "team_player")
-			}
-			// Check player gold for gold_king title
-			for _, p := range s.gameState.Players {
-				if p.Fingerprint == ctx.Fingerprint && p.Gold >= 500 {
-					earnTitle(ctx, "gold_king")
-				}
-			}
-
-			// Save daily record if in daily mode
-			if ctx.Session != nil && ctx.Session.DailyMode {
-				playerGold := 0
-				for _, p := range s.gameState.Players {
-					if p.Fingerprint == ctx.Fingerprint {
-						playerGold = p.Gold
-						break
-					}
-				}
-				if err := ctx.Store.SaveDaily(store.DailyRecord{
-					Date:         ctx.Session.DailyDate,
-					Player:       ctx.Fingerprint,
-					PlayerName:   ctx.PlayerName,
-					FloorReached: s.gameState.FloorNum,
-					GoldEarned:   playerGold,
-				}); err != nil {
-					slog.Error("save daily failed", "error", err, "date", ctx.Session.DailyDate, "fp", ctx.Fingerprint)
-				}
-			}
-
-			s.rankingSaved = true
-		}
-		return NewResultScreen(s.gameState, s.rankingSaved), nil
+		return NewResultScreen(s.gameState, ctx.Store != nil), nil
 	}
 	if s.gameState.Phase == game.PhaseEvent {
 		es := NewEventScreen(s.gameState)
@@ -565,19 +383,6 @@ func (s *GameScreen) View(ctx *Context) string {
 
 // countCoopCombos returns how many of the 6 coop pair combos appear in the
 // run-scoped combo set.
-func countCoopCombos(fired map[string]bool) int {
-	if fired == nil {
-		return 0
-	}
-	coop := []string{"Iron Aegis", "Crusader", "Expose Weakness", "Sanctuary", "Mirage", "Venomous Edge"}
-	n := 0
-	for _, name := range coop {
-		if fired[name] {
-			n++
-		}
-	}
-	return n
-}
 
 // playerActiveRelics returns the local player's active (triggerable) relics in
 // inventory order. Used by the [r] cycle key and the HUD armed-relic readout.
@@ -1103,41 +908,5 @@ func recordCodex(ctx *Context, category, name string) {
 	}
 	if err := ctx.Store.RecordCodexEntry(ctx.Fingerprint, category, name); err != nil {
 		slog.Error("codex record failed", "error", err, "category", category, "name", name)
-	}
-}
-
-func unlockAchievement(ctx *Context, fingerprint, id string) {
-	if ctx.Store == nil {
-		return
-	}
-	if _, err := ctx.Store.UnlockAchievement(fingerprint, id); err != nil {
-		slog.Error("achievement unlock failed", "error", err, "id", id)
-	}
-}
-
-func unlockContent(ctx *Context, id string) {
-	if ctx.Store == nil {
-		return
-	}
-	if _, err := ctx.Store.UnlockContent(ctx.Fingerprint, id); err != nil {
-		slog.Error("content unlock failed", "error", err, "id", id)
-	}
-}
-
-func earnTitle(ctx *Context, id string) {
-	if ctx.Store == nil {
-		return
-	}
-	if _, err := ctx.Store.EarnTitle(ctx.Fingerprint, id); err != nil {
-		slog.Error("title grant failed", "error", err, "id", id)
-	}
-}
-
-func incCounter(ctx *Context, key string, delta int64) {
-	if ctx.Store == nil {
-		return
-	}
-	if err := ctx.Store.IncCounter(ctx.Fingerprint, key, delta); err != nil {
-		slog.Error("counter increment failed", "error", err, "key", key)
 	}
 }

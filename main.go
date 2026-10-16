@@ -13,6 +13,7 @@ import (
 
 	"github.com/tolelom/catacombs/config"
 	"github.com/tolelom/catacombs/game"
+	"github.com/tolelom/catacombs/record"
 	"github.com/tolelom/catacombs/server"
 	"github.com/tolelom/catacombs/store"
 	"github.com/tolelom/catacombs/web"
@@ -53,6 +54,7 @@ func main() {
 	}()
 
 	lobby := game.NewLobby(cfg)
+	lobby.SetRecorder(record.New(db))
 	startTime := time.Now()
 
 	sshAddr := fmt.Sprintf("0.0.0.0:%d", cfg.Server.SSHPort)

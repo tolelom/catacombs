@@ -53,6 +53,7 @@ type Lobby struct {
 	rooms          map[string]*LobbyRoom
 	online         map[string]*OnlinePlayer
 	activeSessions map[string]string
+	recorder       RunRecorder
 }
 
 func NewLobby(cfg *config.Config) *Lobby {
@@ -62,6 +63,12 @@ func NewLobby(cfg *config.Config) *Lobby {
 		online:         make(map[string]*OnlinePlayer),
 		activeSessions: make(map[string]string),
 	}
+}
+
+func (l *Lobby) SetRecorder(r RunRecorder) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.recorder = r
 }
 
 func (l *Lobby) Cfg() *config.Config {
@@ -431,6 +438,7 @@ func (l *Lobby) EnsureSession(code string, init func() *GameSession) *GameSessio
 	if room.Session == nil {
 		session := init()
 		session.setOnAbandoned(func() { l.removeRoomIfSession(code, session) })
+		session.setRecorder(l.recorder)
 		room.Session = session
 	}
 	return room.Session
