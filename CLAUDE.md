@@ -24,55 +24,19 @@ docker-compose up                 # SSH on :2222, HTTP on :8080
 
 ## Deployment (tolelom.xyz)
 
-The game runs as a Docker container on the Mac Mini server, behind Caddy reverse proxy.
+Pushing to `master` deploys: Gitea Actions (`.gitea/workflows/deploy.yml`) builds and pushes
+`git.tolelom.xyz/tolelom/catacombs:main`, Renovate bumps the digest in the `server-config` repo
+(`m4/apps/catacombs/docker-compose.yml`), and its GitOps sync redeploys the container on the M4 Mac Mini.
+Traefik routes `catacombs.tolelom.xyz` to port 8080. The SSH port is not published; outside players
+reach the game only through the web bridge.
 
-**Server structure:**
-```
-~/server/
-├── docker-compose.yml      # All services (caddy, gitea, catacombs, etc.)
-├── caddy/Caddyfile          # Reverse proxy config
-└── apps/catacombs/          # Git clone of this repo
-```
+The runtime image contains only the binary, so `config.yaml` is not loaded in production and the defaults apply.
 
-**First-time setup:**
-```bash
-cd ~/server
-git clone https://git.tolelom.xyz/tolelom/Catacombs.git apps/catacombs
-```
+**Admin endpoint:** `/admin` is registered only when both `CATACOMBS_ADMIN_USERNAME` and
+`CATACOMBS_ADMIN_PASSWORD` are set (they override `admin:` in `config.yaml`). There is no default credential.
 
-Add to `docker-compose.yml` services:
-```yaml
-  catacombs:
-    build: ./apps/catacombs
-    restart: always
-    logging: *default-logging
-    volumes:
-      - catacombs_data:/app/data
-    networks:
-      - web
-    deploy:
-      resources:
-        limits:
-          memory: 64m
-          pids: 200
-```
-
-Add `catacombs_data:` to the `volumes:` section.
-
-Add to `caddy/Caddyfile`:
-```
-catacombs.tolelom.xyz {
-    encode gzip zstd
-    reverse_proxy catacombs:8080
-}
-```
-
-**Deploy / Update:**
-```bash
-cd ~/server/apps/catacombs && git pull
-cd ~/server && docker compose up -d --build catacombs
-docker restart server-caddy-1    # only needed if Caddyfile changed
-```
+**Persistent state:** everything lives under `/app/data` (volume): BoltDB, backups, and the SSH host key
+(`data/ssh_host_key`).
 
 **Access:** https://catacombs.tolelom.xyz/static/
 
@@ -84,13 +48,13 @@ docker restart server-caddy-1    # only needed if Caddyfile changed
 |---------|---------------|
 | `main.go` | Entry point: initializes BoltDB (`./data/catacombs.db`), starts SSH server (:2222) and HTTP server (:8080), runs the backup scheduler, calls `Lobby.StopAllSessions` on graceful shutdown |
 | `game/` | `Lobby` (room management, player tracking, reconnection, `EnsureSession` / `LeaveSession` / `StopAllSessions`), `GameSession` (turn-based state, per-session deterministic `*rand.Rand`), turn execution with `cfg.Game.TurnTimeoutSec` action timeout, room events (combat/shop/treasure/event), weekly `Mutation` consulted at runtime via `effectiveSkillUses` / `effectiveTurnTimeout` (no shared-config mutation) |
-| `ui/` | Bubble Tea state machine. Screens (each in its own file): `title` → `nickname` → `lobby` → `class_view` → `waiting` → `game_view` → `shop_view` → `result_view`, plus `help`, `stats`, `leaderboard`, `achievements`, `codex`. `model.go` is the thin top-level dispatcher (~170 lines). `Context` carries shared deps (Lobby, Store, Session, Fingerprint, PlayerName, RoomCode, HardMode) |
+| `ui/` | Bubble Tea state machine. Screens (each in its own file): `title` → `nickname` → `lobby` → `class_view` → `waiting` → `game_view` → `shop_view` → `result_view`, plus `help`, `stats`, `leaderboard`, `achievements`, `codex`. `model.go` is the thin top-level dispatcher and caps the terminal size at 300×100 before any screen renders. `Context` carries shared deps (Lobby, Store, Session, Fingerprint, PlayerName, RoomCode, HardMode) |
 | `dungeon/` | BSP tree procedural generation (60×20 maps), ASCII rendering with floor themes, room visibility / corridor flood-fill. `GenerateFloor` accepts the session RNG for daily-challenge determinism |
 | `entity/` | `Player` (4 classes: Warrior/Mage/Healer/Rogue), `Monster` (4 regular + 4 mini-bosses + 4 bosses; `BaseName()` strips elite prefixes for codex), Items, Relics, `PlayerSkills` diamond trees (2 branches per class; T1 auto → T2 fork → T3 auto → T4 fork) |
 | `combat/` | `CalcDamage`, `MonsterAI`, `ResolveAttacks`, `AttemptFlee`, `Combos`. All RNG-consuming entry points take a leading `*rand.Rand` (nil falls back to a process-global) so daily runs stay deterministic |
 | `store/` | BoltDB persistence: profiles, rankings, achievements (10 IDs), unlocks, titles, codex, daily records, passwords. `Backup` snapshots and `PruneBackups(dir, keep)` rotates them |
 | `server/` | Wish SSH server. Public-key clients hash to `SHA256:...` fingerprint; the web bridge has no key, so the middleware mints a per-connection `anon:<random hex>` so lobby bookkeeping doesn't collide |
-| `web/` | HTTP + WebSocket bridge to local SSH (`/ws`), embedded xterm.js frontend, `/admin` JSON stats endpoint with constant-time Basic Auth |
+| `web/` | HTTP + WebSocket bridge to local SSH (`/ws`) with a 64KB frame limit, a concurrent-connection cap (503 beyond it) and an input-idle timeout; embedded xterm.js frontend; `/admin` JSON stats endpoint with constant-time Basic Auth, served only when admin credentials are configured |
 
 ## Key Patterns
 

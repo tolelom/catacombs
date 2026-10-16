@@ -25,7 +25,7 @@ func TestAdminEndpoint(t *testing.T) {
 	cfg.Admin = config.AdminConfig{Username: "admin", Password: "secret"}
 	lobby := game.NewLobby(cfg)
 
-	handler := AdminHandler(lobby, db, time.Now())
+	handler := AdminHandler(cfg.Admin, lobby, db, time.Now())
 
 	// Test without auth → 401
 	req := httptest.NewRequest("GET", "/admin", nil)
@@ -77,7 +77,7 @@ func TestAdminThrottlesRepeatedFailures(t *testing.T) {
 	cfg, _ := config.Load("")
 	cfg.Admin = config.AdminConfig{Username: "admin", Password: "right"}
 	lobby := game.NewLobby(cfg)
-	handler := AdminHandler(lobby, db, time.Now())
+	handler := AdminHandler(cfg.Admin, lobby, db, time.Now())
 
 	attempt := func(user, pass, fromIP string) int {
 		req := httptest.NewRequest("GET", "/admin", nil)
@@ -118,7 +118,7 @@ func TestAdminThrottleResetsOnSuccess(t *testing.T) {
 	cfg, _ := config.Load("")
 	cfg.Admin = config.AdminConfig{Username: "admin", Password: "right"}
 	lobby := game.NewLobby(cfg)
-	handler := AdminHandler(lobby, db, time.Now())
+	handler := AdminHandler(cfg.Admin, lobby, db, time.Now())
 
 	attempt := func(pass, fromIP string) int {
 		req := httptest.NewRequest("GET", "/admin", nil)

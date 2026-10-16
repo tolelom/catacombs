@@ -10,18 +10,36 @@ import (
 
 type tickMsg struct{}
 
+const (
+	defaultTerminalWidth  = 80
+	defaultTerminalHeight = 24
+	maxTerminalWidth      = 300
+	maxTerminalHeight     = 100
+)
+
+func normalizeTerminalSize(width, height int) (int, int) {
+	return clampDimension(width, defaultTerminalWidth, maxTerminalWidth),
+		clampDimension(height, defaultTerminalHeight, maxTerminalHeight)
+}
+
+func clampDimension(v, fallback, max int) int {
+	switch {
+	case v <= 0:
+		return fallback
+	case v > max:
+		return max
+	default:
+		return v
+	}
+}
+
 type Model struct {
 	currentScreen Screen
 	ctx           *Context
 }
 
 func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
-	if width == 0 {
-		width = 80
-	}
-	if height == 0 {
-		height = 24
-	}
+	width, height = normalizeTerminalSize(width, height)
 	ctx := &Context{
 		Width:       width,
 		Height:      height,
@@ -29,8 +47,6 @@ func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *stor
 		Lobby:       lobby,
 		Store:       db,
 	}
-
-	// Determine initial screen
 	var initialScreen Screen
 	if fingerprint != "" && db != nil {
 		if name, err := db.GetProfile(fingerprint); err == nil {
@@ -52,14 +68,7 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.ctx.Width = msg.Width
-		m.ctx.Height = msg.Height
-		if m.ctx.Width == 0 {
-			m.ctx.Width = 80
-		}
-		if m.ctx.Height == 0 {
-			m.ctx.Height = 24
-		}
+		m.ctx.Width, m.ctx.Height = normalizeTerminalSize(msg.Width, msg.Height)
 		return m, nil
 	}
 
@@ -74,8 +83,6 @@ func (m Model) View() string {
 	}
 	return m.currentScreen.View(m.ctx)
 }
-
-// Key helper functions used by all screens.
 func isKey(key tea.KeyMsg, names ...string) bool {
 	s := key.String()
 	for _, n := range names {
@@ -106,8 +113,6 @@ func isDown(key tea.KeyMsg) bool {
 	return isKey(key, "down") || key.Type == tea.KeyDown
 }
 
-// Keep these for backward compatibility with tests
-// screen enum kept temporarily for test compatibility
 type screen int
 
 const (
@@ -125,7 +130,6 @@ const (
 	screenNickname
 )
 
-// screenType returns the screen enum for the current screen (for test compatibility).
 func (m Model) screenType() screen {
 	switch m.currentScreen.(type) {
 	case *TitleScreen:
@@ -155,8 +159,6 @@ func (m Model) screenType() screen {
 	}
 	return screenTitle
 }
-
-// Convenience accessors for test compatibility
 func (m Model) playerName() string {
 	return m.ctx.PlayerName
 }
@@ -168,4 +170,3 @@ func (m Model) roomCode() string {
 func (m Model) session() *game.GameSession {
 	return m.ctx.Session
 }
-

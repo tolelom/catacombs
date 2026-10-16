@@ -40,12 +40,7 @@ func main() {
 		}
 	}
 
-	// Loud warning when running with the shipped default admin credential.
-	// /admin gives access to runtime stats — fine on a private box, a
-	// liability if the deployment is exposed without a Caddy IP allowlist.
-	if cfg.Admin.Username == "admin" && cfg.Admin.Password == "catacombs" {
-		slog.Warn("admin endpoint is using the shipped default credential; override admin.username and admin.password in config.yaml before exposing the HTTP port to the internet")
-	}
+	config.ApplyEnv(cfg, os.LookupEnv)
 
 	db, err := store.Open("data/catacombs.db")
 	if err != nil {
@@ -62,19 +57,17 @@ func main() {
 
 	sshAddr := fmt.Sprintf("0.0.0.0:%d", cfg.Server.SSHPort)
 	webAddr := fmt.Sprintf(":%d", cfg.Server.HTTPPort)
-
-	// Start web server (non-blocking, returns *http.Server)
-	webServer := web.Start(webAddr, cfg.Server.SSHPort, lobby, db, startTime)
-
-	// Create SSH server
-	sshServer, err := server.NewServer(sshAddr, lobby, db)
+	webServer := web.Start(webAddr, web.Options{
+		SSHPort:   cfg.Server.SSHPort,
+		Lobby:     lobby,
+		DB:        db,
+		StartTime: startTime,
+		Admin:     cfg.Admin,
+	})
+	sshServer, err := server.NewServer(sshAddr, "data/ssh_host_key", lobby, db)
 	if err != nil {
 		log.Fatalf("Failed to create SSH server: %v", err)
 	}
-
-	// Start backup scheduler. The WaitGroup ensures we don't tear down the
-	// DB while a scheduled Backup/PruneBackups is mid-flight (a Bolt View
-	// txn racing with Close would error).
 	backupDone := make(chan struct{})
 	var backupWG sync.WaitGroup
 	backupWG.Add(1)
@@ -82,8 +75,6 @@ func main() {
 		defer backupWG.Done()
 		backupScheduler(db, cfg.Backup, backupDone)
 	}()
-
-	// Start SSH server in background
 	sshErrCh := make(chan error, 1)
 	go func() {
 		slog.Info("starting SSH server", "addr", sshAddr)
@@ -91,8 +82,6 @@ func main() {
 	}()
 
 	slog.Info("server starting", "ssh_port", cfg.Server.SSHPort, "http_port", cfg.Server.HTTPPort)
-
-	// Wait for shutdown signal or SSH server error
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
@@ -104,32 +93,20 @@ func main() {
 			slog.Error("SSH server error", "error", err)
 		}
 	}
-
-	// Graceful shutdown
 	slog.Info("starting graceful shutdown")
-
-	// Stop backup scheduler and wait for it to exit before db.Close fires.
 	close(backupDone)
 	backupWG.Wait()
-
-	// Shutdown web server (5s timeout)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := webServer.Shutdown(ctx); err != nil {
 		slog.Error("web server shutdown error", "error", err)
 	}
-
-	// Shutdown SSH server (10s timeout for active sessions)
 	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel2()
 	if err := sshServer.Shutdown(ctx2); err != nil {
 		slog.Error("SSH server shutdown error", "error", err)
 	}
-
-	// Halt all in-flight game sessions so their combatLoop goroutines exit.
 	lobby.StopAllSessions()
-
-	// Final backup before exit
 	if path, err := db.Backup(cfg.Backup.Dir); err != nil {
 		slog.Error("final backup failed", "error", err)
 	} else {

@@ -21,6 +21,10 @@ type AdminConfig struct {
 	Password string `yaml:"password"`
 }
 
+func (a AdminConfig) Enabled() bool {
+	return a.Username != "" && a.Password != ""
+}
+
 type DifficultyConfig struct {
 	HardModeMonsterMult float64 `yaml:"hard_mode_monster_mult"`
 	HardModeShopMult    float64 `yaml:"hard_mode_shop_mult"`
@@ -68,11 +72,10 @@ func defaults() Config {
 			TurnTimeoutSec: 10, MaxPlayers: 4, MaxFloors: 20,
 			CoopBonus: 0.10, InventoryLimit: 10, SkillUses: 3,
 		},
-		Combat: CombatConfig{FleeChance: 0.50, MonsterScaling: 1.15, SoloHPReduction: 0.50, SoloATKReduction: 0.75, EarlyThreatRamp: 0.08},
-		Dungeon: DungeonConfig{MapWidth: 60, MapHeight: 20, MinRooms: 5, MaxRooms: 8},
+		Combat:     CombatConfig{FleeChance: 0.50, MonsterScaling: 1.15, SoloHPReduction: 0.50, SoloATKReduction: 0.75, EarlyThreatRamp: 0.08},
+		Dungeon:    DungeonConfig{MapWidth: 60, MapHeight: 20, MinRooms: 5, MaxRooms: 8},
 		Backup:     BackupConfig{IntervalMin: 60, Dir: "./data/backup"},
 		Difficulty: DifficultyConfig{HardModeMonsterMult: 1.35, HardModeShopMult: 1.75, HardModeHealMult: 0.6},
-		Admin:      AdminConfig{Username: "admin", Password: "catacombs"},
 	}
 }
 
@@ -91,14 +94,6 @@ func Load(path string) (*Config, error) {
 	cfg.normalize()
 	return &cfg, nil
 }
-
-// normalize replaces zero/negative values with defaults. Without this guard
-// a YAML file that omits or zeroes a critical field — TurnTimeoutSec, MaxPlayers,
-// MaxFloors, InventoryLimit — would put the game into an unrunnable state
-// (turn timer firing instantly, JoinRoom always rejecting, immediate victory
-// on floor 1, etc.). We only touch fields whose zero value is unsafe; flags
-// like SkillUses=0 are legitimate (the no_skills mutation produces it via
-// effectiveSkillUses).
 func (c *Config) normalize() {
 	d := defaults()
 	if c.Server.SSHPort <= 0 {
@@ -142,5 +137,14 @@ func (c *Config) normalize() {
 	}
 	if c.Difficulty.HardModeHealMult <= 0 {
 		c.Difficulty.HardModeHealMult = d.Difficulty.HardModeHealMult
+	}
+}
+
+func ApplyEnv(cfg *Config, lookup func(string) (string, bool)) {
+	if v, ok := lookup("CATACOMBS_ADMIN_USERNAME"); ok {
+		cfg.Admin.Username = v
+	}
+	if v, ok := lookup("CATACOMBS_ADMIN_PASSWORD"); ok {
+		cfg.Admin.Password = v
 	}
 }

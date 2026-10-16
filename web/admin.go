@@ -16,7 +16,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// AdminStats is the JSON response for the /admin endpoint.
 type AdminStats struct {
 	OnlinePlayers int     `json:"online_players"`
 	ActiveRooms   int     `json:"active_rooms"`
@@ -24,14 +23,11 @@ type AdminStats struct {
 	AvgFloorReach float64 `json:"avg_floor_reached"`
 	UptimeSeconds int64   `json:"uptime_seconds"`
 }
-
-// authThrottle rate-limits admin login failures to deter Basic-Auth
-// brute force. A successful auth resets the per-IP counter.
 type authThrottle struct {
-	mu      sync.Mutex
-	fails   map[string][]time.Time
-	window  time.Duration
-	max     int
+	mu       sync.Mutex
+	fails    map[string][]time.Time
+	window   time.Duration
+	max      int
 	cooldown time.Duration
 }
 
@@ -43,9 +39,6 @@ func newAuthThrottle() *authThrottle {
 		cooldown: 5 * time.Minute,
 	}
 }
-
-// blocked reports whether the given IP has exceeded the failure threshold
-// inside the current window. Returns the time until the block lifts.
 func (a *authThrottle) blocked(ip string) (bool, time.Duration) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -76,16 +69,8 @@ func (a *authThrottle) recordSuccess(ip string) {
 	defer a.mu.Unlock()
 	delete(a.fails, ip)
 }
-
-// clientIP returns the IP address used for throttling. X-Forwarded-For is a
-// list of intermediaries appended in order (client, proxy1, proxy2, ...);
-// when a request reaches us through Caddy the LAST entry is the hop Caddy
-// added — i.e., the actual client as seen by Caddy. Reading the FIRST entry
-// would let any attacker bypass throttling by setting their own
-// X-Forwarded-For header. Falls back to RemoteAddr if no XFF is set.
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the rightmost (last) entry — set by our trusted proxy.
 		if i := strings.LastIndexByte(xff, ','); i >= 0 {
 			return strings.TrimSpace(xff[i+1:])
 		}
@@ -97,12 +82,7 @@ func clientIP(r *http.Request) string {
 	}
 	return host
 }
-
-// AdminHandler returns an http.Handler for the /admin stats endpoint.
-// It requires Basic Auth using credentials from config and throttles
-// repeated failures from the same IP.
-func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Handler {
-	cfg := lobby.Cfg()
+func AdminHandler(creds config.AdminConfig, lobby *game.Lobby, db *store.DB, startTime time.Time) http.Handler {
 	throttle := newAuthThrottle()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := clientIP(r)
@@ -115,7 +95,7 @@ func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Han
 			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
 			return
 		}
-		if !checkAuth(r, cfg.Admin) {
+		if !checkAuth(r, creds) {
 			throttle.recordFail(ip)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Catacombs Admin"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -126,9 +106,6 @@ func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Han
 		todayRuns, err1 := db.GetTodayRunCount()
 		avgFloor, err2 := db.GetTodayAvgFloor()
 		if err1 != nil || err2 != nil {
-			// Don't show synthesized zeros that an operator would mistake
-			// for "everything is fine"; surface the failure so the dashboard
-			// shows red.
 			http.Error(w, "stats unavailable", http.StatusServiceUnavailable)
 			return
 		}
@@ -143,7 +120,6 @@ func AdminHandler(lobby *game.Lobby, db *store.DB, startTime time.Time) http.Han
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(stats); err != nil {
-			// Headers are already sent; all we can do is leave a trace.
 			slog.Error("admin stats encode failed", "error", err)
 		}
 	})
@@ -154,8 +130,6 @@ func checkAuth(r *http.Request, cfg config.AdminConfig) bool {
 	if !ok {
 		return false
 	}
-	// Constant-time compare to defeat timing-side-channel guesses against
-	// the admin credential.
 	uOK := subtle.ConstantTimeCompare([]byte(username), []byte(cfg.Username)) == 1
 	pOK := subtle.ConstantTimeCompare([]byte(password), []byte(cfg.Password)) == 1
 	return uOK && pOK
