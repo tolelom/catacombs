@@ -12,17 +12,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// nicknamePhase tracks the current step of the nickname/login screen.
 type nicknamePhase int
 
 const (
-	phaseNickname       nicknamePhase = iota // entering nickname
-	phasePasswordLogin                       // existing account — enter password
-	phasePasswordCreate                      // new account — enter password
-	phasePasswordConfirm                     // new account — confirm password
+	phaseNickname nicknamePhase = iota
+	phasePasswordLogin
+	phasePasswordCreate
+	phasePasswordConfirm
 )
 
-// NicknameScreen handles player name input and optional web login.
 type NicknameScreen struct {
 	input    string
 	password string
@@ -35,11 +33,6 @@ func NewNicknameScreen() *NicknameScreen {
 	return &NicknameScreen{}
 }
 
-// isWebUser returns true when the player connected via the web bridge
-// (no real SSH fingerprint). The bridge mints an "anon:<rand>" token
-// in server/ssh.go; the title screen uses the same shape as a defensive
-// fallback. Anything that isn't a real SHA256: key needs the password
-// flow so progress can be saved.
 func isWebUser(ctx *Context) bool {
 	return ctx.Fingerprint == "" ||
 		strings.HasPrefix(ctx.Fingerprint, "anon:")
@@ -51,7 +44,6 @@ func (s *NicknameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return s, nil
 	}
 
-	// Esc always goes back one step or cancels.
 	if isKey(key, "esc") || key.Type == tea.KeyEsc {
 		switch s.phase {
 		case phaseNickname:
@@ -86,11 +78,11 @@ func (s *NicknameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 
 func (s *NicknameScreen) updateNickname(key tea.KeyMsg, ctx *Context) (Screen, tea.Cmd) {
 	if isEnter(key) && len(s.input) > 0 {
-		// SSH users with a real fingerprint skip password entirely.
+
 		if !isWebUser(ctx) {
 			return s.finishLogin(ctx)
 		}
-		// Web user — need password flow.
+
 		if ctx.Store != nil && ctx.Store.HasPassword(s.input) {
 			s.phase = phasePasswordLogin
 			s.error = ""
@@ -128,7 +120,7 @@ func (s *NicknameScreen) updatePasswordLogin(key tea.KeyMsg, ctx *Context) (Scre
 			s.password = ""
 			return s, nil
 		}
-		// Set deterministic fingerprint for web user.
+
 		ctx.Fingerprint = webFingerprint(s.input)
 		return s.finishLogin(ctx)
 	}
@@ -136,9 +128,6 @@ func (s *NicknameScreen) updatePasswordLogin(key tea.KeyMsg, ctx *Context) (Scre
 	return s, nil
 }
 
-// minPasswordLen is the floor for new web account passwords. Web users do
-// not have an SSH key tying them to a fingerprint, so the password is the
-// only barrier to nickname squatting once an account exists.
 const minPasswordLen = 6
 
 func (s *NicknameScreen) updatePasswordCreate(key tea.KeyMsg, ctx *Context) (Screen, tea.Cmd) {
@@ -176,7 +165,6 @@ func (s *NicknameScreen) updatePasswordConfirm(key tea.KeyMsg, ctx *Context) (Sc
 	return s, nil
 }
 
-// finishLogin sets the player name, saves the profile, and transitions to lobby.
 func (s *NicknameScreen) finishLogin(ctx *Context) (Screen, tea.Cmd) {
 	ctx.PlayerName = s.input
 	if ctx.Store != nil && ctx.Fingerprint != "" {
@@ -187,7 +175,7 @@ func (s *NicknameScreen) finishLogin(ctx *Context) (Screen, tea.Cmd) {
 	if ctx.Lobby != nil {
 		ctx.Lobby.PlayerOnline(ctx.Fingerprint, ctx.PlayerName)
 	}
-	// Check for active session to reconnect.
+
 	if ctx.Lobby != nil {
 		code, session := ctx.Lobby.GetActiveSession(ctx.Fingerprint)
 		if session != nil {
@@ -205,7 +193,6 @@ func (s *NicknameScreen) finishLogin(ctx *Context) (Screen, tea.Cmd) {
 	return ls, ls.pollLobby(ctx)
 }
 
-// webFingerprint produces a deterministic fingerprint for a web user.
 func webFingerprint(nickname string) string {
 	h := sha256.Sum256([]byte("web:" + nickname))
 	return fmt.Sprintf("SHA256:%x", h)

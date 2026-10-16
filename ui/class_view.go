@@ -9,7 +9,6 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-// ClassSelectScreen lets the player choose a class before entering the game.
 type ClassSelectScreen struct {
 	cursor int
 }

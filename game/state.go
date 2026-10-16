@@ -17,27 +17,20 @@ const (
 	PhaseEvent
 )
 
-// EventChoiceView is a snapshot-safe view of one event choice for the UI.
-// The Resolve function is intentionally omitted — it is non-copyable behavior
-// state and lives only on the typed *RandomEvent in the session.
 type EventChoiceView struct {
 	Label string
 	Tags  []ChoiceTag
 }
 
-// SoloChainView surfaces the solo-chain sequence state for the HUD.
-// Populated only during solo-mode combat; nil otherwise.
 type SoloChainView struct {
 	LastAction   string
 	AttackStreak int
 }
 
-// PendingEventView is a snapshot-safe view of the active event, populated
-// while Phase == PhaseEvent and nil otherwise.
 type PendingEventView struct {
 	Name        string
 	Description string
-	PerPlayer   bool // true for loot picks: each player's own choice applies to them
+	PerPlayer   bool
 	Choices     []EventChoiceView
 }
 
@@ -58,9 +51,6 @@ const (
 	ActionRelic
 )
 
-// RoomPreview is what Foresight reveals to the party about the next room
-// before they vote to enter it. Boss rooms hide the monster names but
-// expose the room type.
 type RoomPreview struct {
 	RoomIdx       int
 	RoomTypeLabel string
@@ -75,46 +65,42 @@ type GameState struct {
 	Phase             GamePhase
 	FloorNum          int
 	TurnNum           int
-	CombatTurn        int // reset per combat encounter
+	CombatTurn        int
 	SoloMode          bool
 	GameOver          bool
 	Victory           bool
 	ShopItems         []entity.Item
-	CombatLog         []string // recent combat messages
+	CombatLog         []string
 	TurnDeadline      time.Time
-	SubmittedActions  map[string]string // fingerprint -> action description
-	PendingLogs       []string          // logs waiting to be revealed one by one
-	TurnResolving     bool              // true while logs are being replayed
+	SubmittedActions  map[string]string
+	PendingLogs       []string
+	TurnResolving     bool
 	BossKilled        bool
 	FleeSucceeded     bool
-	AnyPlayerDied     bool              // true once any player has died this run; powers the no_death achievement
-	StartingPartySize int               // number of players at StartGame; powers the full_party achievement
-	LastEventName     string            // name of the most recent random event (for codex)
-	MoveVotes         map[string]int    // fingerprint -> voted room index (exploration)
-	PendingEvent      *PendingEventView // active event during PhaseEvent
-	EventVotes        map[string]int    // fingerprint → choice index
-	ShopSold          []bool            // parallel to ShopItems; true once a weapon/armor slot is sold (consumables and charms restock freely)
-	ShopLeavers       map[string]bool   // fingerprint -> wants to leave the shop (UI display only)
-	NextRoomPreview   *RoomPreview      // populated when Foresight has been used
-	CoopAvailable     map[string]bool   // fingerprint → can use coop now (HUD display)
-	SoloChain         *SoloChainView    // solo-mode combat chain state (HUD display)
-	// Run-scoped event flags (drives polish achievements at GameOver)
-	CombosFiredThisRun  map[string]bool // combo name → fired at least once this run
-	BossPhase2Reached   bool            // any boss reached Phase 2
-	MimicKilled         bool            // any mimic monster defeated
-	AltarUsedThisRun    int             // cursed altar uses this run
-	RevivesThisRun      int             // Divine Grace revives this run
-	BossesKilledThisRun map[string]bool // boss name → killed this run
+	AnyPlayerDied     bool
+	StartingPartySize int
+	LastEventName     string
+	MoveVotes         map[string]int
+	PendingEvent      *PendingEventView
+	EventVotes        map[string]int
+	ShopSold          []bool
+	ShopLeavers       map[string]bool
+	NextRoomPreview   *RoomPreview
+	CoopAvailable     map[string]bool
+	SoloChain         *SoloChainView
+
+	CombosFiredThisRun  map[string]bool
+	BossPhase2Reached   bool
+	MimicKilled         bool
+	AltarUsedThisRun    int
+	RevivesThisRun      int
+	BossesKilledThisRun map[string]bool
 }
 
 func (s *GameSession) GetState() GameState {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Deep copy players. Skip allocating zero-length slices (most players
-	// have no Effects between combats, fresh players have no Inventory or
-	// Relics). At ~5 Hz polling per client these allocations dominate idle
-	// CPU otherwise.
 	var players []*entity.Player
 	if n := len(s.state.Players); n > 0 {
 		players = make([]*entity.Player, n)
@@ -146,7 +132,6 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Deep copy monsters
 	var monsters []*entity.Monster
 	if n := len(s.state.Monsters); n > 0 {
 		monsters = make([]*entity.Monster, n)
@@ -156,7 +141,6 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Deep copy floor
 	var floorCopy *dungeon.Floor
 	if s.state.Floor != nil {
 		fc := *s.state.Floor
@@ -174,14 +158,12 @@ func (s *GameSession) GetState() GameState {
 		floorCopy = &fc
 	}
 
-	// Copy combat log only when non-empty.
 	var logCopy []string
 	if n := len(s.state.CombatLog); n > 0 {
 		logCopy = make([]string, n)
 		copy(logCopy, s.state.CombatLog)
 	}
 
-	// Copy submitted actions only when non-empty.
 	var submittedCopy map[string]string
 	if n := len(s.state.SubmittedActions); n > 0 {
 		submittedCopy = make(map[string]string, n)
@@ -190,7 +172,6 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Copy move votes
 	var moveVotesCopy map[string]int
 	if n := len(s.state.MoveVotes); n > 0 {
 		moveVotesCopy = make(map[string]int, n)
@@ -199,7 +180,6 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Copy event votes
 	var eventVotesCopy map[string]int
 	if s.state.EventVotes != nil {
 		n := len(s.state.EventVotes)
@@ -209,7 +189,6 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Copy pending event view (deep — Choices slice + per-Choice Tags slice)
 	var pendingEventCopy *PendingEventView
 	if src := s.state.PendingEvent; src != nil {
 		choices := make([]EventChoiceView, len(src.Choices))
@@ -226,7 +205,6 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Mirror shopLeavers for the UI's "N/M ready to leave" display.
 	var shopLeaversCopy map[string]bool
 	if n := len(s.shopLeavers); n > 0 {
 		shopLeaversCopy = make(map[string]bool, n)
@@ -235,14 +213,12 @@ func (s *GameSession) GetState() GameState {
 		}
 	}
 
-	// Copy pending logs
 	var pendingCopy []string
 	if n := len(s.state.PendingLogs); n > 0 {
 		pendingCopy = make([]string, n)
 		copy(pendingCopy, s.state.PendingLogs)
 	}
 
-	// Copy shop wares
 	var shopItemsCopy []entity.Item
 	if n := len(s.state.ShopItems); n > 0 {
 		shopItemsCopy = make([]entity.Item, n)
@@ -293,8 +269,6 @@ func (s *GameSession) GetState() GameState {
 	}
 }
 
-// soloChainView builds the HUD snapshot of the solo-chain state, or nil when
-// it doesn't apply (party mode or out of combat). Caller holds s.mu.
 func (s *GameSession) soloChainView() *SoloChainView {
 	if !s.state.SoloMode || s.state.Phase != PhaseCombat {
 		return nil
@@ -316,8 +290,6 @@ func copyStringBoolMap(in map[string]bool) map[string]bool {
 	return out
 }
 
-// computeCoopAvailable returns a map of fingerprint→true when that player can
-// fire their coop ability right now. Caller must hold s.mu.
 func (s *GameSession) computeCoopAvailable() map[string]bool {
 	out := make(map[string]bool, len(s.state.Players))
 	for _, p := range s.state.Players {

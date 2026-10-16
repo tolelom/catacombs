@@ -10,7 +10,6 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-// ShopScreen handles the shop between floors.
 type ShopScreen struct {
 	gameState game.GameState
 	shopMsg   string
@@ -26,8 +25,7 @@ func (s *ShopScreen) pollState(ctx *Context) tea.Cmd {
 
 func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if _, ok := msg.(tickMsg); ok {
-		// Another player may have just left the shop and triggered the
-		// transition; pick that up so we follow them out.
+
 		if ctx.Session != nil {
 			st := ctx.Session.GetState()
 			s.gameState = st
@@ -112,7 +110,6 @@ func renderShop(state game.GameState, width, height int, shopMsg string) string 
 
 	header := headerStyle.Render("── 상점 ──")
 
-	// Show current player's gold
 	goldLine := ""
 	for _, p := range state.Players {
 		inventoryCount := len(p.Inventory)
@@ -131,12 +128,10 @@ func renderShop(state game.GameState, width, height int, shopMsg string) string 
 		}
 	}
 
-	// One-line explainer when a charm is on the shelf — the label alone
-	// doesn't tell players what counts as a "gamble".
 	charmHint := ""
 	for _, item := range state.ShopItems {
 		if item.Type == entity.ItemCharm {
-			// Two lines: the single-line version overflows 80-col terminals.
+
 			charmHint = styleSystem.Render(
 				"  행운 부적: 🎲 도박 실패 손해(HP/골드/저주)를 1회 무효화\n" +
 					"  (고정 비용·성공 보상에는 미적용)")

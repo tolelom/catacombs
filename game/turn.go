@@ -16,7 +16,7 @@ func (s *GameSession) RunTurn() {
 	s.clearLog()
 	s.actions = make(map[string]PlayerAction)
 	s.state.SubmittedActions = make(map[string]string)
-	// Clear single-turn coop modifiers from the previous turn before this turn resolves.
+
 	s.coopDamageReduction = make(map[string]float64)
 	s.invincibleNextTurn = make(map[string]bool)
 	s.dodgeBonusThisTurn = make(map[string]float64)
@@ -31,7 +31,6 @@ draining:
 		}
 	}
 
-	// Collect actions with timeout
 	turnTimeout := time.Duration(s.effectiveTurnTimeout()) * time.Second
 	timer := time.NewTimer(turnTimeout)
 	s.mu.Lock()
@@ -40,10 +39,7 @@ draining:
 
 collecting:
 	for {
-		// Recompute the alive set every iteration so a mid-turn quit
-		// (RemovePlayer drops the leaver from s.actions and pokes
-		// playerLeftCh) shrinks the expected count instead of stalling
-		// the party until the timeout fires.
+
 		s.mu.Lock()
 		allActed := s.allAliveMembersActedLocked()
 		s.mu.Unlock()
@@ -59,7 +55,7 @@ collecting:
 			}
 			s.mu.Unlock()
 		case <-s.playerLeftCh:
-			// loop re-evaluates aliveCount on next iteration
+
 		case <-timer.C:
 			break collecting
 		case <-s.done:
@@ -73,7 +69,6 @@ collecting:
 	defer s.mu.Unlock()
 	s.state.TurnDeadline = time.Time{}
 
-	// Default action for players who didn't submit: Wait
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
 			if _, ok := s.actions[p.Fingerprint]; !ok {
@@ -84,9 +79,7 @@ collecting:
 
 	s.state.TurnResolving = true
 	s.state.PendingLogs = nil
-	// Time Glass: players flagged on the *previous* turn get one extra attack
-	// before this turn's normal player phase. Flag is cleared so a single use
-	// only buys one bonus turn.
+
 	if len(s.extraActionNext) > 0 {
 		s.runExtraActions()
 		s.extraActionNext = make(map[string]bool)
@@ -94,18 +87,16 @@ collecting:
 	s.resolvePlayerActions()
 	s.resolveMonsterActions()
 	s.state.TurnResolving = false
-	// One-turn flags consumed during this turn — clear so they don't carry over.
+
 	s.critGuaranteedNext = false
 	s.enemyMissNextTurn = false
-	// B15 phase 2 vulnerable window — flips every turn so the 1.5x damage
-	// buff alternates (per the design comment in checkBossPhaseTransitions);
-	// without this, Vulnerable would stay true permanently after entry.
+
 	for _, m := range s.state.Monsters {
 		if m.IsBoss && m.Phase == 2 && s.state.FloorNum == 15 && !m.IsDead() {
 			m.Vulnerable = !m.Vulnerable
 		}
 	}
-	// PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
+
 }
 
 func (s *GameSession) resolvePlayerActions() {
@@ -639,7 +630,7 @@ func (s *GameSession) advanceFloor() {
 		s.addLog("카타콤을 정복했습니다!")
 		return
 	}
-	// Grant 1 skill point per floor clear
+
 	for _, p := range s.state.Players {
 		if p.Skills == nil {
 			p.Skills = &entity.PlayerSkills{BranchIndex: -1}
@@ -681,7 +672,7 @@ func (s *GameSession) grantBossRelic() {
 			r := relics[s.rng.Intn(len(relics))]
 			p.Relics = append(p.Relics, r)
 			s.addLog(fmt.Sprintf("%s 유물 획득: %s", p.Name, r.Name))
-			// Bosses also drop one set item per surviving player.
+
 			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
 				item := randomSetItem(s.rng, s.state.FloorNum)
 				p.Inventory = append(p.Inventory, item)
@@ -691,7 +682,6 @@ func (s *GameSession) grantBossRelic() {
 	}
 }
 
-// randomSetItem rolls a random set item appropriate for the current floor.
 func randomSetItem(rng interface{ Intn(int) int }, floor int) entity.Item {
 	sets := []entity.ItemSet{entity.SetFlame, entity.SetFrost, entity.SetHoly, entity.SetShadow, entity.SetNature}
 	set := sets[rng.Intn(len(sets))]
@@ -729,7 +719,7 @@ func (s *GameSession) resolveMonsterActions() {
 				}
 			}
 			if m.IsBoss || m.IsMiniBoss {
-				// Boss/mini-boss special pattern
+
 				switch m.Pattern {
 				case entity.PatternPoison:
 					for _, p := range s.state.Players {
@@ -774,9 +764,7 @@ func (s *GameSession) resolveMonsterActions() {
 					dmg = s.applyDamageMods(p, dmg)
 					p.TakeDamage(dmg)
 					s.addLog(fmt.Sprintf("%s이(가) %s을(를) 공격하여 %d 피해", m.Name, p.Name, dmg))
-					// Elite on-hit effects only apply when the strike actually
-					// connected — dodge/block/Sanctuary that reduced dmg to 0
-					// shouldn't still inflict status (or heal vampiric for 0).
+
 					if m.IsElite && dmg > 0 {
 						def := entity.ElitePrefixDefs[m.ElitePrefix]
 						if def.OnHit >= 0 {
@@ -812,10 +800,6 @@ func (s *GameSession) allAliveMembersActedLocked() bool {
 	return true
 }
 
-// pickHealTarget returns the player a heal should land on: the explicitly
-// chosen ally if it is alive and actually wounded, otherwise the most-wounded
-// alive ally. Returns nil when no alive player needs healing — the caller then
-// converts the heal into an offensive smite.
 func (s *GameSession) pickHealTarget(chosenIdx int) *entity.Player {
 	if chosenIdx >= 0 && chosenIdx < len(s.state.Players) {
 		c := s.state.Players[chosenIdx]
@@ -837,8 +821,6 @@ func (s *GameSession) pickHealTarget(chosenIdx int) *entity.Player {
 	return best
 }
 
-// firstAliveMonsterIdx returns the index of the first living monster, or -1 if
-// none are alive.
 func (s *GameSession) firstAliveMonsterIdx() int {
 	for i, m := range s.state.Monsters {
 		if !m.IsDead() {
@@ -848,10 +830,6 @@ func (s *GameSession) firstAliveMonsterIdx() int {
 	return -1
 }
 
-// applyDamageMods reduces incoming damage by coop reductions, returns 0 if
-// invincible. Also applies class-based dodge/block rolls (Rogue +10% dodge,
-// Warrior +10% block) and Smoke Bomb relic dodge bonus. Returns the final
-// damage value (0 if dodged). Caller holds s.mu.
 func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
 	if s.invincibleNextTurn[p.Fingerprint] {
 		return 0
@@ -886,8 +864,6 @@ func (s *GameSession) applyDamageMods(p *entity.Player, dmg int) int {
 	return dmg
 }
 
-// runExtraActions performs one extra auto-attack per player who used Time
-// Glass last turn. Skips if no monsters alive. Caller holds s.mu.
 func (s *GameSession) runExtraActions() {
 	if len(s.state.Monsters) == 0 {
 		return
@@ -901,7 +877,7 @@ func (s *GameSession) runExtraActions() {
 		if !s.extraActionNext[p.Fingerprint] {
 			continue
 		}
-		// Find first alive monster
+
 		targetIdx := -1
 		for i, m := range s.state.Monsters {
 			if !m.IsDead() {
@@ -932,10 +908,6 @@ func (s *GameSession) runExtraActions() {
 	}
 }
 
-// applyActiveRelic resolves an ActionRelic submission. choice is the UI's
-// armed-relic cursor and selects which active relic in the player's
-// inventory fires when more than one is owned. Once per combat per player.
-// Caller holds s.mu.
 func (s *GameSession) applyActiveRelic(p *entity.Player, choice int) {
 	if s.activeRelicUsed[p.Fingerprint] {
 		s.addLog(fmt.Sprintf("%s 액티브 유물은 이번 전투에 이미 사용했습니다", p.Name))
@@ -980,7 +952,6 @@ func (s *GameSession) applyActiveRelic(p *entity.Player, choice int) {
 	s.activeRelicUsed[p.Fingerprint] = true
 }
 
-// applyCoopAbility resolves one player's coop ability use. Caller holds s.mu.
 func (s *GameSession) applyCoopAbility(p *entity.Player) {
 	if p.Class == entity.ClassRogue {
 		s.addLog(fmt.Sprintf("%s 정찰은 전투 외에 사용해야 합니다", p.Name))
@@ -1033,11 +1004,6 @@ func (s *GameSession) applyCoopAbility(p *entity.Player) {
 	s.coopUsedThisCombat[p.Fingerprint] = true
 }
 
-// recordSoloAction updates the solo-chain sequence state after a player's
-// combat action resolves. actionType must reflect what actually happened —
-// failed skills/coops, items-with-empty-bag, waits, freezes, and relic uses
-// record "" and break every chain. No-op outside solo mode (party combos own
-// that space). Caller holds s.mu.
 func (s *GameSession) recordSoloAction(actionType string) {
 	if !s.state.SoloMode {
 		return
@@ -1050,8 +1016,6 @@ func (s *GameSession) recordSoloAction(actionType string) {
 	s.soloLastAction = actionType
 }
 
-// mergeCoopReduction merges incoming damage-reduction multipliers into the
-// session map, taking the maximum per fingerprint.
 func (s *GameSession) mergeCoopReduction(in map[string]float64) {
 	for fp, mult := range in {
 		if cur := s.coopDamageReduction[fp]; mult > cur {
@@ -1060,9 +1024,6 @@ func (s *GameSession) mergeCoopReduction(in map[string]float64) {
 	}
 }
 
-// checkBossPhaseTransitions runs after damage to detect bosses entering
-// Phase 2 and applies their unique enrage effects. Threshold defaults to 50%
-// HP, raised to 70% by the Cruel curse. Caller holds s.mu.
 func (s *GameSession) checkBossPhaseTransitions() {
 	floor := s.state.FloorNum
 	threshold := 50
@@ -1077,32 +1038,29 @@ func (s *GameSession) checkBossPhaseTransitions() {
 		s.addLog(fmt.Sprintf("⚡ %s 광폭화! Phase 2 진입!", m.Name))
 		switch floor {
 		case 5:
-			// B5 Guardian: berserk — ATK +50%, no more healing pattern
+
 			m.ATK = int(float64(m.ATK) * 1.5)
 			if m.Pattern == entity.PatternHeal {
 				m.Pattern = entity.PatternNone
 			}
 			s.addLog(fmt.Sprintf("  %s ATK +50%%!", m.Name))
 		case 10:
-			// B10 Warden: split — summon 2 slimes scaled to floor.
-			// applyDifficultyMods covers HardMode/NG+/DailyMod so summons
-			// stay scary in late-game runs (the HP*2 boost happens BEFORE
-			// scaling so it survives multiplication).
+
 			scaling := s.cfg.Combat.MonsterScaling
 			for i := 0; i < 2; i++ {
 				summon := entity.NewMonster(entity.MonsterSlime, floor, scaling)
-				summon.HP = summon.MaxHP * 2 // tougher summons
+				summon.HP = summon.MaxHP * 2
 				summon.MaxHP = summon.HP
 				s.applyDifficultyMods(summon)
 				s.state.Monsters = append(s.state.Monsters, summon)
 			}
 			s.addLog(fmt.Sprintf("  %s이(가) 슬라임 2마리를 소환!", m.Name))
 		case 15:
-			// B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
+
 			m.Vulnerable = true
 			s.addLog(fmt.Sprintf("  %s의 약점이 노출됩니다! (받는 피해 1.5배)", m.Name))
 		case 20:
-			// B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
+
 			m.ATK = int(float64(m.ATK) * 1.3)
 			m.DEF = int(float64(m.DEF) * 1.2)
 			for _, p := range s.state.Players {
@@ -1116,8 +1074,6 @@ func (s *GameSession) checkBossPhaseTransitions() {
 	}
 }
 
-// applyCoopComboEffect propagates extended coop combo effects to session state.
-// Caller holds s.mu.
 func (s *GameSession) applyCoopComboEffect(eff combat.ComboEffect) {
 	if eff.WarriorBulwarkOverride > 0 {
 		for _, p := range s.state.Players {
@@ -1160,13 +1116,6 @@ func (s *GameSession) applyCoopComboEffect(eff combat.ComboEffect) {
 	}
 }
 
-// tryReviveSoloHealerLocked handles a player's death uniformly: if the
-// once-per-run solo-healer auto-revive applies, restores the player to
-// 30% HP and logs the revive; otherwise logs the rip line and flips
-// AnyPlayerDied for the no_death achievement. Returns true when revived.
-// Burning the revive on event damage is intentional — any death counts
-// per the Divine Grace design. Caller holds s.mu. Only call when
-// p.IsDead() == true.
 func (s *GameSession) tryReviveSoloHealerLocked(p *entity.Player) bool {
 	if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
 		p.Revive(0.30)

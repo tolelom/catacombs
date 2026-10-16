@@ -10,7 +10,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// ResultScreen shows the end-of-run summary and rankings.
 type ResultScreen struct {
 	gameState    game.GameState
 	rankingSaved bool
@@ -34,7 +33,7 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ls.refreshLobby(ctx)
 			return ls, ls.pollLobby(ctx)
 		} else if isKey(key, "n") && s.gameState.Victory && ctx.Lobby != nil {
-			// NG+ branch: leave current session, create new one with NGPlusLevel++ and a random curse
+
 			oldNG := 0
 			if ctx.Session != nil {
 				oldNG = ctx.Session.NGPlusLevel
@@ -91,8 +90,6 @@ func (s *ResultScreen) loadOnce(ctx *Context) {
 
 const recordWait = 2 * time.Second
 
-// findPlayerRank returns the 1-indexed position of the player's best run in
-// the supplied ranking slice, or 0 if they don't appear in the top N.
 func findPlayerRank(rankings []store.RunRecord, playerName string) int {
 	for i, r := range rankings {
 		if r.Player == playerName {
@@ -105,7 +102,6 @@ func findPlayerRank(rankings []store.RunRecord, playerName string) int {
 func renderResult(state game.GameState, rankings []store.RunRecord, playerName string) string {
 	var sb strings.Builder
 
-	// Title
 	if state.Victory {
 		sb.WriteString(styleHeal.Render("  ✦ 승리 ✦  ") + "\n\n")
 		sb.WriteString(styleSystem.Render("  카타콤을 정복했습니다!") + "\n\n")
@@ -114,7 +110,6 @@ func renderResult(state game.GameState, rankings []store.RunRecord, playerName s
 		sb.WriteString(styleSystem.Render(fmt.Sprintf("  B%d층에서 쓰러졌습니다", state.FloorNum)) + "\n\n")
 	}
 
-	// Player summary
 	sb.WriteString(styleHeader.Render("── 파티 요약 ──") + "\n\n")
 	totalGold := 0
 	for _, p := range state.Players {
@@ -128,7 +123,6 @@ func renderResult(state game.GameState, rankings []store.RunRecord, playerName s
 	}
 	fmt.Fprintf(&sb, "\n  총 골드: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold)))
 
-	// Rankings
 	if len(rankings) > 0 {
 		sb.WriteString("\n" + styleHeader.Render("── 최고 기록 ──") + "\n\n")
 		myRank := findPlayerRank(rankings, playerName)
@@ -147,7 +141,7 @@ func renderResult(state game.GameState, rankings []store.RunRecord, playerName s
 				party = fmt.Sprintf(" (%s)", strings.Join(r.Members, ", "))
 			}
 			line := fmt.Sprintf("  %s %s  B%d층  점수: %d%s", medal, r.Player, r.Floor, r.Score, party)
-			// Highlight the current player's row so they can find themselves.
+
 			if i+1 == myRank {
 				line = stylePlayer.Render(line + "  ←")
 			}

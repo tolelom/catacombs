@@ -81,12 +81,6 @@ func (l *Lobby) RegisterSession(fingerprint, roomCode string) {
 	l.activeSessions[fingerprint] = roomCode
 }
 
-func (l *Lobby) UnregisterSession(fingerprint string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	delete(l.activeSessions, fingerprint)
-}
-
 func (l *Lobby) GetActiveSession(fingerprint string) (string, *GameSession) {
 	l.mu.RLock()
 	code, ok := l.activeSessions[fingerprint]
@@ -189,20 +183,6 @@ func (l *Lobby) ListOnline() []*OnlinePlayer {
 		result = append(result, p)
 	}
 	return result
-}
-
-func (l *Lobby) InvitePlayer(roomCode, fingerprint string) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	p, ok := l.online[fingerprint]
-	if !ok {
-		return fmt.Errorf("플레이어가 온라인이 아닙니다")
-	}
-	if p.InRoom != "" {
-		return fmt.Errorf("플레이어가 이미 방에 있습니다")
-	}
-	p.InRoom = "invited:" + roomCode
-	return nil
 }
 
 func (l *Lobby) CreateRoom(owner, name string) (string, error) {
@@ -451,12 +431,6 @@ func (l *Lobby) StartRoom(code string) {
 		room.Status = RoomPlaying
 		slog.Info("game started", "room", code, "players", len(room.Players))
 	}
-}
-
-func (l *Lobby) RemoveRoom(code string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	delete(l.rooms, code)
 }
 
 func (l *Lobby) StopAllSessions() {

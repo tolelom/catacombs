@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// WaitingScreen shows room members and lets players ready up before starting.
 type WaitingScreen struct {
 	ready bool
 }
@@ -37,7 +36,7 @@ func (s *WaitingScreen) startGame(ctx *Context) (Screen, tea.Cmd) {
 func (s *WaitingScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	switch msg.(type) {
 	case tickMsg:
-		// Check if all players are ready → start game
+
 		if ctx.Lobby != nil && ctx.Lobby.AllReady(ctx.RoomCode) {
 			return s.startGame(ctx)
 		}
@@ -49,15 +48,13 @@ func (s *WaitingScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			s.ready = true
 			if ctx.Lobby != nil {
 				ctx.Lobby.SetPlayerReady(ctx.RoomCode, ctx.Fingerprint, true)
-				// Solo: if only 1 player in room, start immediately
+
 				if snap, ok := ctx.Lobby.RoomSnapshot(ctx.RoomCode); ok && len(snap.Players) == 1 {
 					return s.startGame(ctx)
 				}
 			}
 		} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
-			// Leave room — unready, drop from lobby roster, and pull our
-			// fingerprint out of the session so an in-flight StartGame
-			// doesn't carry a ghost player into the run.
+
 			if ctx.Lobby != nil {
 				ctx.Lobby.SetPlayerReady(ctx.RoomCode, ctx.Fingerprint, false)
 				ctx.Lobby.LeaveRoom(ctx.RoomCode, ctx.Fingerprint)

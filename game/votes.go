@@ -7,11 +7,6 @@ import (
 	"github.com/tolelom/catacombs/entity"
 )
 
-// recheckPhaseQuorumLocked runs the per-phase quorum tally and resolves
-// the phase if quorum is met. Used by RemovePlayer and the combatLoop
-// inactivity sweep so a player leaving (explicit Q or 60s timeout) cannot
-// strand the party waiting for a vote they will never cast. Caller holds
-// s.mu.
 func (s *GameSession) recheckPhaseQuorumLocked() {
 	switch s.state.Phase {
 	case PhaseExploring:
@@ -30,10 +25,7 @@ func (s *GameSession) recheckPhaseQuorumLocked() {
 			s.state.Floor.Rooms[s.state.Floor.CurrentRoom].Cleared = true
 		}
 	case PhaseEvent:
-		// Mirror the sweep behavior: prune any stale votes for fingerprints
-		// no longer in the alive set (RemovePlayer already deletes from the
-		// maps but defense-in-depth keeps the tally correct if a future
-		// caller forgets).
+
 		alive := make(map[string]bool, len(s.state.Players))
 		for _, p := range s.state.Players {
 			if !p.IsOut() && p.Fingerprint != "" {
@@ -56,9 +48,6 @@ func (s *GameSession) recheckPhaseQuorumLocked() {
 	}
 }
 
-// SubmitForesight is the Rogue's coop ability. Available once per floor while
-// exploring. Reveals the next room's type and exposes monster room context for
-// informed party voting. Boss rooms hide monster names but show "보스" type.
 func (s *GameSession) SubmitForesight(fingerprint string, roomIdx int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -95,10 +84,6 @@ func (s *GameSession) SubmitForesight(fingerprint string, roomIdx int) error {
 	return nil
 }
 
-// tallyMoveQuorumLocked returns the winning room index and true if every
-// alive player has cast a move vote. Returns (-1, false) when quorum is
-// not met or no alive players remain. Tie-break: lowest room index.
-// Caller holds s.mu.
 func (s *GameSession) tallyMoveQuorumLocked() (int, bool) {
 	aliveCount := 0
 	for _, p := range s.state.Players {
@@ -142,9 +127,6 @@ func (s *GameSession) tallyMoveQuorumLocked() (int, bool) {
 	return bestRoom, true
 }
 
-// SubmitMoveVote records a player's room choice during exploration.
-// When all alive players have voted, the majority choice wins and the party moves.
-// Returns true if the vote triggered a move (all votes collected).
 func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -158,7 +140,6 @@ func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 	}
 	s.moveVotes[fingerprint] = roomIdx
 
-	// Mirror to snapshot map for UI display.
 	s.state.MoveVotes = make(map[string]int, len(s.moveVotes))
 	for k, v := range s.moveVotes {
 		s.state.MoveVotes[k] = v
@@ -175,19 +156,6 @@ func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 	return true
 }
 
-// ClearMoveVotes resets any pending move votes (e.g. when phase changes).
-func (s *GameSession) ClearMoveVotes() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.moveVotes = nil
-	s.state.MoveVotes = nil
-}
-
-// tallyEventQuorumLocked returns true if every alive player has cast an
-// event vote. Does NOT compute a winner — winner selection lives in
-// resolveEventVoteLocked. Returns false when no alive players remain.
-// The anonymous-solo special case stays in SubmitEventVote because it
-// depends on the caller's fingerprint context. Caller holds s.mu.
 func (s *GameSession) tallyEventQuorumLocked() bool {
 	aliveCount := 0
 	for _, p := range s.state.Players {
@@ -209,10 +177,6 @@ func (s *GameSession) tallyEventQuorumLocked() bool {
 	return voteCount >= aliveCount
 }
 
-// SubmitEventVote records a player's event choice during PhaseEvent. When
-// all alive players have voted, the majority choice (ties broken by lowest
-// index) is resolved and applied to the party. Returns true if this call
-// triggered resolution.
 func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -230,13 +194,11 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 		s.eventVotes[fingerprint] = choiceIdx
 	}
 
-	// Mirror to snapshot map
 	s.state.EventVotes = make(map[string]int, len(s.eventVotes))
 	for k, v := range s.eventVotes {
 		s.state.EventVotes[k] = v
 	}
 
-	// Defensive: nobody alive to receive the outcome. Clear and bail.
 	aliveCount := 0
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -247,9 +209,7 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 		s.clearPendingEventLocked(true)
 		return true
 	}
-	// Anonymous single-player test path: the caller passed no fingerprint so
-	// the vote did not land in s.eventVotes — treat this call as the sole
-	// alive vote.
+
 	if aliveCount == 1 && fingerprint == "" && len(s.eventVotes) == 0 {
 		s.resolveEventVoteLocked()
 		return true
@@ -261,8 +221,6 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 	return true
 }
 
-// clearPendingEventLocked clears all pending-event state and optionally marks
-// the current event room as cleared. Caller holds s.mu.
 func (s *GameSession) clearPendingEventLocked(markRoomCleared bool) {
 	s.pendingEvent = nil
 	s.eventPerPlayer = false

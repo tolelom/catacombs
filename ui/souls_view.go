@@ -10,7 +10,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// SoulsScreen lets the player spend accumulated souls on permanent upgrades.
 type SoulsScreen struct {
 	cursor    int
 	souls     int64
@@ -19,7 +18,6 @@ type SoulsScreen struct {
 	statusMsg string
 }
 
-// NewSoulsScreen builds a fresh souls/upgrades menu.
 func NewSoulsScreen() *SoulsScreen {
 	return &SoulsScreen{upgrades: store.AllUpgrades(), levels: map[store.PermaUpgrade]int{}}
 }
@@ -36,7 +34,6 @@ func (s *SoulsScreen) refresh(ctx *Context) {
 	}
 }
 
-// Update handles input on the souls screen.
 func (s *SoulsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isUp(key) {
@@ -72,7 +69,6 @@ func (s *SoulsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	return s, nil
 }
 
-// View renders the souls screen.
 func (s *SoulsScreen) View(ctx *Context) string {
 	s.refresh(ctx)
 	header := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).

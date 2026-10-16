@@ -31,10 +31,10 @@ type GameSession struct {
 	cfg            *config.Config
 	state          GameState
 	started        bool
-	actions        map[string]PlayerAction // playerName -> action
+	actions        map[string]PlayerAction
 	actionCh       chan playerActionMsg
 	combatSignal   chan struct{}
-	playerLeftCh   chan struct{} // wakes RunTurn's collect loop on mid-turn quit
+	playerLeftCh   chan struct{}
 	done           chan struct{}
 	stopOnce       sync.Once
 	onAbandoned    func()
@@ -44,48 +44,38 @@ type GameSession struct {
 	recorder       RunRecorder
 	recordOnce     sync.Once
 	recorded       chan struct{}
-	moveVotes      map[string]int  // fingerprint -> voted room index
-	shopLeavers    map[string]bool // fingerprint -> wants to leave the shop
-	eventVotes     map[string]int  // fingerprint → choice index
-	pendingEvent   *RandomEvent    // typed event with Resolve funcs; not snapshotted
-	eventPerPlayer bool            // pendingEvent resolves per player (loot) vs party majority
-	rng            *rand.Rand      // session-scoped RNG; deterministic for daily runs
+	moveVotes      map[string]int
+	shopLeavers    map[string]bool
+	eventVotes     map[string]int
+	pendingEvent   *RandomEvent
+	eventPerPlayer bool
+	rng            *rand.Rand
 
-	// Coop ability state — all maps keyed by player fingerprint.
-	coopUsedThisCombat  map[string]bool    // reset on combat start
-	healerReviveUsed    map[string]bool    // run-scoped (revive arm of Divine Grace)
-	scoutUsedThisFloor  map[string]bool    // reset on floor advance
-	soloHealerRevived   map[string]bool    // run-scoped solo auto-revive
-	coopDamageReduction map[string]float64 // applies for current turn only
-	invincibleNextTurn  map[string]bool    // applies for next turn (Sanctuary combo)
-	dodgeBonusThisTurn  map[string]float64 // Smoke Bomb: extra dodge%, fingerprint→bonus (0..1)
-	extraActionNext     map[string]bool    // Time Glass: bearer gets a second action next turn
-	activeRelicUsed     map[string]bool    // fingerprint → already used active relic this combat
-	nextRoomPreview     *RoomPreview       // populated by Foresight, consumed at next room entry
-	critGuaranteedNext  bool               // next turn party crit (Expose Weakness combo)
-	enemyMissNextTurn   bool               // next turn 50% enemy attacks miss (Mirage)
-	poisonNextCombat    bool               // next combat starts enemies poisoned (Venomous Edge)
+	coopUsedThisCombat  map[string]bool
+	healerReviveUsed    map[string]bool
+	scoutUsedThisFloor  map[string]bool
+	soloHealerRevived   map[string]bool
+	coopDamageReduction map[string]float64
+	invincibleNextTurn  map[string]bool
+	dodgeBonusThisTurn  map[string]float64
+	extraActionNext     map[string]bool
+	activeRelicUsed     map[string]bool
+	nextRoomPreview     *RoomPreview
+	critGuaranteedNext  bool
+	enemyMissNextTurn   bool
+	poisonNextCombat    bool
 
-	// Solo chain state — per-combat action sequence for SoloMode chains
-	// (the solo replacement for cross-class party combos).
-	soloLastAction   string // previous turn's successful action ("" breaks chains)
-	soloAttackStreak int    // consecutive attacks so far this combat
+	soloLastAction   string
+	soloAttackStreak int
 
-	// The fields below are set during session construction (inside an
-	// EnsureSession init callback under Lobby.mu) and are not mutated
-	// thereafter. Reading them without s.mu is safe because the lobby-lock
-	// release establishes happens-before for every subsequent reader.
 	HardMode       bool
 	ActiveMutation *Mutation
 	DailyMode      bool
 	DailyDate      string
 
-	// New Game+ state — same publication invariant as above.
 	NGPlusLevel int
 	ActiveCurse *Curse
 
-	// Daily challenge modifier (set by lobby when DailyMode = true) — same
-	// publication invariant as above.
 	DailyMod *DailyModifier
 }
 
@@ -100,7 +90,6 @@ const (
 	logRevealInterval = 150 * time.Millisecond
 )
 
-// hasMutation returns true if the session has the given mutation active.
 func (s *GameSession) hasMutation(id string) bool {
 	return s.ActiveMutation != nil && s.ActiveMutation.ID == id
 }
@@ -132,12 +121,6 @@ func NewGameSession(cfg *config.Config) *GameSession {
 	}
 }
 
-// reseedForFloor refreshes the session RNG when entering a new floor. In
-// DailyMode the seed is derived from (date + floor) so two players running
-// the same daily on the same date face identical monster spawns, item rolls,
-// and event outcomes. Outside DailyMode we fold in the floor number so each
-// floor still gets fresh randomness rather than reusing the prior floor's
-// stream. Callers must hold s.mu.
 func (s *GameSession) reseedForFloor() {
 	if s.DailyMode {
 		s.rng = rand.New(rand.NewSource(DailySeed(s.DailyDate) + int64(s.state.FloorNum)))
@@ -146,15 +129,11 @@ func (s *GameSession) reseedForFloor() {
 	s.rng = rand.New(rand.NewSource(time.Now().UnixNano() + int64(s.state.FloorNum)))
 }
 
-// ApplyWeeklyMutation sets the current week's mutation on this session.
 func (s *GameSession) ApplyWeeklyMutation() {
 	mut := GetWeeklyMutation()
 	s.ActiveMutation = &mut
 }
 
-// effectiveSkillUses returns the per-combat skill use budget, accounting for
-// the active mutation and any NG+ curse. Reading via this helper avoids
-// mutating shared config.
 func (s *GameSession) effectiveSkillUses() int {
 	if s.hasMutation("no_skills") {
 		return 0
@@ -172,8 +151,6 @@ func (s *GameSession) effectiveSkillUses() int {
 	return uses
 }
 
-// effectiveTurnTimeout returns the per-turn timeout in seconds, accounting
-// for the active mutation.
 func (s *GameSession) effectiveTurnTimeout() int {
 	t := s.cfg.Game.TurnTimeoutSec
 	if s.hasMutation("speed_run") {
@@ -201,7 +178,6 @@ func (s *GameSession) setOnAbandoned(fn func()) {
 	s.onAbandoned = fn
 }
 
-// StartGame determines solo mode from actual player count at game start
 func (s *GameSession) StartGame() {
 	s.mu.Lock()
 	if s.started {
@@ -216,7 +192,6 @@ func (s *GameSession) StartGame() {
 	go s.combatLoop()
 }
 
-// combatLoop continuously runs turns while in combat phase
 func (s *GameSession) combatLoop() {
 	for {
 		select {
@@ -231,9 +206,7 @@ func (s *GameSession) combatLoop() {
 		s.mu.Unlock()
 
 		if gameOver {
-			// Reading state without s.mu here is safe: FloorNum/Victory are
-			// only written inside RunTurn (advanceFloor / turn.go), all on
-			// this same combatLoop goroutine.
+
 			slog.Info("game over", "floor", s.state.FloorNum, "victory", s.state.Victory)
 			s.recordRun()
 			return
@@ -254,11 +227,7 @@ func (s *GameSession) combatLoop() {
 		if phase == PhaseCombat {
 			s.RunTurn()
 		} else {
-			// Wake periodically so the inactivity sweep above runs even
-			// during PhaseShop / PhaseExploring. Otherwise a disconnected
-			// player can deadlock the shop-leave consensus or move-vote
-			// (both require every alive fingerprint to participate) until
-			// the next combat — which never arrives without the move.
+
 			select {
 			case <-s.combatSignal:
 			case <-time.After(10 * time.Second):
@@ -276,9 +245,6 @@ func (s *GameSession) signalCombat() {
 	}
 }
 
-// RemovePlayer removes a player from the session by fingerprint and returns
-// the number of remaining players. Returns -1 if the fingerprint was not found
-// (so callers can distinguish a no-op from a successful drop to zero).
 func (s *GameSession) RemovePlayer(fingerprint string) int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -327,11 +293,9 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 	delete(s.dodgeBonusThisTurn, fingerprint)
 	delete(s.extraActionNext, fingerprint)
 	delete(s.activeRelicUsed, fingerprint)
-	// The leaver might have been the last voter the party was waiting on —
-	// re-evaluate the current phase's quorum so we don't deadlock.
+
 	s.recheckPhaseQuorumLocked()
-	// Wake RunTurn's collect loop in case it's blocked waiting for this
-	// player's never-arriving action.
+
 	select {
 	case s.playerLeftCh <- struct{}{}:
 	default:
@@ -342,8 +306,7 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 func (s *GameSession) AddPlayer(p *entity.Player) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// Dedup by fingerprint — a player who left the waiting room and rejoined
-	// must not be added twice to the session's player list.
+
 	if p.Fingerprint != "" {
 		for _, existing := range s.state.Players {
 			if existing.Fingerprint == p.Fingerprint {
@@ -398,7 +361,6 @@ func (s *GameSession) StartFloor() {
 	s.state.Phase = PhaseExploring
 	s.state.TurnNum = 0
 
-	// Revive dead players at 30% HP
 	for _, p := range s.state.Players {
 		if p.IsDead() {
 			p.Revive(0.30)

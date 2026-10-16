@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TitleScreen is the main menu screen.
 type TitleScreen struct{}
 
 func NewTitleScreen() *TitleScreen {
@@ -20,16 +19,13 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		if isEnter(key) {
 			if ctx.Fingerprint == "" {
-				// Defensive only — server/ssh.go always supplies a real
-				// SHA256:... or anon:<rand> fingerprint in production. Match
-				// the production "anon:" prefix so downstream isWebUser() and
-				// lobby bookkeeping see one consistent shape.
+
 				ctx.Fingerprint = fmt.Sprintf("anon:%d", time.Now().UnixNano())
 			}
 			if ctx.Store != nil {
 				name, err := ctx.Store.GetProfile(ctx.Fingerprint)
 				if err != nil {
-					// First time player — show nickname input
+
 					return NewNicknameScreen(), nil
 				}
 				ctx.PlayerName = name
@@ -39,7 +35,7 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			if ctx.Lobby != nil {
 				ctx.Lobby.PlayerOnline(ctx.Fingerprint, ctx.PlayerName)
 			}
-			// Check for active session to reconnect
+
 			if ctx.Lobby != nil {
 				code, session := ctx.Lobby.GetActiveSession(ctx.Fingerprint)
 				if session != nil {

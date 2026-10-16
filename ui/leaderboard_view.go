@@ -10,7 +10,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// LeaderboardScreen shows the top runs.
 type LeaderboardScreen struct {
 	tab     int
 	byFloor []store.RunRecord
@@ -51,9 +50,6 @@ func (s *LeaderboardScreen) loadOnce(ctx *Context) {
 	s.daily, _ = ctx.Store.GetDailyLeaderboard(time.Now().Format("2006-01-02"), 20)
 }
 
-// markIfMine wraps a leaderboard line with a highlight when the row belongs
-// to the calling user, using the provided id (player name for ranking
-// records, fingerprint for daily records) to match.
 func markIfMine(line, rowID, myID string) string {
 	if myID != "" && rowID == myID {
 		return stylePlayer.Render(line + "  ←")
@@ -64,7 +60,6 @@ func markIfMine(line, rowID, myID string) string {
 func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRecord, tab, width, height int, playerName, fingerprint string) string {
 	title := styleHeader.Render("── 리더보드 ──")
 
-	// Tab header
 	tabs := []string{"층수", "골드", "일일"}
 	var tabLine string
 	for i, t := range tabs {
@@ -78,7 +73,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 	var content string
 
 	switch tab {
-	case 0: // By Floor
+	case 0:
 		content += styleCoop.Render("  층수 순위") + "\n"
 		for i, r := range byFloor {
 			if i >= 10 {
@@ -98,7 +93,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
 			content += markIfMine(line, r.Player, playerName) + "\n"
 		}
-	case 1: // By Gold
+	case 1:
 		content += styleCoop.Render("  골드 순위") + "\n"
 		for i, r := range byGold {
 			if i >= 10 {
@@ -118,7 +113,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
 			content += markIfMine(line, r.Player, playerName) + "\n"
 		}
-	case 2: // Daily
+	case 2:
 		content += styleCoop.Render(fmt.Sprintf("  일일 도전 — %s", time.Now().Format("2006-01-02"))) + "\n"
 		if len(daily) == 0 {
 			content += "  오늘 일일 도전 기록이 없습니다.\n"
@@ -131,7 +126,7 @@ func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRec
 			line := fmt.Sprintf("  %s %s  B%d  %s",
 				medal, stylePlayer.Render(r.PlayerName),
 				r.FloorReached, styleGold.Render(fmt.Sprintf("%dg", r.GoldEarned)))
-			// Daily records are keyed by fingerprint, not name.
+
 			content += markIfMine(line, r.Player, fingerprint) + "\n"
 		}
 	}

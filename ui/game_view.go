@@ -14,13 +14,12 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-// GameScreen handles the main gameplay: exploration, combat, and chat.
 type GameScreen struct {
 	gameState     game.GameState
 	targetCursor  int
-	allyCursor    int // for Healer skill targeting allies
+	allyCursor    int
 	moveCursor    int
-	relicCursor   int // index into local player's active relics; cycled with [r]
+	relicCursor   int
 	chatting      bool
 	chatInput     string
 	codexRecorded map[string]bool
@@ -410,11 +409,6 @@ func (s *GameScreen) View(ctx *Context) string {
 	return renderGame(s.gameState, ctx.Width, ctx.Height, s.targetCursor, s.allyCursor, s.moveCursor, s.relicCursor, s.chatting, s.chatInput, ctx.Fingerprint, s.skillMsg)
 }
 
-// countCoopCombos returns how many of the 6 coop pair combos appear in the
-// run-scoped combo set.
-
-// playerActiveRelics returns the local player's active (triggerable) relics in
-// inventory order. Used by the [r] cycle key and the HUD armed-relic readout.
 func playerActiveRelics(state game.GameState, fingerprint string) []entity.Relic {
 	for _, p := range state.Players {
 		if p.Fingerprint != fingerprint {
@@ -461,7 +455,6 @@ func renderMap(floor *dungeon.Floor) string {
 	theme := dungeon.GetFloorTheme(floor.Number)
 	headerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
 
-	// Count explored rooms
 	explored := 0
 	for _, r := range floor.Rooms {
 		if r.Visited || r.Cleared {
@@ -474,9 +467,6 @@ func renderMap(floor *dungeon.Floor) string {
 	return header + "\n" + dungeon.RenderFloor(floor, floor.CurrentRoom, true)
 }
 
-// soloChainHint renders the one-line solo-chain status for the combat HUD,
-// or "" when nothing is armed. Nil chain (party mode / out of combat) shows
-// nothing.
 func soloChainHint(chain *game.SoloChainView) string {
 	if chain == nil {
 		return ""
@@ -890,13 +880,12 @@ func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
 		if m.IsDead() {
 			continue
 		}
-		// ASCII art
+
 		art := MonsterArt(m.Type)
 		for _, line := range art {
 			sb.WriteString(styleEnemy.Render("  "+line) + "\n")
 		}
 
-		// Name + HP
 		marker := "  "
 		if i == targetCursor {
 			marker = "> "
@@ -911,12 +900,6 @@ func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
 	}
 	return sb.String()
 }
-
-// --- best-effort persistence helpers ---------------------------------------
-// These store writes fire from the UI tick and have no user-facing error
-// channel; silently dropping them meant lost codex entries, souls, and
-// achievements with zero trace. Logging keeps failures visible to the
-// operator without interrupting play.
 
 func recordCodex(ctx *Context, category, name string) {
 	if ctx.Store == nil {

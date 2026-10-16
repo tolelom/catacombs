@@ -23,7 +23,6 @@ type playerInfo struct {
 	Ready bool
 }
 
-// LobbyScreen shows available rooms and lets players create/join.
 type LobbyScreen struct {
 	rooms        []roomInfo
 	input        string
@@ -36,10 +35,7 @@ type LobbyScreen struct {
 	hardMode     bool
 	hardUnlocked bool
 	errMsg       string
-	// dailyDate is captured on lobby refresh so the header banner and the
-	// daily-challenge session created via [D] use the same date — avoids a
-	// midnight crossover where header shows yesterday's modifier but the run
-	// is created with today's.
+
 	dailyDate string
 	dailyMod  game.DailyModifier
 }
@@ -90,7 +86,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		return s, s.pollLobby(ctx)
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
-		// Join-by-code input mode
+
 		if s.joining {
 			if isEnter(key) && len(s.codeInput) == 4 {
 				if ctx.Lobby != nil {
@@ -115,7 +111,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 			return s, nil
 		}
-		// Normal lobby key handling
+
 		if isKey(key, "c") {
 			if ctx.Lobby != nil {
 				code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+"의 방")
@@ -124,8 +120,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					return s, nil
 				}
 				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
-					// Joining a room we just created shouldn't fail, but if it
-					// does the player must see why instead of a ghost lobby.
+
 					s.errMsg = "방 참가 실패: " + err.Error()
 					return s, nil
 				}
@@ -155,7 +150,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 			}
 		} else if isKey(key, "d") {
-			// Daily Challenge: create a private solo daily session
+
 			if ctx.Lobby != nil {
 				if s.dailyDate == "" {
 					s.dailyDate = time.Now().Format("2006-01-02")
@@ -262,7 +257,7 @@ func renderLobby(state lobbyState, width, height int) string {
 		}
 		roomList += fmt.Sprintf("%s%s [%s] (%d/4) %s\n",
 			marker, r.Name, r.Code, len(r.Players), r.Status)
-		// Show players in selected room
+
 		if i == state.cursor {
 			for _, p := range r.Players {
 				cls := p.Class

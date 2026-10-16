@@ -14,7 +14,6 @@ func (s *GameSession) EnterRoom(roomIdx int) {
 	s.enterRoomLocked(roomIdx)
 }
 
-// enterRoomLocked performs room entry logic. Caller must hold s.mu.
 func (s *GameSession) enterRoomLocked(roomIdx int) {
 	if s.state.Floor == nil || roomIdx < 0 || roomIdx >= len(s.state.Floor.Rooms) {
 		return
@@ -49,10 +48,10 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 		s.state.Phase = PhaseShop
 	case dungeon.RoomTreasure:
 		s.triggerLoot()
-		// room.Cleared flipped after all picks resolve in resolveEventVote
+
 	case dungeon.RoomEvent:
 		s.triggerEvent()
-		// room.Cleared flipped after vote quorum in resolveEventVote
+
 	case dungeon.RoomSecret:
 		s.grantSecretTreasure()
 		room.Cleared = true
@@ -77,9 +76,6 @@ func (s *GameSession) enterRoomLocked(roomIdx int) {
 	}
 }
 
-// handleMimic: 50% it's actually a treasure, 50% an ambush by a tough monster
-// (1.5x stat scaling). The room is marked Cleared on the treasure path; combat
-// path defers to combat clear.
 func (s *GameSession) handleMimic(room *dungeon.Room) {
 	if s.rng.Float64() < 0.5 {
 		s.addLog("미믹! 보물 상자가 깨어났습니다!")
@@ -102,10 +98,6 @@ func (s *GameSession) handleMimic(room *dungeon.Room) {
 	}
 }
 
-// handleGamble: each player can bet 50 gold. Outcome:
-// - 50%: lose the 50 gold
-// - 30%: win 100 gold (+50 net)
-// - 20%: win a random item
 func (s *GameSession) handleGamble() {
 	s.addLog("도박장 발견! 골드 50을 베팅하면 운에 따라 보상.")
 	for _, p := range s.state.Players {
@@ -140,8 +132,6 @@ func (s *GameSession) handleGamble() {
 	}
 }
 
-// handleCursedAltar: each player loses 30% MaxHP, gains random permanent
-// stat boost (ATK+5 / DEF+3 / Gold+100).
 func (s *GameSession) handleCursedAltar() {
 	s.state.AltarUsedThisRun++
 	s.addLog("저주받은 제단! 생명력을 바쳐 힘을 얻습니다.")
@@ -168,7 +158,6 @@ func (s *GameSession) handleCursedAltar() {
 	}
 }
 
-// handleWanderingMerchant: rare items at 2x normal price (one-time stock).
 func (s *GameSession) handleWanderingMerchant() {
 	floor := s.state.FloorNum
 	weaponBonus := 6 + s.rng.Intn(6) + floor/3
@@ -190,11 +179,6 @@ func (s *GameSession) handleWanderingMerchant() {
 	s.addLog("방랑상인이 희귀 아이템을 들고 나타났습니다! (가격 2배)")
 }
 
-// applySoloScaling weakens a monster for single-player runs: HP and DEF are
-// reduced by SoloHPReduction (squishier) and ATK by SoloATKReduction (hits
-// softer). The ATK cut compensates for a solo party having no healer sustain
-// or coop combos — without it, fragile classes cannot survive late bosses long
-// enough to kill them. No-op outside solo mode.
 func (s *GameSession) applySoloScaling(m *entity.Monster) {
 	if !s.state.SoloMode {
 		return
@@ -211,14 +195,8 @@ func (s *GameSession) applySoloScaling(m *entity.Monster) {
 	}
 }
 
-// earlyThreatMult returns a HP/ATK multiplier that compresses the trivial
-// early-game "warmup". It is a smooth bump: 1.0 on the onboarding floors (1-2),
-// rising to a mid-early peak (~floor 6), then tapering back to 1.0 by floor 10
-// where the exponential min-floor scaling takes over. This brings tension
-// forward to ~floor 4-5 without creating a difficulty discontinuity at floor 10.
-// EarlyThreatRamp == 0 disables it entirely.
 func (s *GameSession) earlyThreatMult(floor int) float64 {
-	const fadeFloor = 10 // ramp returns to 1.0 here, merging into base scaling
+	const fadeFloor = 10
 	steps := floor - 2
 	if fade := fadeFloor - floor; fade < steps {
 		steps = fade
@@ -229,9 +207,6 @@ func (s *GameSession) earlyThreatMult(floor int) float64 {
 	return 1.0 + s.cfg.Combat.EarlyThreatRamp*float64(steps)
 }
 
-// applyEarlyThreat scales a regular monster's HP and ATK (not DEF — the
-// subtractive damage formula makes DEF lifts disproportionately punishing) by
-// earlyThreatMult. No-op once the multiplier is 1.0.
 func (s *GameSession) applyEarlyThreat(m *entity.Monster, floor int) {
 	mult := s.earlyThreatMult(floor)
 	if mult == 1.0 {
@@ -248,14 +223,6 @@ func (s *GameSession) applyEarlyThreat(m *entity.Monster, floor int) {
 	}
 }
 
-// resetPerCombatStateLocked refreshes every map and flag scoped to a
-// single combat encounter: skill uses, coop-used, active-relic-used,
-// Time Glass extra actions, the solo chain sequence, plus the pending
-// Venomous Edge poison application. Without the extraActionNext reset,
-// Time Glass would carry a free attack from the prior combat into this
-// one. Every combat-entry site (spawnMonsters, spawnBoss, spawnMiniBoss,
-// handleMimic) calls this so adding a new per-combat flag means editing
-// one place, not four. Caller holds s.mu.
 func (s *GameSession) resetPerCombatStateLocked() {
 	for _, p := range s.state.Players {
 		p.SkillUses = s.effectiveSkillUses()
@@ -326,13 +293,13 @@ func (s *GameSession) spawnBoss() {
 	boss := entity.NewMonster(mt, s.state.FloorNum, s.cfg.Combat.MonsterScaling)
 	switch mt {
 	case entity.MonsterBoss5:
-		boss.Pattern = entity.PatternPoison // Swamp theme
+		boss.Pattern = entity.PatternPoison
 	case entity.MonsterBoss10:
-		boss.Pattern = entity.PatternBurn // Volcano theme
+		boss.Pattern = entity.PatternBurn
 	case entity.MonsterBoss15:
-		boss.Pattern = entity.PatternFreeze // Glacier theme
+		boss.Pattern = entity.PatternFreeze
 	case entity.MonsterBoss20:
-		boss.Pattern = entity.PatternHeal // Inferno theme (+ natural AoE every 3 turns)
+		boss.Pattern = entity.PatternHeal
 	}
 	s.applySoloScaling(boss)
 	s.applyDifficultyMods(boss)
@@ -341,9 +308,6 @@ func (s *GameSession) spawnBoss() {
 	s.resetPerCombatStateLocked()
 }
 
-// applyPoisonNextCombatIfPending applies the Venomous Edge combo's effect at
-// combat start: every spawned monster gets a 3-turn poison stack.
-// Caller holds s.mu.
 func (s *GameSession) applyPoisonNextCombatIfPending() {
 	if !s.poisonNextCombat {
 		return
@@ -366,7 +330,7 @@ func (s *GameSession) grantTreasure() {
 			s.addLog(fmt.Sprintf("%s의 인벤토리가 가득 찼습니다!", p.Name))
 			continue
 		}
-		// 10% chance: drop a set item instead of regular gear.
+
 		if s.rng.Float64() < 0.10 {
 			item := randomSetItem(s.rng, floor)
 			p.Inventory = append(p.Inventory, item)
@@ -393,14 +357,14 @@ func (s *GameSession) grantTreasure() {
 
 func (s *GameSession) generateShopItems() {
 	floor := s.state.FloorNum
-	// Weapon bonus scales: base 3-8 + floor/3
+
 	weaponBonus := 3 + s.rng.Intn(6) + floor/3
-	// Armor bonus scales: base 2-5 + floor/4
+
 	armorBonus := 2 + s.rng.Intn(4) + floor/4
-	// Prices scale with power
+
 	weaponPrice := 40 + weaponBonus*5
 	armorPrice := 30 + armorBonus*5
-	// Potion heals more on higher floors
+
 	potionHeal := 30 + floor
 	potionPrice := 20 + floor/2
 	charm := entity.NewLuckyCharm(floor)
@@ -447,10 +411,6 @@ func armorName(floor int) string {
 	}
 }
 
-// applyEventOutcome applies an event outcome to the party per the rules in
-// the design spec: HPChange to each alive player, GoldChange split evenly
-// (remainder to the first alive player), ItemDrop one rolled item per alive
-// player (skip if inventory full). Caller holds s.mu.
 func (s *GameSession) applyEventOutcome(o EventOutcome) {
 	alive := make([]*entity.Player, 0, len(s.state.Players))
 	for _, p := range s.state.Players {
@@ -462,10 +422,6 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		return
 	}
 
-	// Lucky charm: one charm voids ALL of a player's losses from a single
-	// gambled outcome (one result = one insurance claim — same invariant as
-	// applyOutcomeToPlayer). Consumed once here, then both the HP and gold
-	// loss branches honor the protection.
 	charmProtected := make(map[string]bool)
 	if o.Gambled && (o.HPChange < 0 || o.GoldChange < 0) {
 		for _, p := range alive {
@@ -476,7 +432,6 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		}
 	}
 
-	// HP change: each alive player heals/takes damage of the full amount.
 	if o.HPChange > 0 {
 		for _, p := range alive {
 			before := p.HP
@@ -492,14 +447,12 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 			p.TakeDamage(dmg)
 			s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
 			if p.IsDead() {
-				// Uniform with combat: try solo-healer auto-revive,
-				// otherwise log the rip and flip AnyPlayerDied.
+
 				s.tryReviveSoloHealerLocked(p)
 			}
 		}
 	}
 
-	// Gold change: split evenly across alive; remainder to alive[0].
 	if o.GoldChange != 0 {
 		total := o.GoldChange
 		share := total / len(alive)
@@ -509,8 +462,7 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 			if i == 0 {
 				delta += remainder
 			}
-			// Charm holders skip their share of a gambled gold loss (their
-			// remainder portion is voided, not redistributed).
+
 			if delta < 0 && charmProtected[p.Fingerprint] {
 				continue
 			}
@@ -526,10 +478,6 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 		}
 	}
 
-	// Concrete item grant: each alive player gets their own copy. Full
-	// inventories convert to bonus*5 gold — same invariant as
-	// applyOutcomeToPlayer. Mutually exclusive with ItemDrop so an outcome
-	// accidentally setting both can't double-grant.
 	if o.Item != nil {
 		for _, p := range alive {
 			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
@@ -563,11 +511,6 @@ func (s *GameSession) applyEventOutcome(o EventOutcome) {
 	}
 }
 
-// resolveEventVoteLocked tallies eventVotes, picks the winning choice (lowest
-// index breaks ties), runs Resolve, applies the outcome party-wide, and
-// returns the session to PhaseExploring with the room cleared. Per-player
-// pending events (loot picks) skip the tally and resolve each player's own
-// choice individually. Caller holds s.mu and has verified quorum.
 func (s *GameSession) resolveEventVoteLocked() {
 	if s.pendingEvent == nil {
 		s.clearPendingEventLocked(true)
@@ -577,7 +520,7 @@ func (s *GameSession) resolveEventVoteLocked() {
 		s.resolveLootPicksLocked()
 		return
 	}
-	// Tally
+
 	tally := make(map[int]int, len(s.pendingEvent.Choices))
 	for _, idx := range s.eventVotes {
 		tally[idx]++
@@ -604,15 +547,11 @@ func (s *GameSession) resolveEventVoteLocked() {
 	s.endRunIfPartyWipedLocked()
 }
 
-// triggerEvent picks a random event and parks the session in PhaseEvent
-// awaiting player votes. The actual outcome runs later via resolveEventVote.
-// Caller holds s.mu.
 func (s *GameSession) triggerEvent() {
 	event := PickRandomEvent(s.rng)
 	s.state.LastEventName = event.Name
 	s.addLog(fmt.Sprintf("이벤트: %s — %s", event.Name, event.Description))
 
-	// Edge case: nobody alive to vote (post-wipe race). Skip + clear.
 	alive := 0
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
@@ -629,9 +568,6 @@ func (s *GameSession) triggerEvent() {
 	s.startEventPhaseLocked(event, false)
 }
 
-// triggerLoot presents the treasure-room loot table and parks the session in
-// PhaseEvent with per-player resolution: each player's own pick applies to
-// them only. Mirrors triggerEvent's zero-alive guard. Caller holds s.mu.
 func (s *GameSession) triggerLoot() {
 	alive := 0
 	for _, p := range s.state.Players {
@@ -651,10 +587,6 @@ func (s *GameSession) triggerLoot() {
 	s.startEventPhaseLocked(event, true)
 }
 
-// startEventPhaseLocked stashes the typed event, builds the snapshot-safe
-// view, and parks the session in PhaseEvent awaiting player input. perPlayer
-// selects individual resolution (loot picks) over party majority (random
-// events). Caller holds s.mu and has verified at least one alive player.
 func (s *GameSession) startEventPhaseLocked(event RandomEvent, perPlayer bool) {
 	ev := event
 	s.pendingEvent = &ev
@@ -677,10 +609,6 @@ func (s *GameSession) startEventPhaseLocked(event RandomEvent, perPlayer bool) {
 	s.state.Phase = PhaseEvent
 }
 
-// resolveLootPicksLocked applies each alive player's own pick. Iterates
-// s.state.Players (not the vote map) so RNG consumption order is deterministic
-// for daily runs. Voteless alive players (disconnect-sweep edge) are skipped.
-// Caller holds s.mu.
 func (s *GameSession) resolveLootPicksLocked() {
 	floor := s.state.FloorNum
 	for _, p := range s.state.Players {
@@ -701,18 +629,9 @@ func (s *GameSession) resolveLootPicksLocked() {
 	s.endRunIfPartyWipedLocked()
 }
 
-// applyOutcomeToPlayer applies a loot outcome to a single player. Unlike
-// applyEventOutcome (party-wide), gold goes entirely to the picker, and a
-// concrete Item grant converts to bonus*5 gold when the inventory is full
-// (mirrors handleGamble's jackpot fallback; consistent with the shop price
-// formula 40+bonus*5). Loot outcomes always carry concrete items (o.Item),
-// never deferred ItemDrop rolls — see buildRotatingLootChoice. A player
-// killed by the HP cost still receives the item/gold: pick and price are one
-// transaction, and a revive keeps the loot. Caller holds s.mu.
 func (s *GameSession) applyOutcomeToPlayer(p *entity.Player, o EventOutcome) {
 	hpChange, goldChange := o.HPChange, o.GoldChange
-	// Lucky charm: one charm voids ALL losses of a single gambled outcome
-	// (one result = one insurance claim). Fixed costs pass through.
+
 	if o.Gambled && (hpChange < 0 || goldChange < 0) && p.ConsumeCharm() {
 		s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
 		if hpChange < 0 {
@@ -762,7 +681,7 @@ func (s *GameSession) applyOutcomeToPlayer(p *entity.Player, o EventOutcome) {
 func (s *GameSession) grantSecretTreasure() {
 	s.addLog("보물로 가득 찬 비밀의 방을 발견했습니다!")
 	floor := s.state.FloorNum
-	// Double treasure: grant two items per player
+
 	for _, p := range s.state.Players {
 		for i := 0; i < 2; i++ {
 			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
@@ -803,7 +722,6 @@ func (s *GameSession) spawnMiniBoss() {
 	}
 	miniBoss := entity.NewMonster(mt, floor, s.cfg.Combat.MonsterScaling)
 
-	// Use same pattern as the subsequent boss
 	switch mt {
 	case entity.MonsterMiniBoss5:
 		miniBoss.Pattern = entity.PatternPoison
@@ -823,11 +741,6 @@ func (s *GameSession) spawnMiniBoss() {
 	s.resetPerCombatStateLocked()
 }
 
-// applyDifficultyMods scales a monster's HP/ATK by HardMode, NG+ level, and
-// the active daily challenge modifier. SoloMode is intentionally NOT applied
-// here — solo balance is handled per-spawn-context (regular spawns and bosses
-// reduce HP for solo, but B10 phase-2 summons stay tough by design). Caller
-// holds s.mu.
 func (s *GameSession) applyDifficultyMods(m *entity.Monster) {
 	if s.HardMode {
 		mult := s.cfg.Difficulty.HardModeMonsterMult

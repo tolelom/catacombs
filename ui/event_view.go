@@ -10,7 +10,6 @@ import (
 	"github.com/tolelom/catacombs/game"
 )
 
-// tagIcon maps a ChoiceTag to a short display token used in event hints.
 func tagIcon(t game.ChoiceTag) string {
 	switch t {
 	case game.TagHeal:
@@ -31,8 +30,6 @@ func tagIcon(t game.ChoiceTag) string {
 	return "?"
 }
 
-// EventScreen handles the random-event vote phase. Mirrors ShopScreen's
-// poll-based update pattern so other players' votes show up in real time.
 type EventScreen struct {
 	gameState game.GameState
 	cursor    int
@@ -90,7 +87,7 @@ func (e *EventScreen) submitVote(ctx *Context, idx int) {
 	}
 	perPlayer := e.gameState.PendingEvent != nil && e.gameState.PendingEvent.PerPlayer
 	if ctx.Session.SubmitEventVote(ctx.Fingerprint, idx) {
-		// Vote triggered resolution; the next tick will follow phase out.
+
 		e.statusMsg = "결정되었습니다..."
 	} else if perPlayer {
 		e.statusMsg = fmt.Sprintf("선택지 %d 선택 완료 — 다른 플레이어 대기 중", idx+1)

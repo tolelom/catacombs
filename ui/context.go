@@ -5,7 +5,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// Context holds shared state accessible to all screens.
 type Context struct {
 	Width       int
 	Height      int

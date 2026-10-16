@@ -11,7 +11,6 @@ func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
 		return
 	}
 
-	// Prevent duplicate submissions in the same turn
 	if _, already := s.state.SubmittedActions[playerID]; already {
 		s.mu.Unlock()
 		return
@@ -48,7 +47,6 @@ func (s *GameSession) isAliveMemberLocked(fingerprint string) bool {
 	return false
 }
 
-// RevealNextLog moves one log from PendingLogs to CombatLog. Returns true if there was one to reveal.
 func (s *GameSession) RevealNextLog() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -66,7 +64,6 @@ func (s *GameSession) RevealNextLog() bool {
 	return true
 }
 
-// AllocateSkillPoint spends one skill point into the given branch for the player.
 func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int, choice byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -79,7 +76,7 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int, choi
 			if err := p.Skills.Allocate(branchIdx, p.Class, choice); err != nil {
 				return err
 			}
-			// MaxHPBoost nodes raise both MaxHP and current HP by the delta.
+
 			delta := p.Skills.GetMaxHPBonus(p.Class) - before
 			if delta > 0 {
 				p.MaxHP += delta
@@ -91,7 +88,6 @@ func (s *GameSession) AllocateSkillPoint(fingerprint string, branchIdx int, choi
 	return fmt.Errorf("플레이어를 찾을 수 없습니다")
 }
 
-// SendChat appends a chat message to the combat log
 func (s *GameSession) SendChat(playerName, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
