@@ -48,10 +48,8 @@ func NewLobbyScreen() *LobbyScreen {
 	return &LobbyScreen{}
 }
 
-func (s *LobbyScreen) pollLobby() tea.Cmd {
-	return tea.Tick(time.Second*2, func(t time.Time) tea.Msg {
-		return tickMsg{}
-	})
+func (s *LobbyScreen) pollLobby(ctx *Context) tea.Cmd {
+	return scheduleTick(ctx, time.Second*2)
 }
 
 func (s *LobbyScreen) refreshLobby(ctx *Context) {
@@ -89,7 +87,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	switch msg.(type) {
 	case tickMsg:
 		s.refreshLobby(ctx)
-		return s, s.pollLobby()
+		return s, s.pollLobby(ctx)
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		// Join-by-code input mode
@@ -164,7 +162,7 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					s.dailyMod = game.PickDailyModifier(s.dailyDate)
 				}
 				dailyDate, dailyMod := s.dailyDate, s.dailyMod
-				code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+"의 일일 도전")
+				code, err := ctx.Lobby.CreatePrivateRoom(ctx.Fingerprint, ctx.PlayerName+"의 일일 도전")
 				if err != nil {
 					s.errMsg = err.Error()
 					return s, nil

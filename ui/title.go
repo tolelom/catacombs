@@ -49,12 +49,12 @@ func (s *TitleScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					gs.gameState = ctx.Session.GetState()
 					ctx.Session.MarkConnected(ctx.Fingerprint)
 					ctx.Session.SendChat("System", ctx.PlayerName+" 재접속!")
-					return gs, gs.pollState()
+					return gs, gs.pollState(ctx)
 				}
 			}
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
-			return ls, ls.pollLobby()
+			return ls, ls.pollLobby(ctx)
 		} else if isKey(key, "h") {
 			return NewHelpScreen(), nil
 		} else if isKey(key, "s") {

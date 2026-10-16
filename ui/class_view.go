@@ -47,7 +47,7 @@ func (s *ClassSelectScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) 
 					ctx.Session.AddPlayer(player)
 					ctx.Lobby.RegisterSession(ctx.Fingerprint, ctx.RoomCode)
 					ws := NewWaitingScreen()
-					return ws, ws.pollWaiting()
+					return ws, ws.pollWaiting(ctx)
 				}
 			}
 		}

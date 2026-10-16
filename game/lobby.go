@@ -28,6 +28,7 @@ type LobbyRoom struct {
 	Code    string
 	Name    string
 	Owner   string
+	Private bool
 	Players []LobbyPlayer
 	Status  RoomStatus
 	Session *GameSession
@@ -198,6 +199,14 @@ func (l *Lobby) InvitePlayer(roomCode, fingerprint string) error {
 }
 
 func (l *Lobby) CreateRoom(owner, name string) (string, error) {
+	return l.createRoom(owner, name, false)
+}
+
+func (l *Lobby) CreatePrivateRoom(owner, name string) (string, error) {
+	return l.createRoom(owner, name, true)
+}
+
+func (l *Lobby) createRoom(owner, name string, private bool) (string, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if err := l.checkRoomQuotaLocked(owner); err != nil {
@@ -205,10 +214,11 @@ func (l *Lobby) CreateRoom(owner, name string) (string, error) {
 	}
 	code := l.unusedCodeLocked()
 	l.rooms[code] = &LobbyRoom{
-		Code:   code,
-		Name:   name,
-		Owner:  owner,
-		Status: RoomWaiting,
+		Code:    code,
+		Name:    name,
+		Owner:   owner,
+		Private: private,
+		Status:  RoomWaiting,
 	}
 	slog.Info("room created", "code", code, "name", name)
 	return code, nil
@@ -240,6 +250,9 @@ func (l *Lobby) JoinRoom(code, playerName, fingerprint string) error {
 	room, ok := l.rooms[code]
 	if !ok {
 		return fmt.Errorf("방 %s을(를) 찾을 수 없습니다", code)
+	}
+	if room.Private && fingerprint != room.Owner {
+		return fmt.Errorf("방 %s은(는) 비공개 방입니다", code)
 	}
 	if room.Status != RoomWaiting {
 		return fmt.Errorf("방 %s이(가) 이미 진행 중입니다", code)
@@ -359,6 +372,9 @@ func (l *Lobby) ListRoomSnapshots() []RoomSnapshot {
 	defer l.mu.RUnlock()
 	result := make([]RoomSnapshot, 0, len(l.rooms))
 	for _, r := range l.rooms {
+		if r.Private {
+			continue
+		}
 		result = append(result, RoomSnapshot{
 			Code:    r.Code,
 			Name:    r.Name,

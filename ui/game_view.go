@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -43,13 +44,29 @@ func (s *GameScreen) leaveGame(ctx *Context) (Screen, tea.Cmd) {
 	ctx.RoomCode = ""
 	ls := NewLobbyScreen()
 	ls.refreshLobby(ctx)
-	return ls, ls.pollLobby()
+	return ls, ls.pollLobby(ctx)
 }
 
-func (s *GameScreen) pollState() tea.Cmd {
-	return tea.Tick(time.Millisecond*200, func(t time.Time) tea.Msg {
-		return tickMsg{}
-	})
+func (s *GameScreen) pollState(ctx *Context) tea.Cmd {
+	return scheduleTick(ctx, time.Millisecond*200)
+}
+
+const maxChatRunes = 40
+
+func dropLastRune(s string) string {
+	r := []rune(s)
+	return string(r[:len(r)-1])
+}
+
+func clampIndex(i, n int) int {
+	switch {
+	case i < 0:
+		return 0
+	case i >= n:
+		return n - 1
+	default:
+		return i
+	}
 }
 
 func (s *GameScreen) getNeighbors() []int {
@@ -322,11 +339,11 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	}
 	if s.gameState.Phase == game.PhaseEvent {
 		es := NewEventScreen(s.gameState)
-		return es, es.pollState()
+		return es, es.pollState(ctx)
 	}
 	if s.gameState.Phase == game.PhaseShop {
 		ss := NewShopScreen(s.gameState)
-		return ss, ss.pollState()
+		return ss, ss.pollState(ctx)
 	}
 
 	switch msg.(type) {
@@ -335,10 +352,10 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ctx.Session.RevealNextLog()
 		}
 		if s.gameState.Phase == game.PhaseCombat {
-			return s, s.pollState()
+			return s, s.pollState(ctx)
 		}
 		if len(s.gameState.PendingLogs) > 0 {
-			return s, s.pollState()
+			return s, s.pollState(ctx)
 		}
 		return s, nil
 	}
@@ -357,12 +374,12 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				s.chatting = false
 				s.chatInput = ""
 			} else if key.Type == tea.KeyBackspace && len(s.chatInput) > 0 {
-				s.chatInput = s.chatInput[:len(s.chatInput)-1]
-			} else if len(key.Runes) == 1 && len(s.chatInput) < 40 {
+				s.chatInput = dropLastRune(s.chatInput)
+			} else if len(key.Runes) == 1 && utf8.RuneCountInString(s.chatInput) < maxChatRunes {
 				s.chatInput += string(key.Runes)
 			}
 			if s.gameState.Phase == game.PhaseCombat {
-				return s, s.pollState()
+				return s, s.pollState(ctx)
 			}
 			return s, nil
 		}
@@ -371,7 +388,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			s.chatting = true
 			s.chatInput = ""
 			if s.gameState.Phase == game.PhaseCombat {
-				return s, s.pollState()
+				return s, s.pollState(ctx)
 			}
 			return s, nil
 		}
@@ -448,6 +465,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 			} else if isEnter(key) {
 				if ctx.Session != nil && len(neighbors) > 0 && !alreadyVoted {
+					s.moveCursor = clampIndex(s.moveCursor, len(neighbors))
 					roomIdx := neighbors[s.moveCursor]
 					if s.gameState.SoloMode {
 						ctx.Session.EnterRoom(roomIdx)
@@ -457,13 +475,14 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					s.gameState = ctx.Session.GetState()
 					s.moveCursor = 0
 					if s.gameState.Phase == game.PhaseCombat {
-						return s, s.pollState()
+						return s, s.pollState(ctx)
 					}
 				}
 			} else if isForceQuit(key) {
 				return s, tea.Quit
 			} else if key.String() == "6" {
 				if ctx.Session != nil && len(neighbors) > 0 {
+					s.moveCursor = clampIndex(s.moveCursor, len(neighbors))
 					target := neighbors[s.moveCursor]
 					if err := ctx.Session.SubmitForesight(ctx.Fingerprint, target); err != nil {
 						s.skillMsg = err.Error()
@@ -484,7 +503,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				}
 			}
 			if isPlayerOut {
-				return s, s.pollState()
+				return s, s.pollState(ctx)
 			}
 			if isKey(key, "tab") || key.Type == tea.KeyTab {
 				if key.Type == tea.KeyShiftTab {
@@ -498,7 +517,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						s.targetCursor = (s.targetCursor + 1) % len(s.gameState.Monsters)
 					}
 				}
-				return s, s.pollState()
+				return s, s.pollState(ctx)
 			}
 			if ctx.Session != nil {
 				// Determine current player's class for skill targeting
@@ -533,7 +552,7 @@ func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 						s.relicCursor = (s.relicCursor + 1) % n
 					}
 				}
-				return s, s.pollState()
+				return s, s.pollState(ctx)
 			}
 		}
 	}

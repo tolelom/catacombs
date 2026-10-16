@@ -17,4 +17,6 @@ type Context struct {
 	Session  *game.GameSession
 	RoomCode string
 	HardMode bool
+
+	tickGen int
 }

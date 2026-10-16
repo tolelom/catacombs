@@ -141,6 +141,7 @@ type GameSession struct {
 	onAbandoned    func()
 	disconnectedAt map[string]time.Time
 	clock          func() time.Time
+	lastReveal     time.Time
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	eventVotes     map[string]int       // fingerprint → choice index
@@ -192,7 +193,10 @@ type playerActionMsg struct {
 	Turn     int
 }
 
-const disconnectGrace = 60 * time.Second
+const (
+	disconnectGrace   = 60 * time.Second
+	logRevealInterval = 150 * time.Millisecond
+)
 
 // hasMutation returns true if the session has the given mutation active.
 func (s *GameSession) hasMutation(id string) bool {
@@ -865,9 +869,11 @@ func (s *GameSession) isAliveMemberLocked(fingerprint string) bool {
 func (s *GameSession) RevealNextLog() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(s.state.PendingLogs) == 0 {
+	now := s.clock()
+	if len(s.state.PendingLogs) == 0 || now.Sub(s.lastReveal) < logRevealInterval {
 		return false
 	}
+	s.lastReveal = now
 	msg := s.state.PendingLogs[0]
 	s.state.PendingLogs = s.state.PendingLogs[1:]
 	s.state.CombatLog = append(s.state.CombatLog, msg)

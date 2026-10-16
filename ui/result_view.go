@@ -13,6 +13,8 @@ import (
 type ResultScreen struct {
 	gameState    game.GameState
 	rankingSaved bool
+	rankings     []store.RunRecord
+	loaded       bool
 }
 
 func NewResultScreen(state game.GameState, rankingSaved bool) *ResultScreen {
@@ -29,7 +31,7 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ctx.RoomCode = ""
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
-			return ls, ls.pollLobby()
+			return ls, ls.pollLobby(ctx)
 		} else if isKey(key, "n") && s.gameState.Victory && ctx.Lobby != nil {
 			// NG+ branch: leave current session, create new one with NGPlusLevel++ and a random curse
 			oldNG := 0
@@ -46,7 +48,7 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				ls := NewLobbyScreen()
 				ls.refreshLobby(ctx)
 				ls.errMsg = err.Error()
-				return ls, ls.pollLobby()
+				return ls, ls.pollLobby(ctx)
 			}
 			if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 				ctx.RoomCode = code
@@ -71,11 +73,16 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *ResultScreen) View(ctx *Context) string {
-	var rankings []store.RunRecord
-	if ctx.Store != nil {
-		rankings, _ = ctx.Store.TopRuns(10)
+	s.loadOnce(ctx)
+	return renderResult(s.gameState, s.rankings, ctx.PlayerName)
+}
+
+func (s *ResultScreen) loadOnce(ctx *Context) {
+	if s.loaded || ctx.Store == nil {
+		return
 	}
-	return renderResult(s.gameState, rankings, ctx.PlayerName)
+	s.loaded = true
+	s.rankings, _ = ctx.Store.TopRuns(10)
 }
 
 // findPlayerRank returns the 1-indexed position of the player's best run in

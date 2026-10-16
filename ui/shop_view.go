@@ -20,10 +20,8 @@ func NewShopScreen(state game.GameState) *ShopScreen {
 	return &ShopScreen{gameState: state}
 }
 
-func (s *ShopScreen) pollState() tea.Cmd {
-	return tea.Tick(time.Millisecond*300, func(t time.Time) tea.Msg {
-		return tickMsg{}
-	})
+func (s *ShopScreen) pollState(ctx *Context) tea.Cmd {
+	return scheduleTick(ctx, time.Millisecond*300)
 }
 
 func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
@@ -39,7 +37,7 @@ func (s *ShopScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				return gs, nil
 			}
 		}
-		return s, s.pollState()
+		return s, s.pollState(ctx)
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {

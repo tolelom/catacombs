@@ -197,12 +197,12 @@ func (s *NicknameScreen) finishLogin(ctx *Context) (Screen, tea.Cmd) {
 			gs.gameState = ctx.Session.GetState()
 			ctx.Session.MarkConnected(ctx.Fingerprint)
 			ctx.Session.SendChat("System", ctx.PlayerName+" 재접속!")
-			return gs, gs.pollState()
+			return gs, gs.pollState(ctx)
 		}
 	}
 	ls := NewLobbyScreen()
 	ls.refreshLobby(ctx)
-	return ls, ls.pollLobby()
+	return ls, ls.pollLobby(ctx)
 }
 
 // webFingerprint produces a deterministic fingerprint for a web user.

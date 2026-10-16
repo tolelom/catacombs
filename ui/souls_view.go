@@ -66,7 +66,7 @@ func (s *SoulsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		} else if isKey(key, "q") || isKey(key, "esc") || key.Type == tea.KeyEsc {
 			ls := NewLobbyScreen()
 			ls.refreshLobby(ctx)
-			return ls, ls.pollLobby()
+			return ls, ls.pollLobby(ctx)
 		}
 	}
 	return s, nil

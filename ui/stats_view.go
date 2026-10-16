@@ -8,8 +8,10 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// StatsScreen shows player statistics.
-type StatsScreen struct{}
+type StatsScreen struct {
+	stats  store.PlayerStats
+	loaded bool
+}
 
 func NewStatsScreen() *StatsScreen {
 	return &StatsScreen{}
@@ -25,11 +27,16 @@ func (s *StatsScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 }
 
 func (s *StatsScreen) View(ctx *Context) string {
-	var stats store.PlayerStats
-	if ctx.Store != nil {
-		stats, _ = ctx.Store.GetStats(ctx.PlayerName)
+	s.loadOnce(ctx)
+	return renderStats(ctx.PlayerName, s.stats, ctx.Width, ctx.Height)
+}
+
+func (s *StatsScreen) loadOnce(ctx *Context) {
+	if s.loaded || ctx.Store == nil {
+		return
 	}
-	return renderStats(ctx.PlayerName, stats, ctx.Width, ctx.Height)
+	s.loaded = true
+	s.stats, _ = ctx.Store.GetStats(ctx.PlayerName)
 }
 
 func renderStats(playerName string, stats store.PlayerStats, width, height int) string {

@@ -247,3 +247,45 @@ func TestPickCurseWithRNGIsDeterministic(t *testing.T) {
 		t.Fatalf("same seed gave %q and %q", a.ID, b.ID)
 	}
 }
+
+func TestLogRevealIsPacedRegardlessOfCallers(t *testing.T) {
+	s := NewGameSession(testCfg(t))
+	start := time.Now()
+	setClock(s, start)
+	s.mu.Lock()
+	s.state.PendingLogs = []string{"one", "two", "three"}
+	s.mu.Unlock()
+
+	first := s.RevealNextLog()
+	second := s.RevealNextLog()
+	if !first || second {
+		t.Fatalf("two immediate reveals returned %v, %v; want true, false", first, second)
+	}
+	setClock(s, start.Add(logRevealInterval))
+	if !s.RevealNextLog() {
+		t.Fatal("reveal after the interval did not advance")
+	}
+	if got := len(s.GetState().PendingLogs); got != 1 {
+		t.Fatalf("pending logs left: got %d, want 1", got)
+	}
+}
+
+func TestPrivateRoomIsHiddenAndClosedToOthers(t *testing.T) {
+	l := NewLobby(testConfig(t))
+	code, err := l.CreatePrivateRoom("fp-owner", "daily")
+	if err != nil {
+		t.Fatalf("create private room: %v", err)
+	}
+
+	for _, r := range l.ListRoomSnapshots() {
+		if r.Code == code {
+			t.Fatal("private room is listed in the lobby")
+		}
+	}
+	if err := l.JoinRoom(code, "intruder", "fp-other"); err == nil {
+		t.Fatal("another player joined a private room by code")
+	}
+	if err := l.JoinRoom(code, "owner", "fp-owner"); err != nil {
+		t.Fatalf("owner could not join their private room: %v", err)
+	}
+}

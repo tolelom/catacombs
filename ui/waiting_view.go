@@ -17,10 +17,8 @@ func NewWaitingScreen() *WaitingScreen {
 	return &WaitingScreen{}
 }
 
-func (s *WaitingScreen) pollWaiting() tea.Cmd {
-	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
-		return tickMsg{}
-	})
+func (s *WaitingScreen) pollWaiting(ctx *Context) tea.Cmd {
+	return scheduleTick(ctx, time.Second)
 }
 
 func (s *WaitingScreen) startGame(ctx *Context) (Screen, tea.Cmd) {
@@ -31,9 +29,9 @@ func (s *WaitingScreen) startGame(ctx *Context) (Screen, tea.Cmd) {
 		ctx.Lobby.StartRoom(ctx.RoomCode)
 		gs := NewGameScreen()
 		gs.gameState = ctx.Session.GetState()
-		return gs, gs.pollState()
+		return gs, gs.pollState(ctx)
 	}
-	return s, s.pollWaiting()
+	return s, s.pollWaiting(ctx)
 }
 
 func (s *WaitingScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
@@ -43,7 +41,7 @@ func (s *WaitingScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		if ctx.Lobby != nil && ctx.Lobby.AllReady(ctx.RoomCode) {
 			return s.startGame(ctx)
 		}
-		return s, s.pollWaiting()
+		return s, s.pollWaiting(ctx)
 	}
 
 	if key, ok := msg.(tea.KeyMsg); ok {

@@ -43,10 +43,8 @@ func NewEventScreen(state game.GameState) *EventScreen {
 	return &EventScreen{gameState: state}
 }
 
-func (e *EventScreen) pollState() tea.Cmd {
-	return tea.Tick(time.Millisecond*300, func(t time.Time) tea.Msg {
-		return tickMsg{}
-	})
+func (e *EventScreen) pollState(ctx *Context) tea.Cmd {
+	return scheduleTick(ctx, time.Millisecond*300)
 }
 
 func (e *EventScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
@@ -60,7 +58,7 @@ func (e *EventScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 				return gs, nil
 			}
 		}
-		return e, e.pollState()
+		return e, e.pollState(ctx)
 	}
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch key.String() {
@@ -83,7 +81,7 @@ func (e *EventScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 		}
 	}
-	return e, e.pollState()
+	return e, e.pollState(ctx)
 }
 
 func (e *EventScreen) submitVote(ctx *Context, idx int) {

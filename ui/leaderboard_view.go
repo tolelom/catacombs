@@ -12,7 +12,11 @@ import (
 
 // LeaderboardScreen shows the top runs.
 type LeaderboardScreen struct {
-	tab int // 0=all-time, 1=gold, 2=daily
+	tab     int
+	byFloor []store.RunRecord
+	byGold  []store.RunRecord
+	daily   []store.DailyRecord
+	loaded  bool
 }
 
 func NewLeaderboardScreen() *LeaderboardScreen {
@@ -33,14 +37,18 @@ func (s *LeaderboardScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) 
 }
 
 func (s *LeaderboardScreen) View(ctx *Context) string {
-	var byFloor, byGold []store.RunRecord
-	var daily []store.DailyRecord
-	if ctx.Store != nil {
-		byFloor, _ = ctx.Store.TopRuns(10)
-		byGold, _ = ctx.Store.TopRunsByGold(10)
-		daily, _ = ctx.Store.GetDailyLeaderboard(time.Now().Format("2006-01-02"), 20)
+	s.loadOnce(ctx)
+	return renderLeaderboard(s.byFloor, s.byGold, s.daily, s.tab, ctx.Width, ctx.Height, ctx.PlayerName, ctx.Fingerprint)
+}
+
+func (s *LeaderboardScreen) loadOnce(ctx *Context) {
+	if s.loaded || ctx.Store == nil {
+		return
 	}
-	return renderLeaderboard(byFloor, byGold, daily, s.tab, ctx.Width, ctx.Height, ctx.PlayerName, ctx.Fingerprint)
+	s.loaded = true
+	s.byFloor, _ = ctx.Store.TopRuns(10)
+	s.byGold, _ = ctx.Store.TopRunsByGold(10)
+	s.daily, _ = ctx.Store.GetDailyLeaderboard(time.Now().Format("2006-01-02"), 20)
 }
 
 // markIfMine wraps a leaderboard line with a highlight when the row belongs

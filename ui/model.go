@@ -2,13 +2,22 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
 )
 
-type tickMsg struct{}
+type tickMsg struct {
+	gen int
+}
+
+func scheduleTick(ctx *Context, d time.Duration) tea.Cmd {
+	ctx.tickGen++
+	gen := ctx.tickGen
+	return tea.Tick(d, func(time.Time) tea.Msg { return tickMsg{gen: gen} })
+}
 
 const (
 	defaultTerminalWidth  = 80
@@ -71,6 +80,10 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tickMsg:
+		if msg.gen != m.ctx.tickGen {
+			return m, nil
+		}
 	case tea.WindowSizeMsg:
 		m.ctx.Width, m.ctx.Height = normalizeTerminalSize(msg.Width, msg.Height)
 		return m, nil
