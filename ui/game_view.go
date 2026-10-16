@@ -64,9 +64,6 @@ func (s *GameScreen) getNeighbors() []int {
 }
 
 func (s *GameScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
-	if ctx.Session != nil && ctx.Fingerprint != "" {
-		ctx.Session.TouchActivity(ctx.Fingerprint)
-	}
 	// Refresh state on every update
 	if ctx.Session != nil {
 		s.gameState = ctx.Session.GetState()

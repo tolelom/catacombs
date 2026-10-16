@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/tolelom/catacombs/dungeon"
 	"github.com/tolelom/catacombs/entity"
@@ -11,13 +10,6 @@ import (
 func (s *GameSession) EnterRoom(roomIdx int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	now := time.Now()
-	for _, p := range s.state.Players {
-		if p.Fingerprint != "" {
-			s.lastActivity[p.Fingerprint] = now
-		}
-	}
 
 	s.enterRoomLocked(roomIdx)
 }
@@ -609,6 +601,7 @@ func (s *GameSession) resolveEventVoteLocked() {
 
 	s.applyEventOutcome(outcome)
 	s.clearPendingEventLocked(true)
+	s.endRunIfPartyWipedLocked()
 }
 
 // triggerEvent picks a random event and parks the session in PhaseEvent
@@ -705,6 +698,7 @@ func (s *GameSession) resolveLootPicksLocked() {
 		s.applyOutcomeToPlayer(p, outcome)
 	}
 	s.clearPendingEventLocked(true)
+	s.endRunIfPartyWipedLocked()
 }
 
 // applyOutcomeToPlayer applies a loot outcome to a single player. Unlike

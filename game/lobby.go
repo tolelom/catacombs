@@ -116,11 +116,28 @@ func (l *Lobby) PlayerOffline(fingerprint string) {
 func (l *Lobby) Disconnect(fingerprint string) {
 	l.PlayerOffline(fingerprint)
 	code, ok := l.roomOf(fingerprint)
-	if !ok || !l.releasesOnDisconnect(code) {
+	if !ok {
 		return
 	}
-	l.LeaveRoom(code, fingerprint)
-	l.LeaveSession(code, fingerprint)
+	if l.releasesOnDisconnect(code) {
+		l.LeaveRoom(code, fingerprint)
+		l.LeaveSession(code, fingerprint)
+		return
+	}
+	l.markDisconnectedInSession(code, fingerprint)
+}
+
+func (l *Lobby) markDisconnectedInSession(code, fingerprint string) {
+	l.mu.RLock()
+	room, ok := l.rooms[code]
+	var session *GameSession
+	if ok {
+		session = room.Session
+	}
+	l.mu.RUnlock()
+	if session != nil {
+		session.MarkDisconnected(fingerprint)
+	}
 }
 
 func (l *Lobby) roomOf(fingerprint string) (string, bool) {

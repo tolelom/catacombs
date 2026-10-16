@@ -22,11 +22,9 @@ func (s *GameSession) RunTurn() {
 	s.dodgeBonusThisTurn = make(map[string]float64)
 	s.mu.Unlock()
 
-	// Drain stale actions and leave-signals from previous turn
 draining:
 	for {
 		select {
-		case <-s.actionCh:
 		case <-s.playerLeftCh:
 		default:
 			break draining
@@ -47,22 +45,18 @@ collecting:
 		// playerLeftCh) shrinks the expected count instead of stalling
 		// the party until the timeout fires.
 		s.mu.Lock()
-		aliveCount := 0
-		for _, p := range s.state.Players {
-			if !p.IsOut() {
-				aliveCount++
-			}
-		}
-		collected := len(s.actions)
+		allActed := s.allAliveMembersActedLocked()
 		s.mu.Unlock()
-		if collected >= aliveCount {
+		if allActed {
 			break collecting
 		}
 
 		select {
 		case msg := <-s.actionCh:
 			s.mu.Lock()
-			s.actions[msg.PlayerID] = msg.Action
+			if msg.Turn == s.state.TurnNum && s.isAliveMemberLocked(msg.PlayerID) {
+				s.actions[msg.PlayerID] = msg.Action
+			}
 			s.mu.Unlock()
 		case <-s.playerLeftCh:
 			// loop re-evaluates aliveCount on next iteration
@@ -721,18 +715,19 @@ func (s *GameSession) resolveMonsterActions() {
 		m.TickTaunt()
 	}
 
-	allPlayersDead := true
+	s.endRunIfPartyWipedLocked()
+}
+
+func (s *GameSession) allAliveMembersActedLocked() bool {
 	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			allPlayersDead = false
-			break
+		if p.IsOut() {
+			continue
+		}
+		if _, ok := s.actions[p.Fingerprint]; !ok {
+			return false
 		}
 	}
-	if allPlayersDead {
-		s.state.Phase = PhaseResult
-		s.state.GameOver = true
-		s.addLog("파티가 전멸했습니다!")
-	}
+	return true
 }
 
 // pickHealTarget returns the player a heal should land on: the explicitly

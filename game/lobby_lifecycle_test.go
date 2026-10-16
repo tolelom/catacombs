@@ -123,19 +123,18 @@ func TestDisconnectAfterGameOverRemovesRoom(t *testing.T) {
 	}
 }
 
-func TestSessionAbandonedByInactivityRemovesRoom(t *testing.T) {
+func TestSessionAbandonedAfterDisconnectRemovesRoom(t *testing.T) {
 	l := NewLobby(testConfig(t))
 	code := mustCreateRoom(t, l, "abandoned")
 	session := seatInWaitingRoom(t, l, code, "A", "fp-a")
 	startPlaying(t, l, code, session)
 
-	session.mu.Lock()
-	session.lastActivity["fp-a"] = time.Now().Add(-2 * time.Minute)
-	session.mu.Unlock()
+	l.Disconnect("fp-a")
+	setClock(session, time.Now().Add(2*time.Minute))
 	session.signalCombat()
 
 	if !waitFor(t, 3*time.Second, func() bool { return l.GetRoom(code) == nil }) {
-		t.Fatal("room of a session abandoned by inactivity was not reclaimed")
+		t.Fatal("room of a session abandoned after its last player disconnected was not reclaimed")
 	}
 }
 

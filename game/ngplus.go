@@ -27,7 +27,7 @@ var AvailableCurses = []Curse{
 // PickCurse returns one curse using the supplied RNG.
 func PickCurse(rng *rand.Rand) Curse {
 	if rng == nil {
-		return AvailableCurses[0]
+		return AvailableCurses[rand.Intn(len(AvailableCurses))]
 	}
 	return AvailableCurses[rng.Intn(len(AvailableCurses))]
 }

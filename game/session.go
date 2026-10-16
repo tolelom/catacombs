@@ -139,7 +139,8 @@ type GameSession struct {
 	done           chan struct{}
 	stopOnce       sync.Once
 	onAbandoned    func()
-	lastActivity   map[string]time.Time // fingerprint -> last activity time
+	disconnectedAt map[string]time.Time
+	clock          func() time.Time
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
 	eventVotes     map[string]int       // fingerprint → choice index
@@ -188,7 +189,10 @@ type GameSession struct {
 type playerActionMsg struct {
 	PlayerID string
 	Action   PlayerAction
+	Turn     int
 }
+
+const disconnectGrace = 60 * time.Second
 
 // hasMutation returns true if the session has the given mutation active.
 func (s *GameSession) hasMutation(id string) bool {
@@ -206,7 +210,8 @@ func NewGameSession(cfg *config.Config) *GameSession {
 		combatSignal:        make(chan struct{}, 1),
 		playerLeftCh:        make(chan struct{}, 4),
 		done:                make(chan struct{}),
-		lastActivity:        make(map[string]time.Time),
+		disconnectedAt:      make(map[string]time.Time),
+		clock:               time.Now,
 		rng:                 rand.New(rand.NewSource(time.Now().UnixNano())),
 		coopUsedThisCombat:  make(map[string]bool),
 		healerReviveUsed:    make(map[string]bool),
@@ -299,10 +304,6 @@ func (s *GameSession) StartGame() {
 	s.started = true
 	s.state.SoloMode = len(s.state.Players) == 1
 	s.state.StartingPartySize = len(s.state.Players)
-	now := time.Now()
-	for _, p := range s.state.Players {
-		s.lastActivity[p.Fingerprint] = now
-	}
 	s.mu.Unlock()
 	s.StartFloor()
 	go s.combatLoop()
@@ -330,39 +331,15 @@ func (s *GameSession) combatLoop() {
 			return
 		}
 
-		// Remove players inactive for >60 seconds
 		s.mu.Lock()
-		now := time.Now()
-		changed := false
-		remaining := make([]*entity.Player, 0, len(s.state.Players))
-		for _, p := range s.state.Players {
-			if p.Fingerprint != "" && !p.IsOut() {
-				if last, ok := s.lastActivity[p.Fingerprint]; ok {
-					if now.Sub(last) > 60*time.Second {
-						slog.Warn("player inactive removed", "fingerprint", p.Fingerprint, "name", p.Name)
-						s.addLog(fmt.Sprintf("%s 제거됨 (접속 끊김)", p.Name))
-						changed = true
-						continue
-					}
-				}
+		if s.sweepDisconnectedLocked(s.clock()) && len(s.state.Players) == 0 {
+			s.state.GameOver = true
+			onAbandoned := s.onAbandoned
+			s.mu.Unlock()
+			if onAbandoned != nil {
+				onAbandoned()
 			}
-			remaining = append(remaining, p)
-		}
-		if changed {
-			s.state.Players = remaining
-			if len(s.state.Players) == 0 {
-				s.state.GameOver = true
-				onAbandoned := s.onAbandoned
-				s.mu.Unlock()
-				if onAbandoned != nil {
-					onAbandoned()
-				}
-				return
-			}
-			// One or more disconnected players were swept — re-check the
-			// active phase's quorum so the party isn't stranded on a vote
-			// that will never complete.
-			s.recheckPhaseQuorumLocked()
+			return
 		}
 		s.mu.Unlock()
 
@@ -460,7 +437,7 @@ func (s *GameSession) RemovePlayer(fingerprint string) int {
 		return -1
 	}
 	s.state.Players = append(s.state.Players[:idx], s.state.Players[idx+1:]...)
-	delete(s.lastActivity, fingerprint)
+	delete(s.disconnectedAt, fingerprint)
 	if s.moveVotes != nil {
 		delete(s.moveVotes, fingerprint)
 	}
@@ -842,14 +819,9 @@ func (s *GameSession) SubmitForesight(fingerprint string, roomIdx int) error {
 
 func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
 	s.mu.Lock()
-	s.lastActivity[playerID] = time.Now()
-
-	// Block dead/out players from submitting
-	for _, p := range s.state.Players {
-		if p.Fingerprint == playerID && p.IsOut() {
-			s.mu.Unlock()
-			return
-		}
+	if !s.isAliveMemberLocked(playerID) {
+		s.mu.Unlock()
+		return
 	}
 
 	// Prevent duplicate submissions in the same turn
@@ -875,8 +847,18 @@ func (s *GameSession) SubmitAction(playerID string, action PlayerAction) {
 		s.state.SubmittedActions = make(map[string]string)
 	}
 	s.state.SubmittedActions[playerID] = desc
+	turn := s.state.TurnNum
 	s.mu.Unlock()
-	s.actionCh <- playerActionMsg{PlayerID: playerID, Action: action}
+	s.actionCh <- playerActionMsg{PlayerID: playerID, Action: action, Turn: turn}
+}
+
+func (s *GameSession) isAliveMemberLocked(fingerprint string) bool {
+	for _, p := range s.state.Players {
+		if p.Fingerprint == fingerprint {
+			return !p.IsOut()
+		}
+	}
+	return false
 }
 
 // RevealNextLog moves one log from PendingLogs to CombatLog. Returns true if there was one to reveal.
@@ -895,10 +877,54 @@ func (s *GameSession) RevealNextLog() bool {
 	return true
 }
 
-func (s *GameSession) TouchActivity(fingerprint string) {
+func (s *GameSession) MarkDisconnected(fingerprint string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.lastActivity[fingerprint] = time.Now()
+	s.disconnectedAt[fingerprint] = s.clock()
+}
+
+func (s *GameSession) MarkConnected(fingerprint string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.disconnectedAt, fingerprint)
+}
+
+func (s *GameSession) sweepDisconnectedLocked(now time.Time) bool {
+	remaining := make([]*entity.Player, 0, len(s.state.Players))
+	for _, p := range s.state.Players {
+		if s.pastDisconnectGraceLocked(p, now) {
+			slog.Warn("disconnected player removed", "fingerprint", p.Fingerprint, "name", p.Name)
+			s.addLog(fmt.Sprintf("%s 제거됨 (접속 끊김)", p.Name))
+			delete(s.disconnectedAt, p.Fingerprint)
+			continue
+		}
+		remaining = append(remaining, p)
+	}
+	if len(remaining) == len(s.state.Players) {
+		return false
+	}
+	s.state.Players = remaining
+	if len(remaining) > 0 {
+		s.recheckPhaseQuorumLocked()
+	}
+	return true
+}
+
+func (s *GameSession) pastDisconnectGraceLocked(p *entity.Player, now time.Time) bool {
+	since, ok := s.disconnectedAt[p.Fingerprint]
+	return ok && now.Sub(since) > disconnectGrace
+}
+
+func (s *GameSession) endRunIfPartyWipedLocked() {
+	for _, p := range s.state.Players {
+		if !p.IsOut() {
+			return
+		}
+	}
+	s.state.Phase = PhaseResult
+	s.state.GameOver = true
+	s.addLog("파티가 전멸했습니다!")
+	s.signalCombat()
 }
 
 // AllocateSkillPoint spends one skill point into the given branch for the player.
@@ -1087,8 +1113,6 @@ func (s *GameSession) SubmitMoveVote(fingerprint string, roomIdx int) bool {
 		return false
 	}
 
-	s.lastActivity[fingerprint] = time.Now()
-
 	if s.moveVotes == nil {
 		s.moveVotes = make(map[string]int)
 	}
@@ -1159,10 +1183,6 @@ func (s *GameSession) SubmitEventVote(fingerprint string, choiceIdx int) bool {
 	if choiceIdx < 0 || choiceIdx >= len(s.pendingEvent.Choices) {
 		return false
 	}
-	if fingerprint != "" {
-		s.lastActivity[fingerprint] = time.Now()
-	}
-
 	if s.eventVotes == nil {
 		s.eventVotes = make(map[string]int)
 	}

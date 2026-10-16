@@ -195,7 +195,7 @@ func (s *NicknameScreen) finishLogin(ctx *Context) (Screen, tea.Cmd) {
 			ctx.Session = session
 			gs := NewGameScreen()
 			gs.gameState = ctx.Session.GetState()
-			ctx.Session.TouchActivity(ctx.Fingerprint)
+			ctx.Session.MarkConnected(ctx.Fingerprint)
 			ctx.Session.SendChat("System", ctx.PlayerName+" 재접속!")
 			return gs, gs.pollState()
 		}
