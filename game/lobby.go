@@ -1,6 +1,7 @@
 package game
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -18,7 +19,7 @@ const (
 
 type LobbyPlayer struct {
 	Name        string
-	Class       string // empty until class selected
+	Class       string
 	Fingerprint string
 	Ready       bool
 }
@@ -26,23 +27,31 @@ type LobbyPlayer struct {
 type LobbyRoom struct {
 	Code    string
 	Name    string
+	Owner   string
 	Players []LobbyPlayer
 	Status  RoomStatus
 	Session *GameSession
 }
 
+const maxRooms = 100
+
+var (
+	ErrOwnerHasWaitingRoom = errors.New("이미 대기 중인 방이 있습니다")
+	ErrTooManyRooms        = errors.New("방이 너무 많습니다. 잠시 후 다시 시도해 주세요")
+)
+
 type OnlinePlayer struct {
 	Name        string
 	Fingerprint string
-	InRoom      string // room code, empty if in lobby
+	InRoom      string
 }
 
 type Lobby struct {
 	mu             sync.RWMutex
 	cfg            *config.Config
 	rooms          map[string]*LobbyRoom
-	online         map[string]*OnlinePlayer // fingerprint -> player
-	activeSessions map[string]string        // fingerprint -> room code (for reconnect)
+	online         map[string]*OnlinePlayer
+	activeSessions map[string]string
 }
 
 func NewLobby(cfg *config.Config) *Lobby {
@@ -84,8 +93,6 @@ func (l *Lobby) GetActiveSession(fingerprint string) (string, *GameSession) {
 	}
 	session := room.Session
 	l.mu.RUnlock()
-	// GetState takes session.mu; calling it under l.mu would let one slow
-	// session serialise every other reconnect on the lobby lock.
 	for _, p := range session.GetState().Players {
 		if p.Fingerprint == fingerprint {
 			return code, session
@@ -104,6 +111,49 @@ func (l *Lobby) PlayerOffline(fingerprint string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	delete(l.online, fingerprint)
+}
+
+func (l *Lobby) Disconnect(fingerprint string) {
+	l.PlayerOffline(fingerprint)
+	code, ok := l.roomOf(fingerprint)
+	if !ok || !l.releasesOnDisconnect(code) {
+		return
+	}
+	l.LeaveRoom(code, fingerprint)
+	l.LeaveSession(code, fingerprint)
+}
+
+func (l *Lobby) roomOf(fingerprint string) (string, bool) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	if code, ok := l.activeSessions[fingerprint]; ok {
+		if _, exists := l.rooms[code]; exists {
+			return code, true
+		}
+	}
+	for code, r := range l.rooms {
+		for _, p := range r.Players {
+			if p.Fingerprint == fingerprint {
+				return code, true
+			}
+		}
+	}
+	return "", false
+}
+
+func (l *Lobby) releasesOnDisconnect(code string) bool {
+	l.mu.RLock()
+	room, ok := l.rooms[code]
+	if !ok {
+		l.mu.RUnlock()
+		return false
+	}
+	status, session := room.Status, room.Session
+	l.mu.RUnlock()
+	if status == RoomWaiting || session == nil {
+		return true
+	}
+	return session.IsOver()
 }
 
 func (l *Lobby) ListOnline() []*OnlinePlayer {
@@ -126,24 +176,44 @@ func (l *Lobby) InvitePlayer(roomCode, fingerprint string) error {
 	if p.InRoom != "" {
 		return fmt.Errorf("플레이어가 이미 방에 있습니다")
 	}
-	// Store the invite as a pending field
 	p.InRoom = "invited:" + roomCode
 	return nil
 }
 
-func (l *Lobby) CreateRoom(name string) string {
+func (l *Lobby) CreateRoom(owner, name string) (string, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if err := l.checkRoomQuotaLocked(owner); err != nil {
+		return "", err
+	}
+	code := l.unusedCodeLocked()
+	l.rooms[code] = &LobbyRoom{
+		Code:   code,
+		Name:   name,
+		Owner:  owner,
+		Status: RoomWaiting,
+	}
+	slog.Info("room created", "code", code, "name", name)
+	return code, nil
+}
+
+func (l *Lobby) checkRoomQuotaLocked(owner string) error {
+	if len(l.rooms) >= maxRooms {
+		return ErrTooManyRooms
+	}
+	for _, r := range l.rooms {
+		if r.Owner == owner && r.Status == RoomWaiting {
+			return ErrOwnerHasWaitingRoom
+		}
+	}
+	return nil
+}
+
+func (l *Lobby) unusedCodeLocked() string {
 	code := generateCode()
 	for l.rooms[code] != nil {
 		code = generateCode()
 	}
-	l.rooms[code] = &LobbyRoom{
-		Code:   code,
-		Name:   name,
-		Status: RoomWaiting,
-	}
-	slog.Info("room created", "code", code, "name", name)
 	return code
 }
 
@@ -183,7 +253,6 @@ func (l *Lobby) LeaveRoom(code, fingerprint string) {
 			break
 		}
 	}
-	// Remove empty waiting rooms
 	if len(room.Players) == 0 && room.Status == RoomWaiting {
 		delete(l.rooms, code)
 	}
@@ -234,10 +303,6 @@ func (l *Lobby) GetRoom(code string) *LobbyRoom {
 	return l.rooms[code]
 }
 
-// RoomSnapshot is a point-in-time copy of a LobbyRoom's read-only state. The
-// Players slice is a fresh copy so callers can iterate without holding l.mu.
-// Session is a pointer; once a session is created it is not reassigned, so
-// the pointer is safe to use after RoomSnapshot returns.
 type RoomSnapshot struct {
 	Code    string
 	Name    string
@@ -246,9 +311,6 @@ type RoomSnapshot struct {
 	Session *GameSession
 }
 
-// RoomSnapshot returns a copy of the room's state under l.mu, decoupling
-// callers (especially UI code rendering on a tick) from concurrent
-// JoinRoom/LeaveRoom/SetPlayer* mutations on room.Players.
 func (l *Lobby) RoomSnapshot(code string) (RoomSnapshot, bool) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -275,10 +337,6 @@ func (l *Lobby) ListRooms() []*LobbyRoom {
 	return result
 }
 
-// ListRoomSnapshots returns a copy of every room's state under l.mu. Use this
-// from UI / external readers instead of ListRooms — the latter hands back live
-// *LobbyRoom pointers, and reading their Players slice without l.mu races
-// with Join/Leave/SetPlayer* mutations.
 func (l *Lobby) ListRoomSnapshots() []RoomSnapshot {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -295,16 +353,9 @@ func (l *Lobby) ListRoomSnapshots() []RoomSnapshot {
 	return result
 }
 
-// LeaveSession removes a single player from the room's session and returns
-// the number of players still remaining. The room and session are kept alive
-// while at least one player is left. When the last player leaves, the session
-// is stopped and the room removed atomically.
 func (l *Lobby) LeaveSession(code, fingerprint string) int {
 	l.mu.Lock()
 	room, ok := l.rooms[code]
-	// Only clear the reconnect mapping if it actually points at this room.
-	// A stale LeaveSession from a delayed UI cmd must not wipe a mapping
-	// that the player already moved to a different room.
 	if l.activeSessions[fingerprint] == code {
 		delete(l.activeSessions, fingerprint)
 	}
@@ -320,19 +371,23 @@ func (l *Lobby) LeaveSession(code, fingerprint string) int {
 		return remaining
 	}
 
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	// Re-check under lock: another goroutine may have repopulated the room.
-	if cur, ok := l.rooms[code]; ok && cur.Session == session {
-		session.Stop()
-		delete(l.rooms, code)
-	}
+	l.removeRoomIfSession(code, session)
 	return 0
 }
 
-// EnsureSession returns the room's GameSession, creating one via init if it
-// does not yet exist. The check-and-create is atomic under the lobby lock, so
-// concurrent callers will agree on a single session instance.
+func (l *Lobby) removeRoomIfSession(code string, session *GameSession) {
+	l.mu.Lock()
+	cur, ok := l.rooms[code]
+	removed := ok && cur.Session == session
+	if removed {
+		delete(l.rooms, code)
+	}
+	l.mu.Unlock()
+	if removed {
+		session.Stop()
+	}
+}
+
 func (l *Lobby) EnsureSession(code string, init func() *GameSession) *GameSession {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -341,7 +396,9 @@ func (l *Lobby) EnsureSession(code string, init func() *GameSession) *GameSessio
 		return nil
 	}
 	if room.Session == nil {
-		room.Session = init()
+		session := init()
+		session.setOnAbandoned(func() { l.removeRoomIfSession(code, session) })
+		room.Session = session
 	}
 	return room.Session
 }
@@ -361,9 +418,6 @@ func (l *Lobby) RemoveRoom(code string) {
 	delete(l.rooms, code)
 }
 
-// StopAllSessions terminates every active session's combat loop. Used during
-// graceful shutdown so combatLoop goroutines exit before the process ends
-// rather than being killed mid-tick.
 func (l *Lobby) StopAllSessions() {
 	l.mu.Lock()
 	sessions := make([]*GameSession, 0, len(l.rooms))

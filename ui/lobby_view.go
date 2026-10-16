@@ -120,7 +120,11 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		// Normal lobby key handling
 		if isKey(key, "c") {
 			if ctx.Lobby != nil {
-				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 방")
+				code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+"의 방")
+				if err != nil {
+					s.errMsg = err.Error()
+					return s, nil
+				}
 				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
 					// Joining a room we just created shouldn't fail, but if it
 					// does the player must see why instead of a ghost lobby.
@@ -160,7 +164,11 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 					s.dailyMod = game.PickDailyModifier(s.dailyDate)
 				}
 				dailyDate, dailyMod := s.dailyDate, s.dailyMod
-				code := ctx.Lobby.CreateRoom(ctx.PlayerName + "의 일일 도전")
+				code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+"의 일일 도전")
+				if err != nil {
+					s.errMsg = err.Error()
+					return s, nil
+				}
 				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 					ctx.RoomCode = code
 					session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {

@@ -333,7 +333,7 @@ func TestDailyCrossSessionDeterminism(t *testing.T) {
 func TestMultiplayerFlowEndToEnd(t *testing.T) {
 	cfg := testCfg(t)
 	l := NewLobby(cfg)
-	code := l.CreateRoom("E2E")
+	code := mustCreateRoom(t, l, "E2E")
 	if err := l.JoinRoom(code, "A", "fp-a"); err != nil {
 		t.Fatalf("join A: %v", err)
 	}
@@ -387,7 +387,7 @@ func TestMultiplayerFlowEndToEnd(t *testing.T) {
 func TestStopAllSessionsDuringShutdown(t *testing.T) {
 	cfg := testCfg(t)
 	l := NewLobby(cfg)
-	codes := []string{l.CreateRoom("R1"), l.CreateRoom("R2"), l.CreateRoom("R3")}
+	codes := []string{mustCreateRoom(t, l, "R1"), mustCreateRoom(t, l, "R2"), mustCreateRoom(t, l, "R3")}
 	sessions := make([]*GameSession, len(codes))
 	for i, c := range codes {
 		sessions[i] = l.EnsureSession(c, func() *GameSession { return NewGameSession(cfg) })

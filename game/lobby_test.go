@@ -22,7 +22,7 @@ func testConfig(t *testing.T) *config.Config {
 
 func TestCreateRoom(t *testing.T) {
 	lobby := NewLobby(testConfig(t))
-	code := lobby.CreateRoom("Test Room")
+	code := mustCreateRoom(t, lobby, "Test Room")
 	if len(code) != 4 {
 		t.Errorf("Room code length: got %d, want 4", len(code))
 	}
@@ -34,7 +34,7 @@ func TestCreateRoom(t *testing.T) {
 
 func TestJoinRoom(t *testing.T) {
 	lobby := NewLobby(testConfig(t))
-	code := lobby.CreateRoom("Test Room")
+	code := mustCreateRoom(t, lobby, "Test Room")
 	err := lobby.JoinRoom(code, "player1", "fp-player1")
 	if err != nil {
 		t.Errorf("Join failed: %v", err)
@@ -47,7 +47,7 @@ func TestJoinRoom(t *testing.T) {
 
 func TestRoomStatusTransition(t *testing.T) {
 	l := NewLobby(testConfig(t))
-	code := l.CreateRoom("Test")
+	code := mustCreateRoom(t, l, "Test")
 	_ = l.JoinRoom(code, "Alice", "fp-alice")
 	r := l.GetRoom(code)
 	if r.Status != RoomWaiting {
@@ -66,7 +66,7 @@ func TestRoomStatusTransition(t *testing.T) {
 
 func TestJoinRoomFull(t *testing.T) {
 	lobby := NewLobby(testConfig(t))
-	code := lobby.CreateRoom("Test Room")
+	code := mustCreateRoom(t, lobby, "Test Room")
 	for i := 0; i < 4; i++ {
 		if err := lobby.JoinRoom(code, fmt.Sprintf("player%d", i), fmt.Sprintf("fp-player%d", i)); err != nil {
 			t.Fatalf("unexpected join error: %v", err)
@@ -80,7 +80,7 @@ func TestJoinRoomFull(t *testing.T) {
 
 func TestJoinRoomDuplicateFingerprint(t *testing.T) {
 	lobby := NewLobby(testConfig(t))
-	code := lobby.CreateRoom("Test Room")
+	code := mustCreateRoom(t, lobby, "Test Room")
 	if err := lobby.JoinRoom(code, "Alice", "fp-alice"); err != nil {
 		t.Fatalf("first join should succeed: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestJoinRoomDuplicateFingerprint(t *testing.T) {
 
 func TestSetPlayerClass(t *testing.T) {
 	l := NewLobby(testConfig(t))
-	code := l.CreateRoom("Test")
+	code := mustCreateRoom(t, l, "Test")
 	_ = l.JoinRoom(code, "Alice", "fp-alice")
 	l.SetPlayerClass(code, "fp-alice", "Warrior")
 	room := l.GetRoom(code)
@@ -106,7 +106,7 @@ func TestSetPlayerClass(t *testing.T) {
 
 func TestAllReady(t *testing.T) {
 	l := NewLobby(testConfig(t))
-	code := l.CreateRoom("Test")
+	code := mustCreateRoom(t, l, "Test")
 	_ = l.JoinRoom(code, "Alice", "fp-alice")
 	_ = l.JoinRoom(code, "Bob", "fp-bob")
 
@@ -127,7 +127,7 @@ func TestAllReady(t *testing.T) {
 
 func TestAllReadyEmptyRoom(t *testing.T) {
 	l := NewLobby(testConfig(t))
-	code := l.CreateRoom("Test")
+	code := mustCreateRoom(t, l, "Test")
 	if l.AllReady(code) {
 		t.Error("empty room should not be all ready")
 	}
@@ -140,7 +140,7 @@ func TestAllReadyEmptyRoom(t *testing.T) {
 func TestLeaveSessionRemovesGhostFromWaitingRoom(t *testing.T) {
 	cfg := testConfig(t)
 	l := NewLobby(cfg)
-	code := l.CreateRoom("Pre-game")
+	code := mustCreateRoom(t, l, "Pre-game")
 
 	// Two players join the lobby, pick classes, get added to the session.
 	if err := l.JoinRoom(code, "A", "fp-a"); err != nil {
@@ -173,8 +173,8 @@ func TestLeaveSessionRemovesGhostFromWaitingRoom(t *testing.T) {
 func TestStopAllSessionsHaltsCombatLoops(t *testing.T) {
 	cfg := testConfig(t)
 	l := NewLobby(cfg)
-	codeA := l.CreateRoom("A")
-	codeB := l.CreateRoom("B")
+	codeA := mustCreateRoom(t, l, "A")
+	codeB := mustCreateRoom(t, l, "B")
 	sessA := l.EnsureSession(codeA, func() *GameSession { return NewGameSession(cfg) })
 	sessB := l.EnsureSession(codeB, func() *GameSession { return NewGameSession(cfg) })
 	if sessA == nil || sessB == nil {
@@ -197,7 +197,7 @@ func TestStopAllSessionsHaltsCombatLoops(t *testing.T) {
 func TestLeaveSessionKeepsRoomForRemainingPlayers(t *testing.T) {
 	cfg := testConfig(t)
 	l := NewLobby(cfg)
-	code := l.CreateRoom("Test")
+	code := mustCreateRoom(t, l, "Test")
 
 	session := l.EnsureSession(code, func() *GameSession { return NewGameSession(cfg) })
 	if session == nil {
@@ -240,8 +240,8 @@ func TestLeaveSessionKeepsRoomForRemainingPlayers(t *testing.T) {
 // reconnect mapping for a room the player has since moved to.
 func TestLeaveSessionPreservesUnrelatedActiveSession(t *testing.T) {
 	l := NewLobby(testConfig(t))
-	codeA := l.CreateRoom("RoomA")
-	codeB := l.CreateRoom("RoomB")
+	codeA := mustCreateRoom(t, l, "RoomA")
+	codeB := mustCreateRoom(t, l, "RoomB")
 	l.RegisterSession("fp-alice", codeA)
 
 	// Stale leave for room B must not touch the mapping for room A.

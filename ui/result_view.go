@@ -41,7 +41,13 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			}
 			ctx.Session = nil
 			ctx.RoomCode = ""
-			code := ctx.Lobby.CreateRoom(ctx.PlayerName + fmt.Sprintf(" NG+%d", oldNG+1))
+			code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+fmt.Sprintf(" NG+%d", oldNG+1))
+			if err != nil {
+				ls := NewLobbyScreen()
+				ls.refreshLobby(ctx)
+				ls.errMsg = err.Error()
+				return ls, ls.pollLobby()
+			}
 			if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
 				ctx.RoomCode = code
 				session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {

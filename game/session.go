@@ -137,6 +137,8 @@ type GameSession struct {
 	combatSignal   chan struct{}
 	playerLeftCh   chan struct{} // wakes RunTurn's collect loop on mid-turn quit
 	done           chan struct{}
+	stopOnce       sync.Once
+	onAbandoned    func()
 	lastActivity   map[string]time.Time // fingerprint -> last activity time
 	moveVotes      map[string]int       // fingerprint -> voted room index
 	shopLeavers    map[string]bool      // fingerprint -> wants to leave the shop
@@ -272,12 +274,19 @@ func (s *GameSession) effectiveTurnTimeout() int {
 }
 
 func (s *GameSession) Stop() {
-	select {
-	case <-s.done:
-		// already stopped
-	default:
-		close(s.done)
-	}
+	s.stopOnce.Do(func() { close(s.done) })
+}
+
+func (s *GameSession) IsOver() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.state.GameOver
+}
+
+func (s *GameSession) setOnAbandoned(fn func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onAbandoned = fn
 }
 
 // StartGame determines solo mode from actual player count at game start
@@ -343,7 +352,11 @@ func (s *GameSession) combatLoop() {
 			s.state.Players = remaining
 			if len(s.state.Players) == 0 {
 				s.state.GameOver = true
+				onAbandoned := s.onAbandoned
 				s.mu.Unlock()
+				if onAbandoned != nil {
+					onAbandoned()
+				}
 				return
 			}
 			// One or more disconnected players were swept — re-check the

@@ -61,6 +61,10 @@ func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *stor
 	}
 }
 
+func (m Model) Fingerprint() string {
+	return m.ctx.Fingerprint
+}
+
 func (m Model) Init() tea.Cmd {
 	return nil
 }

@@ -30,6 +30,7 @@ func NewServer(addr, hostKeyPath string, lobby *game.Lobby, db *store.DB) (*ssh.
 			bubbletea.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 				return newSessionModel(s, lobby, db)
 			}),
+			releaseOnDisconnect(lobby),
 		),
 	)
 	if err != nil {
@@ -47,7 +48,22 @@ func newSessionModel(s ssh.Session, lobby *game.Lobby, db *store.DB) (tea.Model,
 	}
 	pty, _, _ := s.Pty()
 	slog.Info("new SSH session", "fingerprint", fingerprint, "width", pty.Window.Width, "height", pty.Window.Height)
-	return ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db), []tea.ProgramOption{tea.WithAltScreen()}
+	m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db)
+	s.Context().SetValue(sessionModelKey{}, m)
+	return m, []tea.ProgramOption{tea.WithAltScreen()}
+}
+
+type sessionModelKey struct{}
+
+func releaseOnDisconnect(lobby *game.Lobby) wish.Middleware {
+	return func(next ssh.Handler) ssh.Handler {
+		return func(s ssh.Session) {
+			next(s)
+			if m, ok := s.Context().Value(sessionModelKey{}).(ui.Model); ok {
+				lobby.Disconnect(m.Fingerprint())
+			}
+		}
+	}
 }
 
 func sessionFingerprint(s ssh.Session) (string, error) {
