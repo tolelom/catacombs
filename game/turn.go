@@ -10,76 +10,81 @@ import (
 )
 
 func (s *GameSession) RunTurn() {
+	s.beginTurn()
+	s.drainPlayerLeft()
+	if !s.collectActions() {
+		return
+	}
 	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.resolveTurnLocked()
+}
+
+func (s *GameSession) beginTurn() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.state.TurnNum++
 	s.state.CombatTurn++
 	s.clearLog()
 	s.actions = make(map[string]PlayerAction)
 	s.state.SubmittedActions = make(map[string]string)
-
 	s.coopDamageReduction = make(map[string]float64)
 	s.invincibleNextTurn = make(map[string]bool)
 	s.dodgeBonusThisTurn = make(map[string]float64)
-	s.mu.Unlock()
+}
 
-draining:
+func (s *GameSession) drainPlayerLeft() {
 	for {
 		select {
 		case <-s.playerLeftCh:
 		default:
-			break draining
+			return
 		}
 	}
+}
 
+func (s *GameSession) collectActions() bool {
 	turnTimeout := time.Duration(s.effectiveTurnTimeout()) * time.Second
 	timer := time.NewTimer(turnTimeout)
+	defer timer.Stop()
 	s.mu.Lock()
 	s.state.TurnDeadline = time.Now().Add(turnTimeout)
 	s.mu.Unlock()
 
-collecting:
 	for {
-
 		s.mu.Lock()
 		allActed := s.allAliveMembersActedLocked()
 		s.mu.Unlock()
 		if allActed {
-			break collecting
+			return true
 		}
 
 		select {
 		case msg := <-s.actionCh:
-			s.mu.Lock()
-			if msg.Turn == s.state.TurnNum && s.isAliveMemberLocked(msg.PlayerID) {
-				s.actions[msg.PlayerID] = msg.Action
-			}
-			s.mu.Unlock()
+			s.recordActionMessage(msg)
 		case <-s.playerLeftCh:
-
 		case <-timer.C:
-			break collecting
+			return true
 		case <-s.done:
-			timer.Stop()
-			return
+			return false
 		}
 	}
-	timer.Stop()
+}
 
+func (s *GameSession) recordActionMessage(msg playerActionMsg) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.state.TurnDeadline = time.Time{}
-
-	for _, p := range s.state.Players {
-		if !p.IsOut() {
-			if _, ok := s.actions[p.Fingerprint]; !ok {
-				s.actions[p.Fingerprint] = PlayerAction{Type: ActionWait}
-			}
-		}
+	if msg.Turn == s.state.TurnNum && s.isAliveMemberLocked(msg.PlayerID) {
+		s.actions[msg.PlayerID] = msg.Action
 	}
+}
+
+func (s *GameSession) resolveTurnLocked() {
+	s.state.TurnDeadline = time.Time{}
+	s.fillDefaultActionsLocked()
 
 	s.state.TurnResolving = true
 	s.state.PendingLogs = nil
-
 	if len(s.extraActionNext) > 0 {
 		s.runExtraActions()
 		s.extraActionNext = make(map[string]bool)
@@ -88,15 +93,28 @@ collecting:
 	s.resolveMonsterActions()
 	s.state.TurnResolving = false
 
+	s.endTurnLocked()
+}
+
+func (s *GameSession) fillDefaultActionsLocked() {
+	for _, p := range s.state.Players {
+		if p.IsOut() {
+			continue
+		}
+		if _, ok := s.actions[p.Fingerprint]; !ok {
+			s.actions[p.Fingerprint] = PlayerAction{Type: ActionWait}
+		}
+	}
+}
+
+func (s *GameSession) endTurnLocked() {
 	s.critGuaranteedNext = false
 	s.enemyMissNextTurn = false
-
 	for _, m := range s.state.Monsters {
 		if m.IsBoss && m.Phase == 2 && s.state.FloorNum == 15 && !m.IsDead() {
 			m.Vulnerable = !m.Vulnerable
 		}
 	}
-
 }
 
 func (s *GameSession) resolvePlayerActions() {
