@@ -1,0 +1,10 @@
+.git
+.claude
+.ssh
+data
+docs
+catacombs
+catacombs.exe
+**/testdata
+*.test
+*.out
