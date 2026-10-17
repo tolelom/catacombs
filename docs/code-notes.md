@@ -35,12 +35,12 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.generateShopItems`: Prices scale with power
 - `GameSession.generateShopItems`: Potion heals more on higher floors
 - `GameSession.applyEventOutcome`: applyEventOutcome applies an event outcome to the party per the rules in the design spec: HPChange to each alive player, GoldChange split evenly (remainder to the first alive player), ItemDrop one rolled item per alive player (skip if inventory full). Caller holds s.mu.
-- `GameSession.applyEventOutcome`: Lucky charm: one charm voids ALL of a player's losses from a single gambled outcome (one result = one insurance claim — same invariant as applyOutcomeToPlayer). Consumed once here, then both the HP and gold loss branches honor the protection.
-- `GameSession.applyEventOutcome`: HP change: each alive player heals/takes damage of the full amount.
-- `GameSession.applyEventOutcome`: Uniform with combat: try solo-healer auto-revive, otherwise log the rip and flip AnyPlayerDied.
-- `GameSession.applyEventOutcome`: Gold change: split evenly across alive; remainder to alive[0].
-- `GameSession.applyEventOutcome`: Charm holders skip their share of a gambled gold loss (their remainder portion is voided, not redistributed).
-- `GameSession.applyEventOutcome`: Concrete item grant: each alive player gets their own copy. Full inventories convert to bonus*5 gold — same invariant as applyOutcomeToPlayer. Mutually exclusive with ItemDrop so an outcome accidentally setting both can't double-grant.
+- `GameSession.consumeCharmsAgainstLossLocked`: Lucky charm: one charm voids ALL of a player's losses from a single gambled outcome (one result = one insurance claim — same invariant as applyOutcomeToPlayer). Consumed once here, then both the HP and gold loss branches honor the protection.
+- `GameSession.applyEventHPChangeLocked`: HP change: each alive player heals/takes damage of the full amount.
+- `GameSession.applyEventHPChangeLocked`: Uniform with combat: try solo-healer auto-revive, otherwise log the rip and flip AnyPlayerDied.
+- `GameSession.applyEventGoldChangeLocked`: Gold change: split evenly across alive; remainder to alive[0].
+- `GameSession.applyEventGoldChangeLocked`: Charm holders skip their share of a gambled gold loss (their remainder portion is voided, not redistributed).
+- `GameSession.applyEventItemsLocked`: Concrete item grant: each alive player gets their own copy. Full inventories convert to bonus*5 gold — same invariant as applyOutcomeToPlayer. Mutually exclusive with ItemDrop so an outcome accidentally setting both can't double-grant.
 - `GameSession.resolveEventVoteLocked`: resolveEventVoteLocked tallies eventVotes, picks the winning choice (lowest index breaks ties), runs Resolve, applies the outcome party-wide, and returns the session to PhaseExploring with the room cleared. Per-player pending events (loot picks) skip the tally and resolve each player's own choice individually. Caller holds s.mu and has verified quorum.
 - `GameSession.resolveEventVoteLocked`: Tally
 - `GameSession.triggerEvent`: triggerEvent picks a random event and parks the session in PhaseEvent awaiting player votes. The actual outcome runs later via resolveEventVote. Caller holds s.mu.
@@ -163,20 +163,20 @@ Explanations that used to live in production-code comments, grouped by file and 
 
 ## game/turn.go
 
-- `GameSession.RunTurn`: Clear single-turn coop modifiers from the previous turn before this turn resolves.
-- `GameSession.RunTurn`: Collect actions with timeout
-- `GameSession.RunTurn`: Recompute the alive set every iteration so a mid-turn quit (RemovePlayer drops the leaver from s.actions and pokes playerLeftCh) shrinks the expected count instead of stalling the party until the timeout fires.
-- `GameSession.RunTurn`: loop re-evaluates aliveCount on next iteration
-- `GameSession.RunTurn`: Default action for players who didn't submit: Wait
-- `GameSession.RunTurn`: Time Glass: players flagged on the *previous* turn get one extra attack before this turn's normal player phase. Flag is cleared so a single use only buys one bonus turn.
-- `GameSession.RunTurn`: One-turn flags consumed during this turn — clear so they don't carry over.
-- `GameSession.RunTurn`: B15 phase 2 vulnerable window — flips every turn so the 1.5x damage buff alternates (per the design comment in checkBossPhaseTransitions); without this, Vulnerable would stay true permanently after entry.
-- `GameSession.RunTurn`: PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
+- `GameSession.beginTurn`: Clear single-turn coop modifiers from the previous turn before this turn resolves.
+- `GameSession.collectActions`: Collect actions with timeout
+- `GameSession.collectActions`: Recompute the alive set every iteration so a mid-turn quit (RemovePlayer drops the leaver from s.actions and pokes playerLeftCh) shrinks the expected count instead of stalling the party until the timeout fires.
+- `GameSession.collectActions`: loop re-evaluates aliveCount on next iteration
+- `GameSession.fillDefaultActionsLocked`: Default action for players who didn't submit: Wait
+- `GameSession.resolveTurnLocked`: Time Glass: players flagged on the *previous* turn get one extra attack before this turn's normal player phase. Flag is cleared so a single use only buys one bonus turn.
+- `GameSession.endTurnLocked`: One-turn flags consumed during this turn — clear so they don't carry over.
+- `GameSession.endTurnLocked`: B15 phase 2 vulnerable window — flips every turn so the 1.5x damage buff alternates (per the design comment in checkBossPhaseTransitions); without this, Vulnerable would stay true permanently after entry.
+- `GameSession.resolveTurnLocked`: PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
 - `GameSession.advanceFloor`: Grant 1 skill point per floor clear
 - `GameSession.grantBossRelic`: Bosses also drop one set item per surviving player.
 - `randomSetItem`: randomSetItem rolls a random set item appropriate for the current floor.
-- `GameSession.resolveMonsterActions`: Boss/mini-boss special pattern
-- `GameSession.resolveMonsterActions`: Elite on-hit effects only apply when the strike actually connected — dodge/block/Sanctuary that reduced dmg to 0 shouldn't still inflict status (or heal vampiric for 0).
+- `GameSession.applyBossPatternLocked`: Boss/mini-boss special pattern
+- `GameSession.monsterSingleAttackLocked`: Elite on-hit effects only apply when the strike actually connected — dodge/block/Sanctuary that reduced dmg to 0 shouldn't still inflict status (or heal vampiric for 0).
 - `GameSession.pickHealTarget`: pickHealTarget returns the player a heal should land on: the explicitly chosen ally if it is alive and actually wounded, otherwise the most-wounded alive ally. Returns nil when no alive player needs healing — the caller then converts the heal into an offensive smite.
 - `GameSession.firstAliveMonsterIdx`: firstAliveMonsterIdx returns the index of the first living monster, or -1 if none are alive.
 - `GameSession.applyDamageMods`: applyDamageMods reduces incoming damage by coop reductions, returns 0 if invincible. Also applies class-based dodge/block rolls (Rogue +10% dodge, Warrior +10% block) and Smoke Bomb relic dodge bonus. Returns the final damage value (0 if dodged). Caller holds s.mu.
@@ -187,11 +187,11 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.recordSoloAction`: recordSoloAction updates the solo-chain sequence state after a player's combat action resolves. actionType must reflect what actually happened — failed skills/coops, items-with-empty-bag, waits, freezes, and relic uses record "" and break every chain. No-op outside solo mode (party combos own that space). Caller holds s.mu.
 - `GameSession.mergeCoopReduction`: mergeCoopReduction merges incoming damage-reduction multipliers into the session map, taking the maximum per fingerprint.
 - `GameSession.checkBossPhaseTransitions`: checkBossPhaseTransitions runs after damage to detect bosses entering Phase 2 and applies their unique enrage effects. Threshold defaults to 50% HP, raised to 70% by the Cruel curse. Caller holds s.mu.
-- `GameSession.checkBossPhaseTransitions`: B5 Guardian: berserk — ATK +50%, no more healing pattern
-- `GameSession.checkBossPhaseTransitions`: B10 Warden: split — summon 2 slimes scaled to floor. applyDifficultyMods covers HardMode/NG+/DailyMod so summons stay scary in late-game runs (the HP*2 boost happens BEFORE scaling so it survives multiplication).
-- `GameSession.checkBossPhaseTransitions`: tougher summons
-- `GameSession.checkBossPhaseTransitions`: B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
-- `GameSession.checkBossPhaseTransitions`: B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
+- `GameSession.enrageBossLocked`: B5 Guardian: berserk — ATK +50%, no more healing pattern
+- `GameSession.summonPhaseTwoSlimesLocked`: B10 Warden: split — summon 2 slimes scaled to floor. applyDifficultyMods covers HardMode/NG+/DailyMod so summons stay scary in late-game runs (the HP*2 boost happens BEFORE scaling so it survives multiplication).
+- `GameSession.summonPhaseTwoSlimesLocked`: tougher summons
+- `GameSession.exposeBossWeaknessLocked`: B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
+- `GameSession.curseBossFoesLocked`: B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
 - `GameSession.applyCoopComboEffect`: applyCoopComboEffect propagates extended coop combo effects to session state. Caller holds s.mu.
 - `GameSession.handlePlayerDeathLocked`: handlePlayerDeathLocked handles a player's death uniformly: if the once-per-run solo-healer auto-revive applies, restores the player to 30% HP and logs the revive; otherwise logs the rip line and flips AnyPlayerDied for the no_death achievement. Burning the revive on event damage is intentional — any death counts per the Divine Grace design. Caller holds s.mu. Only call when p.IsDead() == true.
 
@@ -278,7 +278,7 @@ Explanations that used to live in production-code comments, grouped by file and 
 ## ui/result_view.go
 
 - `ResultScreen`: ResultScreen shows the end-of-run summary and rankings.
-- `ResultScreen.Update`: NG+ branch: leave current session, create new one with NGPlusLevel++ and a random curse
+- `ResultScreen.startNGPlus`: NG+ branch: leave current session, create new one with NGPlusLevel++ and a random curse
 - `findPlayerRank`: findPlayerRank returns the 1-indexed position of the player's best run in the supplied ranking slice, or 0 if they don't appear in the top N.
 - `renderResult`: Title
 - `renderResult`: Player summary
