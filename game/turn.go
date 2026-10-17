@@ -183,7 +183,7 @@ func (s *GameSession) tickPlayerEffects(p *entity.Player, theme dungeon.ThemeMod
 		}
 	}
 	if p.IsDead() {
-		s.tryReviveSoloHealerLocked(p)
+		s.handlePlayerDeathLocked(p)
 	}
 }
 
@@ -749,7 +749,7 @@ func (s *GameSession) monsterAreaAttackLocked(m *entity.Monster) {
 		dmg := s.monsterDamageLocked(m, p, 0.5)
 		s.addLog(fmt.Sprintf("%s 광역 공격으로 %s에게 %d 피해", m.Name, p.Name, dmg))
 		if p.IsDead() {
-			s.tryReviveSoloHealerLocked(p)
+			s.handlePlayerDeathLocked(p)
 		}
 	}
 }
@@ -772,7 +772,7 @@ func (s *GameSession) monsterSingleAttackLocked(m *entity.Monster, targetIdx int
 		s.applyEliteOnHitLocked(m, p, dmg)
 	}
 	if p.IsDead() {
-		s.tryReviveSoloHealerLocked(p)
+		s.handlePlayerDeathLocked(p)
 	}
 }
 
@@ -1170,14 +1170,13 @@ func (s *GameSession) applyCoopComboEffect(eff combat.ComboEffect) {
 	}
 }
 
-func (s *GameSession) tryReviveSoloHealerLocked(p *entity.Player) bool {
+func (s *GameSession) handlePlayerDeathLocked(p *entity.Player) {
 	if s.state.SoloMode && p.Class == entity.ClassHealer && !s.soloHealerRevived[p.Fingerprint] {
 		p.Revive(0.30)
 		s.soloHealerRevived[p.Fingerprint] = true
 		s.addLog(fmt.Sprintf("✦ %s 신성 가호로 30%%HP로 부활!", p.Name))
-		return true
+		return
 	}
 	s.addLog(fmt.Sprintf("☠ %s 쓰러졌습니다!", p.Name))
 	s.state.AnyPlayerDied = true
-	return false
 }

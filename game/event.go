@@ -466,7 +466,7 @@ func (s *GameSession) applyEventHPChangeLocked(change int, alive []*entity.Playe
 		p.TakeDamage(dmg)
 		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
 		if p.IsDead() {
-			s.tryReviveSoloHealerLocked(p)
+			s.handlePlayerDeathLocked(p)
 		}
 	}
 }

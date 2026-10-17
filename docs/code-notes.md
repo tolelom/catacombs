@@ -193,7 +193,7 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.checkBossPhaseTransitions`: B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
 - `GameSession.checkBossPhaseTransitions`: B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
 - `GameSession.applyCoopComboEffect`: applyCoopComboEffect propagates extended coop combo effects to session state. Caller holds s.mu.
-- `GameSession.tryReviveSoloHealerLocked`: tryReviveSoloHealerLocked handles a player's death uniformly: if the once-per-run solo-healer auto-revive applies, restores the player to 30% HP and logs the revive; otherwise logs the rip line and flips AnyPlayerDied for the no_death achievement. Returns true when revived. Burning the revive on event damage is intentional — any death counts per the Divine Grace design. Caller holds s.mu. Only call when p.IsDead() == true.
+- `GameSession.handlePlayerDeathLocked`: handlePlayerDeathLocked handles a player's death uniformly: if the once-per-run solo-healer auto-revive applies, restores the player to 30% HP and logs the revive; otherwise logs the rip line and flips AnyPlayerDied for the no_death achievement. Burning the revive on event damage is intentional — any death counts per the Divine Grace design. Caller holds s.mu. Only call when p.IsDead() == true.
 
 ## game/votes.go
 
