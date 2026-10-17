@@ -412,103 +412,130 @@ func armorName(floor int) string {
 }
 
 func (s *GameSession) applyEventOutcome(o EventOutcome) {
+	alive := s.activePlayersLocked()
+	if len(alive) == 0 {
+		return
+	}
+	charmProtected := s.consumeCharmsAgainstLossLocked(o, alive)
+	s.applyEventHPChangeLocked(o.HPChange, alive, charmProtected)
+	s.applyEventGoldChangeLocked(o.GoldChange, alive, charmProtected)
+	s.applyEventItemsLocked(o, alive)
+}
+
+func (s *GameSession) activePlayersLocked() []*entity.Player {
 	alive := make([]*entity.Player, 0, len(s.state.Players))
 	for _, p := range s.state.Players {
 		if !p.IsOut() {
 			alive = append(alive, p)
 		}
 	}
-	if len(alive) == 0 {
-		return
-	}
+	return alive
+}
 
+func (s *GameSession) consumeCharmsAgainstLossLocked(o EventOutcome, alive []*entity.Player) map[string]bool {
 	charmProtected := make(map[string]bool)
-	if o.Gambled && (o.HPChange < 0 || o.GoldChange < 0) {
-		for _, p := range alive {
-			if p.ConsumeCharm() {
-				charmProtected[p.Fingerprint] = true
-				s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
-			}
+	if !o.Gambled || (o.HPChange >= 0 && o.GoldChange >= 0) {
+		return charmProtected
+	}
+	for _, p := range alive {
+		if p.ConsumeCharm() {
+			charmProtected[p.Fingerprint] = true
+			s.addLog(fmt.Sprintf("  🍀 %s의 행운 부적이 불운을 막아냈다!", p.Name))
 		}
 	}
+	return charmProtected
+}
 
-	if o.HPChange > 0 {
+func (s *GameSession) applyEventHPChangeLocked(change int, alive []*entity.Player, charmProtected map[string]bool) {
+	if change > 0 {
 		for _, p := range alive {
 			before := p.HP
-			p.Heal(o.HPChange)
+			p.Heal(change)
 			s.addLog(fmt.Sprintf("  %s HP %d 회복", p.Name, p.HP-before))
 		}
-	} else if o.HPChange < 0 {
-		dmg := -o.HPChange
-		for _, p := range alive {
-			if charmProtected[p.Fingerprint] {
-				continue
-			}
-			p.TakeDamage(dmg)
-			s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
-			if p.IsDead() {
-
-				s.tryReviveSoloHealerLocked(p)
-			}
+		return
+	}
+	if change == 0 {
+		return
+	}
+	dmg := -change
+	for _, p := range alive {
+		if charmProtected[p.Fingerprint] {
+			continue
+		}
+		p.TakeDamage(dmg)
+		s.addLog(fmt.Sprintf("  %s %d 피해를 받음", p.Name, dmg))
+		if p.IsDead() {
+			s.tryReviveSoloHealerLocked(p)
 		}
 	}
+}
 
-	if o.GoldChange != 0 {
-		total := o.GoldChange
-		share := total / len(alive)
-		remainder := total - share*len(alive)
-		for i, p := range alive {
-			delta := share
-			if i == 0 {
-				delta += remainder
-			}
-
-			if delta < 0 && charmProtected[p.Fingerprint] {
-				continue
-			}
-			p.Gold += delta
-			if p.Gold < 0 {
-				p.Gold = 0
-			}
-			if delta > 0 {
-				s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, delta))
-			} else if delta < 0 {
-				s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -delta))
-			}
+func (s *GameSession) applyEventGoldChangeLocked(total int, alive []*entity.Player, charmProtected map[string]bool) {
+	if total == 0 {
+		return
+	}
+	share := total / len(alive)
+	remainder := total - share*len(alive)
+	for i, p := range alive {
+		delta := share
+		if i == 0 {
+			delta += remainder
+		}
+		if delta < 0 && charmProtected[p.Fingerprint] {
+			continue
+		}
+		p.Gold = max(p.Gold+delta, 0)
+		if delta > 0 {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 획득", p.Name, delta))
+		} else if delta < 0 {
+			s.addLog(fmt.Sprintf("  %s 골드 %d 잃음", p.Name, -delta))
 		}
 	}
+}
 
+func (s *GameSession) applyEventItemsLocked(o EventOutcome, alive []*entity.Player) {
 	if o.Item != nil {
 		for _, p := range alive {
-			if len(p.Inventory) < s.cfg.Game.InventoryLimit {
-				p.Inventory = append(p.Inventory, *o.Item)
-				s.addLog(fmt.Sprintf("  %s %s 획득", p.Name, o.Item.Name))
-			} else {
-				comp := o.Item.Bonus * 5
-				p.Gold += comp
-				s.addLog(fmt.Sprintf("  %s 인벤토리 가득 → +%dG로 전환", p.Name, comp))
-			}
+			s.grantEventItemLocked(p, *o.Item)
 		}
-	} else if o.ItemDrop {
-		floor := s.state.FloorNum
+		return
+	}
+	if o.ItemDrop {
 		for _, p := range alive {
-			if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
-				s.addLog(fmt.Sprintf("  %s의 인벤토리가 가득 찼습니다!", p.Name))
-				continue
-			}
-			if s.rng.Float64() < 0.5 {
-				bonus := 3 + s.rng.Intn(6) + floor/3
-				item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
-				p.Inventory = append(p.Inventory, item)
-				s.addLog(fmt.Sprintf("  %s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
-			} else {
-				bonus := 2 + s.rng.Intn(4) + floor/4
-				item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
-				p.Inventory = append(p.Inventory, item)
-				s.addLog(fmt.Sprintf("  %s %s 발견 (DEF+%d)", p.Name, item.Name, item.Bonus))
-			}
+			s.rollEventItemDropLocked(p)
 		}
 	}
+}
+
+func (s *GameSession) grantEventItemLocked(p *entity.Player, item entity.Item) {
+	if len(p.Inventory) < s.cfg.Game.InventoryLimit {
+		p.Inventory = append(p.Inventory, item)
+		s.addLog(fmt.Sprintf("  %s %s 획득", p.Name, item.Name))
+		return
+	}
+	comp := item.Bonus * 5
+	p.Gold += comp
+	s.addLog(fmt.Sprintf("  %s 인벤토리 가득 → +%dG로 전환", p.Name, comp))
+}
+
+func (s *GameSession) rollEventItemDropLocked(p *entity.Player) {
+	if len(p.Inventory) >= s.cfg.Game.InventoryLimit {
+		s.addLog(fmt.Sprintf("  %s의 인벤토리가 가득 찼습니다!", p.Name))
+		return
+	}
+	floor := s.state.FloorNum
+	if s.rng.Float64() < 0.5 {
+		bonus := 3 + s.rng.Intn(6) + floor/3
+		item := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: bonus}
+		p.Inventory = append(p.Inventory, item)
+		s.addLog(fmt.Sprintf("  %s %s 발견 (ATK+%d)", p.Name, item.Name, item.Bonus))
+		return
+	}
+	bonus := 2 + s.rng.Intn(4) + floor/4
+	item := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: bonus}
+	p.Inventory = append(p.Inventory, item)
+	s.addLog(fmt.Sprintf("  %s %s 발견 (DEF+%d)", p.Name, item.Name, item.Bonus))
 }
 
 func (s *GameSession) resolveEventVoteLocked() {
