@@ -2,3 +2,4 @@ data/
 catacombs
 catacombs.exe
 .ssh/
+.claude/scheduled_tasks.lock
