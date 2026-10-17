@@ -33,43 +33,42 @@ func (s *ResultScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 			ls.refreshLobby(ctx)
 			return ls, ls.pollLobby(ctx)
 		} else if isKey(key, "n") && s.gameState.Victory && ctx.Lobby != nil {
-
-			oldNG := 0
-			if ctx.Session != nil {
-				oldNG = ctx.Session.NGPlusLevel
-			}
-			if ctx.RoomCode != "" {
-				ctx.Lobby.LeaveSession(ctx.RoomCode, ctx.Fingerprint)
-			}
-			ctx.Session = nil
-			ctx.RoomCode = ""
-			code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+fmt.Sprintf(" NG+%d", oldNG+1))
-			if err != nil {
-				ls := NewLobbyScreen()
-				ls.refreshLobby(ctx)
-				ls.errMsg = err.Error()
-				return ls, ls.pollLobby(ctx)
-			}
-			if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
-				ctx.RoomCode = code
-				session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
-					gs := game.NewGameSession(ctx.Lobby.Cfg())
-					gs.NGPlusLevel = oldNG + 1
-					curse := game.PickCurse(nil)
-					gs.ActiveCurse = &curse
-					gs.ApplyWeeklyMutation()
-					return gs
-				})
-				if session != nil {
-					ctx.Session = session
-				}
-				return NewClassSelectScreen(), nil
-			}
+			return s.startNGPlus(ctx)
 		} else if isForceQuit(key) {
 			return s, tea.Quit
 		}
 	}
 	return s, nil
+}
+
+func (s *ResultScreen) startNGPlus(ctx *Context) (Screen, tea.Cmd) {
+	level := 1
+	if ctx.Session != nil {
+		level = ctx.Session.NGPlusLevel + 1
+	}
+	if ctx.RoomCode != "" {
+		ctx.Lobby.LeaveSession(ctx.RoomCode, ctx.Fingerprint)
+	}
+	ctx.Session = nil
+	ctx.RoomCode = ""
+	code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+fmt.Sprintf(" NG+%d", level))
+	if err != nil {
+		ls := NewLobbyScreen()
+		ls.refreshLobby(ctx)
+		ls.errMsg = err.Error()
+		return ls, ls.pollLobby(ctx)
+	}
+	if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
+		return s, nil
+	}
+	ctx.RoomCode = code
+	session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
+		return game.NewNGPlusSession(ctx.Lobby.Cfg(), level)
+	})
+	if session != nil {
+		ctx.Session = session
+	}
+	return NewClassSelectScreen(), nil
 }
 
 func (s *ResultScreen) View(ctx *Context) string {

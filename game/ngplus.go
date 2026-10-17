@@ -1,6 +1,10 @@
 package game
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/tolelom/catacombs/config"
+)
 
 type Curse struct {
 	ID   string
@@ -27,4 +31,13 @@ func PickCurse(rng *rand.Rand) Curse {
 		return AvailableCurses[rand.Intn(len(AvailableCurses))]
 	}
 	return AvailableCurses[rng.Intn(len(AvailableCurses))]
+}
+
+func NewNGPlusSession(cfg *config.Config, level int) *GameSession {
+	s := NewGameSession(cfg)
+	s.NGPlusLevel = level
+	curse := PickCurse(nil)
+	s.ActiveCurse = &curse
+	s.ApplyWeeklyMutation()
+	return s
 }
