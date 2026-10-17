@@ -528,224 +528,282 @@ func writePlayerSummaries(sb *strings.Builder, players []*entity.Player) {
 }
 
 func writeCombatHUD(sb *strings.Builder, state game.GameState, targetCursor, allyCursor, relicCursor int, fingerprint string) {
-	isHealer := false
-	for _, p := range state.Players {
+	isHealer := viewerIsHealer(state.Players, fingerprint)
+	sb.WriteString(renderCombatPanels(state, targetCursor, allyCursor, isHealer))
+	sb.WriteString("\n")
+	sb.WriteString(combatActionBar(state, relicCursor, fingerprint, isHealer))
+	sb.WriteString("\n")
+	writeSoloChainHint(sb, state.SoloChain)
+	writeTurnTimer(sb, state.TurnDeadline)
+	writeFirstActiveSkillInfo(sb, state)
+}
+
+func viewerIsHealer(players []*entity.Player, fingerprint string) bool {
+	for _, p := range players {
 		if p.Fingerprint == fingerprint && p.Class == entity.ClassHealer {
-			isHealer = true
-			break
+			return true
 		}
 	}
-	partyContent := renderPartyPanel(state.Players, state.SubmittedActions, isHealer, allyCursor)
-	enemyContent := renderEnemyPanel(state.Monsters, targetCursor)
+	return false
+}
 
+func renderCombatPanels(state game.GameState, targetCursor, allyCursor int, isHealer bool) string {
 	partyPanel := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(colorGray).
 		Width(35).
 		Padding(0, 1).
-		Render(partyContent)
+		Render(renderPartyPanel(state.Players, state.SubmittedActions, isHealer, allyCursor))
 
 	enemyPanel := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(colorGray).
 		Width(38).
 		Padding(0, 1).
-		Render(enemyContent)
+		Render(renderEnemyPanel(state.Monsters, targetCursor))
 
-	panels := lipgloss.JoinHorizontal(lipgloss.Top, partyPanel, enemyPanel)
-	sb.WriteString(panels)
-	sb.WriteString("\n")
+	return lipgloss.JoinHorizontal(lipgloss.Top, partyPanel, enemyPanel)
+}
 
+func combatActionBar(state game.GameState, relicCursor int, fingerprint string, isHealer bool) string {
 	coopHint := "[6]협동기"
 	if state.CoopAvailable != nil && !state.CoopAvailable[fingerprint] {
 		coopHint = styleSystem.Render("[6]협동기(사용됨)")
 	}
-	relicHint := " [7]유물"
-	if actives := playerActiveRelics(state, fingerprint); len(actives) > 0 {
-		idx := relicCursor
-		if idx < 0 || idx >= len(actives) {
-			idx = 0
-		}
-		if len(actives) > 1 {
-			relicHint = fmt.Sprintf(" [7]유물(%s) [r]전환", actives[idx].Name)
-		} else {
-			relicHint = fmt.Sprintf(" [7]유물(%s)", actives[idx].Name)
-		}
-	}
+	relicHint := activeRelicHint(state, relicCursor, fingerprint)
+	targetKeys := " [Tab]대상 [/]채팅"
 	if isHealer {
-		sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(relicHint+" [Tab]적 [Shift+Tab]아군 [/]채팅"))
-	} else {
-		sb.WriteString(styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(relicHint+" [Tab]대상 [/]채팅"))
+		targetKeys = " [Tab]적 [Shift+Tab]아군 [/]채팅"
 	}
-	sb.WriteString("\n")
+	return styleAction.Render("[1]공격 [2]스킬 [3]아이템 [4]도주 [5]대기 ") + coopHint + styleAction.Render(relicHint+targetKeys)
+}
 
-	if hint := soloChainHint(state.SoloChain); hint != "" {
+func activeRelicHint(state game.GameState, relicCursor int, fingerprint string) string {
+	actives := playerActiveRelics(state, fingerprint)
+	if len(actives) == 0 {
+		return " [7]유물"
+	}
+	idx := relicCursor
+	if idx < 0 || idx >= len(actives) {
+		idx = 0
+	}
+	if len(actives) > 1 {
+		return fmt.Sprintf(" [7]유물(%s) [r]전환", actives[idx].Name)
+	}
+	return fmt.Sprintf(" [7]유물(%s)", actives[idx].Name)
+}
+
+func writeSoloChainHint(sb *strings.Builder, chain *game.SoloChainView) {
+	if hint := soloChainHint(chain); hint != "" {
 		sb.WriteString(styleSystem.Render(hint))
 		sb.WriteString("\n")
 	}
+}
 
-	if !state.TurnDeadline.IsZero() {
-		remaining := time.Until(state.TurnDeadline)
-		if remaining < 0 {
-			remaining = 0
-		}
-		sb.WriteString(styleTimer.Render(fmt.Sprintf("  타이머: %.1f초", remaining.Seconds())))
-		sb.WriteString("\n")
+func writeTurnTimer(sb *strings.Builder, deadline time.Time) {
+	if deadline.IsZero() {
+		return
 	}
+	remaining := max(time.Until(deadline), 0)
+	sb.WriteString(styleTimer.Render(fmt.Sprintf("  타이머: %.1f초", remaining.Seconds())))
+	sb.WriteString("\n")
+}
 
+func writeFirstActiveSkillInfo(sb *strings.Builder, state game.GameState) {
 	for _, p := range state.Players {
-		if !p.IsOut() {
-			var skillDesc string
-			switch p.Class {
-			case entity.ClassWarrior:
-				skillDesc = "스킬: Taunt — 2턴간 적의 공격을 끌어옴"
-			case entity.ClassMage:
-				skillDesc = "스킬: Fireball — 전체 적에게 0.8배 피해"
-			case entity.ClassHealer:
-				skillDesc = "스킬: Heal — 아군 HP 30 회복"
-			case entity.ClassRogue:
-				skillDesc = "스킬: Scout — 주변 방 공개"
-			}
-			skillDesc += fmt.Sprintf(" (남은 횟수: %d)", p.SkillUses)
-			coopAbility := entity.GetCoopAbility(p.Class)
-			coopStatus := "사용가능"
-			if state.CoopAvailable == nil || !state.CoopAvailable[p.Fingerprint] {
-				coopStatus = "사용됨"
-			}
-			skillDesc += fmt.Sprintf("\n협동기: %s [%s]", coopAbility.Name, coopStatus)
-			sb.WriteString(styleSystem.Render(skillDesc))
-			sb.WriteString("\n")
-			break
+		if p.IsOut() {
+			continue
 		}
+		sb.WriteString(styleSystem.Render(skillInfo(p, state.CoopAvailable)))
+		sb.WriteString("\n")
+		return
 	}
 }
 
-func writeExplorationHUD(sb *strings.Builder, state game.GameState, moveCursor int, fingerprint string) {
-	votesPerRoom := make(map[int]int)
-	if state.MoveVotes != nil {
-		for _, room := range state.MoveVotes {
-			votesPerRoom[room]++
-		}
+func skillInfo(p *entity.Player, coopAvailable map[string]bool) string {
+	var skillDesc string
+	switch p.Class {
+	case entity.ClassWarrior:
+		skillDesc = "스킬: Taunt — 2턴간 적의 공격을 끌어옴"
+	case entity.ClassMage:
+		skillDesc = "스킬: Fireball — 전체 적에게 0.8배 피해"
+	case entity.ClassHealer:
+		skillDesc = "스킬: Heal — 아군 HP 30 회복"
+	case entity.ClassRogue:
+		skillDesc = "스킬: Scout — 주변 방 공개"
 	}
-	myVoted := false
-	if !state.SoloMode && state.MoveVotes != nil {
-		_, myVoted = state.MoveVotes[fingerprint]
+	skillDesc += fmt.Sprintf(" (남은 횟수: %d)", p.SkillUses)
+	coopStatus := "사용가능"
+	if coopAvailable == nil || !coopAvailable[p.Fingerprint] {
+		coopStatus = "사용됨"
 	}
+	skillDesc += fmt.Sprintf("\n협동기: %s [%s]", entity.GetCoopAbility(p.Class).Name, coopStatus)
+	return skillDesc
+}
 
-	if state.Floor != nil && state.Floor.CurrentRoom >= 0 && state.Floor.CurrentRoom < len(state.Floor.Rooms) {
-		current := state.Floor.Rooms[state.Floor.CurrentRoom]
-		if len(current.Neighbors) > 0 {
-			sb.WriteString("\n")
-			if !state.SoloMode {
-				aliveCount := 0
-				votedCount := 0
-				for _, p := range state.Players {
-					if !p.IsOut() {
-						aliveCount++
-						if state.MoveVotes != nil {
-							if _, ok := state.MoveVotes[p.Fingerprint]; ok {
-								votedCount++
-							}
-						}
-					}
-				}
-				voteStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
-				if myVoted {
-					sb.WriteString(voteStyle.Render(fmt.Sprintf("투표 완료! 대기 중... (%d/%d)", votedCount, aliveCount)))
-				} else {
-					sb.WriteString(voteStyle.Render(fmt.Sprintf("이동할 방을 선택하세요 (%d/%d 투표)", votedCount, aliveCount)))
-				}
-				sb.WriteString("\n")
-			}
-			selectedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
-			normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
-			for i, n := range current.Neighbors {
-				if n >= 0 && n < len(state.Floor.Rooms) {
-					r := state.Floor.Rooms[n]
-					status := r.Type.String()
-					if r.Cleared {
-						status = "클리어"
-					}
-					marker := "  "
-					style := normalStyle
-					if i == moveCursor {
-						marker = "> "
-						style = selectedStyle
-					}
-					voteInfo := ""
-					if !state.SoloMode {
-						if count, ok := votesPerRoom[n]; ok {
-							voteInfo = fmt.Sprintf(" [%d표]", count)
-						}
-					}
-					sb.WriteString(style.Render(fmt.Sprintf("%s방 %d: %s%s", marker, n, status, voteInfo)))
-					sb.WriteString("\n")
-				}
-			}
-		}
+func writeExplorationHUD(sb *strings.Builder, state game.GameState, moveCursor int, fingerprint string) {
+	myVoted := viewerVotedToMove(state, fingerprint)
+	writeRoomChoices(sb, state, moveCursor, myVoted)
+	writeSkillPointPrompt(sb, state.Players, fingerprint)
+	writeRoomPreview(sb, state.NextRoomPreview)
+	sb.WriteString(explorationKeyHints(state, fingerprint, myVoted))
+}
+
+func viewerVotedToMove(state game.GameState, fingerprint string) bool {
+	if state.SoloMode || state.MoveVotes == nil {
+		return false
 	}
-	for _, p := range state.Players {
-		if p.Fingerprint == fingerprint && p.Skills != nil && p.Skills.Points > p.Skills.Allocated && p.Skills.Allocated < 4 {
-			branches := entity.GetBranches(p.Class)
-			sb.WriteString("\n")
-			skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
-			sb.WriteString(skillStyle.Render(fmt.Sprintf("  스킬 포인트 사용 가능! (미사용: %d)", p.Skills.Points-p.Skills.Allocated)))
-			sb.WriteString("\n")
-			if p.Skills.BranchIndex == -1 {
-				for i, tree := range branches {
-					key := "["
-					if i == 1 {
-						key = "]"
-					}
-					fmt.Fprintf(sb, "    [%s] %s -> %s (%s)\n", key, tree.Name, tree.T1.Name, tree.T1.EffectLabel())
-				}
-			} else {
-				tree := branches[p.Skills.BranchIndex]
-				otherTree := branches[1-p.Skills.BranchIndex]
-				otherKey := "["
-				if p.Skills.BranchIndex == 0 {
-					otherKey = "]"
-				}
-				fmt.Fprintf(sb, "    [%s] %s (잠김)\n", otherKey, otherTree.Name)
-				switch p.Skills.Allocated {
-				case 1:
-					fmt.Fprintf(sb, "    [[] %s -> %s (%s)\n", tree.Name, tree.T2[0].Name, tree.T2[0].EffectLabel())
-					fmt.Fprintf(sb, "    []] %s -> %s (%s)\n", tree.Name, tree.T2[1].Name, tree.T2[1].EffectLabel())
-				case 2:
-					fmt.Fprintf(sb, "    [[/]] %s -> %s (%s, 자동)\n", tree.Name, tree.T3.Name, tree.T3.EffectLabel())
-				case 3:
-					fmt.Fprintf(sb, "    [[] %s -> %s (%s) ★ 캡스톤\n", tree.Name, tree.T4[0].Name, tree.T4[0].EffectLabel())
-					fmt.Fprintf(sb, "    []] %s -> %s (%s) ★ 캡스톤\n", tree.Name, tree.T4[1].Name, tree.T4[1].EffectLabel())
-				}
-			}
-			break
-		}
+	_, voted := state.MoveVotes[fingerprint]
+	return voted
+}
+
+func writeRoomChoices(sb *strings.Builder, state game.GameState, moveCursor int, myVoted bool) {
+	if state.Floor == nil || state.Floor.CurrentRoom < 0 || state.Floor.CurrentRoom >= len(state.Floor.Rooms) {
+		return
 	}
-	if state.NextRoomPreview != nil {
-		previewStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("117")).Bold(true)
-		line := fmt.Sprintf("\n[정찰] 다음 방: %s", state.NextRoomPreview.RoomTypeLabel)
-		if !state.NextRoomPreview.HideMonsters && len(state.NextRoomPreview.MonsterNames) > 0 {
-			line += " — " + strings.Join(state.NextRoomPreview.MonsterNames, ", ")
+	current := state.Floor.Rooms[state.Floor.CurrentRoom]
+	if len(current.Neighbors) == 0 {
+		return
+	}
+	sb.WriteString("\n")
+	if !state.SoloMode {
+		writeMoveVoteStatus(sb, state, myVoted)
+	}
+	votesPerRoom := countMoveVotes(state.MoveVotes)
+	for i, n := range current.Neighbors {
+		if n < 0 || n >= len(state.Floor.Rooms) {
+			continue
 		}
-		sb.WriteString(previewStyle.Render(line))
+		sb.WriteString(roomChoiceLine(state, i, n, moveCursor, votesPerRoom))
 		sb.WriteString("\n")
 	}
-	myCanScout := false
+}
+
+func writeMoveVoteStatus(sb *strings.Builder, state game.GameState, myVoted bool) {
+	aliveCount := 0
+	votedCount := 0
 	for _, p := range state.Players {
-		if p.Fingerprint == fingerprint && p.Class == entity.ClassRogue {
-			if state.CoopAvailable != nil && state.CoopAvailable[fingerprint] {
-				myCanScout = true
-			}
-			break
+		if p.IsOut() {
+			continue
+		}
+		aliveCount++
+		if _, ok := state.MoveVotes[p.Fingerprint]; ok {
+			votedCount++
 		}
 	}
-	if !state.SoloMode && myVoted {
-		sb.WriteString("[Q] 종료  — 다른 파티원의 투표를 기다리는 중...")
-	} else if myCanScout {
-		sb.WriteString("[Up/Down] 선택  [Enter] 이동  [6] 정찰  [Q] 종료")
+	voteStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Bold(true)
+	if myVoted {
+		sb.WriteString(voteStyle.Render(fmt.Sprintf("투표 완료! 대기 중... (%d/%d)", votedCount, aliveCount)))
 	} else {
-		sb.WriteString("[Up/Down] 선택  [Enter] 이동  [Q] 종료")
+		sb.WriteString(voteStyle.Render(fmt.Sprintf("이동할 방을 선택하세요 (%d/%d 투표)", votedCount, aliveCount)))
 	}
+	sb.WriteString("\n")
+}
+
+func countMoveVotes(moveVotes map[string]int) map[int]int {
+	votesPerRoom := make(map[int]int)
+	for _, room := range moveVotes {
+		votesPerRoom[room]++
+	}
+	return votesPerRoom
+}
+
+func roomChoiceLine(state game.GameState, choiceIdx, roomIdx, moveCursor int, votesPerRoom map[int]int) string {
+	r := state.Floor.Rooms[roomIdx]
+	status := r.Type.String()
+	if r.Cleared {
+		status = "클리어"
+	}
+	marker := "  "
+	style := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
+	if choiceIdx == moveCursor {
+		marker = "> "
+		style = lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
+	}
+	voteInfo := ""
+	if !state.SoloMode {
+		if count, ok := votesPerRoom[roomIdx]; ok {
+			voteInfo = fmt.Sprintf(" [%d표]", count)
+		}
+	}
+	return style.Render(fmt.Sprintf("%s방 %d: %s%s", marker, roomIdx, status, voteInfo))
+}
+
+func writeSkillPointPrompt(sb *strings.Builder, players []*entity.Player, fingerprint string) {
+	for _, p := range players {
+		if p.Fingerprint != fingerprint || p.Skills == nil || p.Skills.Points <= p.Skills.Allocated || p.Skills.Allocated >= 4 {
+			continue
+		}
+		sb.WriteString("\n")
+		skillStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("213")).Bold(true)
+		sb.WriteString(skillStyle.Render(fmt.Sprintf("  스킬 포인트 사용 가능! (미사용: %d)", p.Skills.Points-p.Skills.Allocated)))
+		sb.WriteString("\n")
+		writeSkillBranchChoices(sb, p.Class, p.Skills)
+		return
+	}
+}
+
+func writeSkillBranchChoices(sb *strings.Builder, class entity.Class, skills *entity.PlayerSkills) {
+	branches := entity.GetBranches(class)
+	if skills.BranchIndex == -1 {
+		for i, tree := range branches {
+			key := "["
+			if i == 1 {
+				key = "]"
+			}
+			fmt.Fprintf(sb, "    [%s] %s -> %s (%s)\n", key, tree.Name, tree.T1.Name, tree.T1.EffectLabel())
+		}
+		return
+	}
+	tree := branches[skills.BranchIndex]
+	otherTree := branches[1-skills.BranchIndex]
+	otherKey := "["
+	if skills.BranchIndex == 0 {
+		otherKey = "]"
+	}
+	fmt.Fprintf(sb, "    [%s] %s (잠김)\n", otherKey, otherTree.Name)
+	switch skills.Allocated {
+	case 1:
+		fmt.Fprintf(sb, "    [[] %s -> %s (%s)\n", tree.Name, tree.T2[0].Name, tree.T2[0].EffectLabel())
+		fmt.Fprintf(sb, "    []] %s -> %s (%s)\n", tree.Name, tree.T2[1].Name, tree.T2[1].EffectLabel())
+	case 2:
+		fmt.Fprintf(sb, "    [[/]] %s -> %s (%s, 자동)\n", tree.Name, tree.T3.Name, tree.T3.EffectLabel())
+	case 3:
+		fmt.Fprintf(sb, "    [[] %s -> %s (%s) ★ 캡스톤\n", tree.Name, tree.T4[0].Name, tree.T4[0].EffectLabel())
+		fmt.Fprintf(sb, "    []] %s -> %s (%s) ★ 캡스톤\n", tree.Name, tree.T4[1].Name, tree.T4[1].EffectLabel())
+	}
+}
+
+func writeRoomPreview(sb *strings.Builder, preview *game.RoomPreview) {
+	if preview == nil {
+		return
+	}
+	previewStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("117")).Bold(true)
+	line := fmt.Sprintf("\n[정찰] 다음 방: %s", preview.RoomTypeLabel)
+	if !preview.HideMonsters && len(preview.MonsterNames) > 0 {
+		line += " — " + strings.Join(preview.MonsterNames, ", ")
+	}
+	sb.WriteString(previewStyle.Render(line))
+	sb.WriteString("\n")
+}
+
+func explorationKeyHints(state game.GameState, fingerprint string, myVoted bool) string {
+	if !state.SoloMode && myVoted {
+		return "[Q] 종료  — 다른 파티원의 투표를 기다리는 중..."
+	}
+	if viewerCanScout(state, fingerprint) {
+		return "[Up/Down] 선택  [Enter] 이동  [6] 정찰  [Q] 종료"
+	}
+	return "[Up/Down] 선택  [Enter] 이동  [Q] 종료"
+}
+
+func viewerCanScout(state game.GameState, fingerprint string) bool {
+	for _, p := range state.Players {
+		if p.Fingerprint == fingerprint && p.Class == entity.ClassRogue {
+			return state.CoopAvailable != nil && state.CoopAvailable[fingerprint]
+		}
+	}
+	return false
 }
 
 func renderCombatLog(log []string) string {
@@ -822,54 +880,64 @@ func renderHPBar(current, max, width int) string {
 func renderPartyPanel(players []*entity.Player, submittedActions map[string]string, showAllyCursor bool, allyCursor int) string {
 	var sb strings.Builder
 	sb.WriteString(styleHeader.Render("  아군") + "\n\n")
-
 	for i, p := range players {
-		marker := "  ♦"
-		if showAllyCursor && i == allyCursor {
-			marker = " >♦"
-		}
-		nameStr := stylePlayer.Render(fmt.Sprintf("%s %s", marker, p.Name))
-		classStr := styleSystem.Render(fmt.Sprintf(" (%s)", p.Class))
-		status := ""
-		if p.IsDead() {
-			status = styleDamage.Render(" [사망]")
-		} else if p.Fled {
-			status = styleFlee.Render(" [도주]")
-		}
-		sb.WriteString(nameStr + classStr + status + "\n")
-
-		hpBar := renderHPBar(p.HP, p.MaxHP, 16)
-		fmt.Fprintf(&sb, "    %s %d/%d\n", hpBar, p.HP, p.MaxHP)
-
-		if len(p.Effects) > 0 {
-			var effects []string
-			for _, e := range p.Effects {
-				switch e.Type {
-				case entity.StatusPoison:
-					effects = append(effects, styleHeal.Render(fmt.Sprintf("☠Poison(%dt)", e.Duration)))
-				case entity.StatusBurn:
-					effects = append(effects, styleDamage.Render(fmt.Sprintf("🔥Burn(%dt)", e.Duration)))
-				case entity.StatusFreeze:
-					effects = append(effects, styleFlee.Render(fmt.Sprintf("❄Freeze(%dt)", e.Duration)))
-				}
-			}
-			sb.WriteString("    " + strings.Join(effects, " ") + "\n")
-		}
-
-		fmt.Fprintf(&sb, "    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF())
-		sb.WriteString(styleGold.Render(fmt.Sprintf("G:%d", p.Gold)))
-		sb.WriteString("\n")
-
-		if action, ok := submittedActions[p.Fingerprint]; ok {
-			sb.WriteString(styleHeal.Render(fmt.Sprintf("    ✓ %s", action)))
-			sb.WriteString("\n")
-		} else if !p.IsOut() {
-			sb.WriteString(styleSystem.Render("    ... 대기중"))
-			sb.WriteString("\n")
-		}
-		sb.WriteString("\n")
+		writePartyMember(&sb, p, showAllyCursor && i == allyCursor, submittedActions)
 	}
 	return sb.String()
+}
+
+func writePartyMember(sb *strings.Builder, p *entity.Player, selected bool, submittedActions map[string]string) {
+	sb.WriteString(partyMemberTitle(p, selected) + "\n")
+	fmt.Fprintf(sb, "    %s %d/%d\n", renderHPBar(p.HP, p.MaxHP, 16), p.HP, p.MaxHP)
+	if len(p.Effects) > 0 {
+		sb.WriteString("    " + strings.Join(effectBadges(p.Effects), " ") + "\n")
+	}
+	fmt.Fprintf(sb, "    ATK:%-3d DEF:%-3d  ", p.EffectiveATK(), p.EffectiveDEF())
+	sb.WriteString(styleGold.Render(fmt.Sprintf("G:%d", p.Gold)))
+	sb.WriteString("\n")
+	writeActionStatus(sb, p, submittedActions)
+	sb.WriteString("\n")
+}
+
+func partyMemberTitle(p *entity.Player, selected bool) string {
+	marker := "  ♦"
+	if selected {
+		marker = " >♦"
+	}
+	status := ""
+	if p.IsDead() {
+		status = styleDamage.Render(" [사망]")
+	} else if p.Fled {
+		status = styleFlee.Render(" [도주]")
+	}
+	return stylePlayer.Render(fmt.Sprintf("%s %s", marker, p.Name)) + styleSystem.Render(fmt.Sprintf(" (%s)", p.Class)) + status
+}
+
+func effectBadges(effects []entity.ActiveEffect) []string {
+	var badges []string
+	for _, e := range effects {
+		switch e.Type {
+		case entity.StatusPoison:
+			badges = append(badges, styleHeal.Render(fmt.Sprintf("☠Poison(%dt)", e.Duration)))
+		case entity.StatusBurn:
+			badges = append(badges, styleDamage.Render(fmt.Sprintf("🔥Burn(%dt)", e.Duration)))
+		case entity.StatusFreeze:
+			badges = append(badges, styleFlee.Render(fmt.Sprintf("❄Freeze(%dt)", e.Duration)))
+		}
+	}
+	return badges
+}
+
+func writeActionStatus(sb *strings.Builder, p *entity.Player, submittedActions map[string]string) {
+	if action, ok := submittedActions[p.Fingerprint]; ok {
+		sb.WriteString(styleHeal.Render(fmt.Sprintf("    ✓ %s", action)))
+		sb.WriteString("\n")
+		return
+	}
+	if !p.IsOut() {
+		sb.WriteString(styleSystem.Render("    ... 대기중"))
+		sb.WriteString("\n")
+	}
 }
 
 func renderEnemyPanel(monsters []*entity.Monster, targetCursor int) string {
