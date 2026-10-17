@@ -1,0 +1,932 @@
+== floor=3 hp=100 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=100 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=100 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=100 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=51 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=51 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=51 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=51 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=50 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=50 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=50 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=50 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=70 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=70 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=3 hp=70 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=70 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=10 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=10 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=10 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=3 hp=10 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  nextRand=8475284246537043955
+== floor=5 hp=100 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=100 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=100 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=100 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=51 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=51 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=51 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=51 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=50 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=50 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=50 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=50 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=70 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=70 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=5 hp=70 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=70 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=10 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=10 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=10 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=5 hp=10 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=60 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss ATK +50%!
+  nextRand=8475284246537043955
+== floor=10 hp=100 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=100 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=100 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=100 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=51 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=51 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=51 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=51 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=50 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=50 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=50 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=50 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=70 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=70 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=10 hp=70 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=70 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=10 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=10 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=10 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=140/140 atk=18 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=10 hp=10 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[3] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  monster[4] Slime hp=189/189 atk=24 def=4 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=1 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 슬라임 2마리를 소환!
+  nextRand=8475284246537043955
+== floor=15 hp=100 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=100 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=100 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=100 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=51 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=51 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=51 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=51 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=50 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=50 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=50 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=50 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=70 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=70 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=15 hp=70 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=70 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=10 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=10 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=10 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=15 hp=10 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=true effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss의 약점이 노출됩니다! (받는 피해 1.5배)
+  nextRand=8475284246537043955
+== floor=20 hp=100 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=100 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=100 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=100 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=100/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=51 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=51 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=51 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=51 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=51/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=50 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=50 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=50 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=50 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=50/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=70 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=70 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=0 transitioned=false vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8475284246537043955
+== floor=20 hp=70 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=70 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=70/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=10 curse="" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=10 curse="" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=10 curse="cruel" hard=false
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955
+== floor=20 hp=10 curse="cruel" hard=true
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[{0 3 5} {1 2 6}]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  monster[0] Boss hp=10/100 atk=52 def=12 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=3 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[1] Done hp=10/100 atk=40 def=10 boss=true mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=2 transitioned=true vulnerable=false effects=[]
+  monster[2] Grunt hp=10/100 atk=10 def=1 boss=false mini=false elite=false prefix=Venomous taunt=false/0 pattern=0 phase=0 transitioned=false vulnerable=false effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=true
+  pending ⚡ Boss 광폭화! Phase 2 진입!
+  pending   Boss이(가) 모든 적을 저주! 독+화상!
+  nextRand=8475284246537043955

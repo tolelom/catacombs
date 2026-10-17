@@ -1,0 +1,1096 @@
+== party outcome=0 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=45/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 HP 0 회복
+  pending   P1 HP 25 회복
+  pending   P2 HP 0 회복
+  nextRand=843730692693298265
+== party outcome=0 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=45/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 HP 0 회복
+  pending   P1 HP 25 회복
+  pending   P2 HP 0 회복
+  nextRand=843730692693298265
+== party outcome=1 floor=2
+  player P0 class=Warrior hp=90/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=55/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 30 피해를 받음
+  pending   P1 30 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 30 피해를 받음
+  nextRand=5920220759044228662
+== party outcome=1 floor=12
+  player P0 class=Warrior hp=90/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=55/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 30 피해를 받음
+  pending   P1 30 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 30 피해를 받음
+  nextRand=5920220759044228662
+== party outcome=2 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=30 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=0/85 atk=15 def=4 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 500 피해를 받음
+  pending ☠ P0 쓰러졌습니다!
+  pending   P1 500 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 500 피해를 받음
+  pending ☠ P2 쓰러졌습니다!
+  nextRand=1867598462707500820
+== party outcome=2 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=30 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=0/85 atk=15 def=4 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 500 피해를 받음
+  pending ☠ P0 쓰러졌습니다!
+  pending   P1 500 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 500 피해를 받음
+  pending ☠ P2 쓰러졌습니다!
+  nextRand=1867598462707500820
+== party outcome=3 floor=2
+  player P0 class=Warrior hp=90/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=55/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 30 피해를 받음
+  pending   P1 30 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 30 피해를 받음
+  nextRand=6983250812964535273
+== party outcome=3 floor=12
+  player P0 class=Warrior hp=90/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=55/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 30 피해를 받음
+  pending   P1 30 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 30 피해를 받음
+  nextRand=6983250812964535273
+== party outcome=4 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=65 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=33 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=33 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 35 획득
+  pending   P1 골드 33 획득
+  pending   P2 골드 33 획득
+  nextRand=3758955014375802183
+== party outcome=4 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=65 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=33 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=33 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 35 획득
+  pending   P1 골드 33 획득
+  pending   P2 골드 33 획득
+  nextRand=3758955014375802183
+== party outcome=5 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 35 잃음
+  pending   P1 골드 33 잃음
+  pending   P2 골드 33 잃음
+  nextRand=8983684945297836708
+== party outcome=5 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 35 잃음
+  pending   P1 골드 33 잃음
+  pending   P2 골드 33 잃음
+  nextRand=8983684945297836708
+== party outcome=6 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 35 잃음
+  pending   P1 골드 33 잃음
+  pending   P2 골드 33 잃음
+  nextRand=4857682683582858106
+== party outcome=6 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 35 잃음
+  pending   P1 골드 33 잃음
+  pending   P2 골드 33 잃음
+  nextRand=4857682683582858106
+== party outcome=7 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=33 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=2 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=2 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 3 획득
+  pending   P1 골드 2 획득
+  pending   P2 골드 2 획득
+  nextRand=504964077767592151
+== party outcome=7 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=33 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=2 dead=false fled=false freezeImmune=0 effects=[]
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=2 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 3 획득
+  pending   P1 골드 2 획득
+  pending   P2 골드 2 획득
+  nextRand=504964077767592151
+== party outcome=8 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Shield Type:1 Bonus:2 Price:0 Set:0}
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Shield Type:1 Bonus:5 Price:0 Set:0}
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Iron Shield 발견 (DEF+2)
+  pending   P1 Iron Shield 발견 (DEF+5)
+  pending   P2 Iron Sword 발견 (ATK+7)
+  nextRand=1670017496445090868
+== party outcome=8 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Shield Type:1 Bonus:5 Price:0 Set:0}
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Shield Type:1 Bonus:8 Price:0 Set:0}
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:11 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Steel Shield 발견 (DEF+5)
+  pending   P1 Steel Shield 발견 (DEF+8)
+  pending   P2 Steel Sword 발견 (ATK+11)
+  nextRand=1670017496445090868
+== party outcome=9 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 Pin Sword 획득
+  pending   P2 Pin Sword 획득
+  nextRand=1529696544168006410
+== party outcome=9 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 Pin Sword 획득
+  pending   P2 Pin Sword 획득
+  nextRand=1529696544168006410
+== party outcome=10 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 Pin Sword 획득
+  pending   P2 Pin Sword 획득
+  nextRand=6716322972832630888
+== party outcome=10 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=30 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=20/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P2 class=Rogue hp=85/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 Pin Sword 획득
+  pending   P2 Pin Sword 획득
+  nextRand=6716322972832630888
+== party outcome=11 floor=2
+  player P0 class=Warrior hp=80/120 atk=12 def=8 gold=12 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:6 Price:0 Set:0}
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:8 Price:0 Set:0}
+  player P2 class=Rogue hp=45/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 40 피해를 받음
+  pending   P1 40 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 40 피해를 받음
+  pending   P0 골드 18 잃음
+  pending   P1 골드 16 잃음
+  pending   P2 골드 16 잃음
+  pending   P0 Iron Sword 발견 (ATK+6)
+  pending   P1 Iron Sword 발견 (ATK+8)
+  pending   P2 Iron Sword 발견 (ATK+7)
+  nextRand=2159927214896815948
+== party outcome=11 floor=12
+  player P0 class=Warrior hp=80/120 atk=12 def=8 gold=12 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:10 Price:0 Set:0}
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:12 Price:0 Set:0}
+  player P2 class=Rogue hp=45/85 atk=15 def=4 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:11 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 40 피해를 받음
+  pending   P1 40 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  pending   P2 40 피해를 받음
+  pending   P0 골드 18 잃음
+  pending   P1 골드 16 잃음
+  pending   P2 골드 16 잃음
+  pending   P0 Steel Sword 발견 (ATK+10)
+  pending   P1 Steel Sword 발견 (ATK+12)
+  pending   P2 Steel Sword 발견 (ATK+11)
+  nextRand=2159927214896815948
+== charm and full inventory outcome=0 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 HP 0 회복
+  pending   P1 HP 0 회복
+  nextRand=843730692693298265
+== charm and full inventory outcome=0 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 HP 0 회복
+  pending   P1 HP 0 회복
+  nextRand=843730692693298265
+== charm and full inventory outcome=1 floor=2
+  player P0 class=Warrior hp=90/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=40/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 30 피해를 받음
+  pending   P1 30 피해를 받음
+  nextRand=5920220759044228662
+== charm and full inventory outcome=1 floor=12
+  player P0 class=Warrior hp=90/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=40/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 30 피해를 받음
+  pending   P1 30 피해를 받음
+  nextRand=5920220759044228662
+== charm and full inventory outcome=2 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=200 dead=true fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 500 피해를 받음
+  pending ☠ P0 쓰러졌습니다!
+  pending   P1 500 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  nextRand=1867598462707500820
+== charm and full inventory outcome=2 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=200 dead=true fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=0/70 atk=20 def=3 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P0 500 피해를 받음
+  pending ☠ P0 쓰러졌습니다!
+  pending   P1 500 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  nextRand=1867598462707500820
+== charm and full inventory outcome=3 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=40/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   🍀 P0의 행운 부적이 불운을 막아냈다!
+  pending   P1 30 피해를 받음
+  nextRand=6983250812964535273
+== charm and full inventory outcome=3 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=40/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   🍀 P0의 행운 부적이 불운을 막아냈다!
+  pending   P1 30 피해를 받음
+  nextRand=6983250812964535273
+== charm and full inventory outcome=4 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=251 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=50 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 51 획득
+  pending   P1 골드 50 획득
+  nextRand=3758955014375802183
+== charm and full inventory outcome=4 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=251 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=50 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 51 획득
+  pending   P1 골드 50 획득
+  nextRand=3758955014375802183
+== charm and full inventory outcome=5 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=149 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 51 잃음
+  pending   P1 골드 50 잃음
+  nextRand=8983684945297836708
+== charm and full inventory outcome=5 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=149 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 51 잃음
+  pending   P1 골드 50 잃음
+  nextRand=8983684945297836708
+== charm and full inventory outcome=6 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   🍀 P0의 행운 부적이 불운을 막아냈다!
+  pending   P1 골드 50 잃음
+  nextRand=4857682683582858106
+== charm and full inventory outcome=6 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   🍀 P0의 행운 부적이 불운을 막아냈다!
+  pending   P1 골드 50 잃음
+  nextRand=4857682683582858106
+== charm and full inventory outcome=7 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=204 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=3 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 4 획득
+  pending   P1 골드 3 획득
+  nextRand=504964077767592151
+== charm and full inventory outcome=7 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=204 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=3 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 4 획득
+  pending   P1 골드 3 획득
+  nextRand=504964077767592151
+== charm and full inventory outcome=8 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+    item {Name:Iron Shield Type:1 Bonus:2 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Iron Shield 발견 (DEF+2)
+  pending   P1의 인벤토리가 가득 찼습니다!
+  nextRand=6065253122432684137
+== charm and full inventory outcome=8 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+    item {Name:Steel Shield Type:1 Bonus:5 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Steel Shield 발견 (DEF+5)
+  pending   P1의 인벤토리가 가득 찼습니다!
+  nextRand=6065253122432684137
+== charm and full inventory outcome=9 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=35 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 인벤토리 가득 → +35G로 전환
+  nextRand=1529696544168006410
+== charm and full inventory outcome=9 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=35 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 인벤토리 가득 → +35G로 전환
+  nextRand=1529696544168006410
+== charm and full inventory outcome=10 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=35 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 인벤토리 가득 → +35G로 전환
+  nextRand=6716322972832630888
+== charm and full inventory outcome=10 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:행운 부적 Type:3 Bonus:0 Price:0 Set:0}
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  player P1 class=Mage hp=70/70 atk=20 def=3 gold=35 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  pending   P1 인벤토리 가득 → +35G로 전환
+  nextRand=6716322972832630888
+== charm and full inventory outcome=11 floor=2
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:6 Price:0 Set:0}
+  player P1 class=Mage hp=30/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   🍀 P0의 행운 부적이 불운을 막아냈다!
+  pending   P1 40 피해를 받음
+  pending   P1 골드 25 잃음
+  pending   P0 Iron Sword 발견 (ATK+6)
+  pending   P1의 인벤토리가 가득 찼습니다!
+  nextRand=3097602948490632669
+== charm and full inventory outcome=11 floor=12
+  player P0 class=Warrior hp=120/120 atk=12 def=8 gold=200 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:10 Price:0 Set:0}
+  player P1 class=Mage hp=30/70 atk=20 def=3 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+    item {Name:Rock Type:1 Bonus:1 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   🍀 P0의 행운 부적이 불운을 막아냈다!
+  pending   P1 40 피해를 받음
+  pending   P1 골드 25 잃음
+  pending   P0 Steel Sword 발견 (ATK+10)
+  pending   P1의 인벤토리가 가득 찼습니다!
+  nextRand=3097602948490632669
+== one out player outcome=0 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 HP 0 회복
+  nextRand=843730692693298265
+== one out player outcome=0 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 HP 0 회복
+  nextRand=843730692693298265
+== one out player outcome=1 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 30 피해를 받음
+  nextRand=5920220759044228662
+== one out player outcome=1 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 30 피해를 받음
+  nextRand=5920220759044228662
+== one out player outcome=2 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=0/90 atk=8 def=5 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P1 500 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  nextRand=1867598462707500820
+== one out player outcome=2 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=0/90 atk=8 def=5 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=true bossPhase2=false
+  pending   P1 500 피해를 받음
+  pending ☠ P1 쓰러졌습니다!
+  nextRand=1867598462707500820
+== one out player outcome=3 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 30 피해를 받음
+  nextRand=6983250812964535273
+== one out player outcome=3 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 30 피해를 받음
+  nextRand=6983250812964535273
+== one out player outcome=4 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=101 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 101 획득
+  nextRand=3758955014375802183
+== one out player outcome=4 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=101 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 101 획득
+  nextRand=3758955014375802183
+== one out player outcome=5 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 101 잃음
+  nextRand=8983684945297836708
+== one out player outcome=5 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 101 잃음
+  nextRand=8983684945297836708
+== one out player outcome=6 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 101 잃음
+  nextRand=4857682683582858106
+== one out player outcome=6 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 101 잃음
+  nextRand=4857682683582858106
+== one out player outcome=7 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=7 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 7 획득
+  nextRand=504964077767592151
+== one out player outcome=7 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=7 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 골드 7 획득
+  nextRand=504964077767592151
+== one out player outcome=8 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Shield Type:1 Bonus:2 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 Iron Shield 발견 (DEF+2)
+  nextRand=6065253122432684137
+== one out player outcome=8 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Shield Type:1 Bonus:5 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 Steel Shield 발견 (DEF+5)
+  nextRand=6065253122432684137
+== one out player outcome=9 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 Pin Sword 획득
+  nextRand=1529696544168006410
+== one out player outcome=9 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 Pin Sword 획득
+  nextRand=1529696544168006410
+== one out player outcome=10 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 Pin Sword 획득
+  nextRand=6716322972832630888
+== one out player outcome=10 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 Pin Sword 획득
+  nextRand=6716322972832630888
+== one out player outcome=11 floor=2
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=50/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:6 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 40 피해를 받음
+  pending   P1 골드 50 잃음
+  pending   P1 Iron Sword 발견 (ATK+6)
+  nextRand=3097602948490632669
+== one out player outcome=11 floor=12
+  player P0 class=Warrior hp=0/120 atk=12 def=8 gold=0 dead=true fled=false freezeImmune=0 effects=[]
+  player P1 class=Healer hp=50/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:10 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P1 40 피해를 받음
+  pending   P1 골드 50 잃음
+  pending   P1 Steel Sword 발견 (ATK+10)
+  nextRand=3097602948490632669
+== solo healer outcome=0 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 HP 0 회복
+  nextRand=843730692693298265
+== solo healer outcome=0 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 HP 0 회복
+  nextRand=843730692693298265
+== solo healer outcome=1 floor=2
+  player P0 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 30 피해를 받음
+  nextRand=5920220759044228662
+== solo healer outcome=1 floor=12
+  player P0 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 30 피해를 받음
+  nextRand=5920220759044228662
+== solo healer outcome=2 floor=2
+  player P0 class=Healer hp=27/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 500 피해를 받음
+  pending ✦ P0 신성 가호로 30%HP로 부활!
+  nextRand=1867598462707500820
+== solo healer outcome=2 floor=12
+  player P0 class=Healer hp=27/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 500 피해를 받음
+  pending ✦ P0 신성 가호로 30%HP로 부활!
+  nextRand=1867598462707500820
+== solo healer outcome=3 floor=2
+  player P0 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 30 피해를 받음
+  nextRand=6983250812964535273
+== solo healer outcome=3 floor=12
+  player P0 class=Healer hp=60/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 30 피해를 받음
+  nextRand=6983250812964535273
+== solo healer outcome=4 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=101 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 101 획득
+  nextRand=3758955014375802183
+== solo healer outcome=4 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=101 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 101 획득
+  nextRand=3758955014375802183
+== solo healer outcome=5 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 101 잃음
+  nextRand=8983684945297836708
+== solo healer outcome=5 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 101 잃음
+  nextRand=8983684945297836708
+== solo healer outcome=6 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 101 잃음
+  nextRand=4857682683582858106
+== solo healer outcome=6 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 101 잃음
+  nextRand=4857682683582858106
+== solo healer outcome=7 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=7 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 7 획득
+  nextRand=504964077767592151
+== solo healer outcome=7 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=7 dead=false fled=false freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 골드 7 획득
+  nextRand=504964077767592151
+== solo healer outcome=8 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Shield Type:1 Bonus:2 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Iron Shield 발견 (DEF+2)
+  nextRand=6065253122432684137
+== solo healer outcome=8 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Shield Type:1 Bonus:5 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Steel Shield 발견 (DEF+5)
+  nextRand=6065253122432684137
+== solo healer outcome=9 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  nextRand=1529696544168006410
+== solo healer outcome=9 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  nextRand=1529696544168006410
+== solo healer outcome=10 floor=2
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  nextRand=6716322972832630888
+== solo healer outcome=10 floor=12
+  player P0 class=Healer hp=90/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Pin Sword Type:0 Bonus:7 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 Pin Sword 획득
+  nextRand=6716322972832630888
+== solo healer outcome=11 floor=2
+  player P0 class=Healer hp=50/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Iron Sword Type:0 Bonus:6 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 40 피해를 받음
+  pending   P0 골드 50 잃음
+  pending   P0 Iron Sword 발견 (ATK+6)
+  nextRand=3097602948490632669
+== solo healer outcome=11 floor=12
+  player P0 class=Healer hp=50/90 atk=8 def=5 gold=0 dead=false fled=false freezeImmune=0 effects=[]
+    item {Name:Steel Sword Type:0 Bonus:10 Price:0 Set:0}
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  pending   P0 40 피해를 받음
+  pending   P0 골드 50 잃음
+  pending   P0 Steel Sword 발견 (ATK+10)
+  nextRand=3097602948490632669
+== everyone out outcome=0 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=843730692693298265
+== everyone out outcome=0 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=843730692693298265
+== everyone out outcome=1 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=5920220759044228662
+== everyone out outcome=1 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=5920220759044228662
+== everyone out outcome=2 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=1867598462707500820
+== everyone out outcome=2 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=1867598462707500820
+== everyone out outcome=3 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=6983250812964535273
+== everyone out outcome=3 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=6983250812964535273
+== everyone out outcome=4 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=3758955014375802183
+== everyone out outcome=4 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=3758955014375802183
+== everyone out outcome=5 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8983684945297836708
+== everyone out outcome=5 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=8983684945297836708
+== everyone out outcome=6 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=4857682683582858106
+== everyone out outcome=6 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=4857682683582858106
+== everyone out outcome=7 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=504964077767592151
+== everyone out outcome=7 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=504964077767592151
+== everyone out outcome=8 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=5674494734864815533
+== everyone out outcome=8 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=5674494734864815533
+== everyone out outcome=9 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=1529696544168006410
+== everyone out outcome=9 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=1529696544168006410
+== everyone out outcome=10 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=6716322972832630888
+== everyone out outcome=10 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=6716322972832630888
+== everyone out outcome=11 floor=2
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=2336222419191169341
+== everyone out outcome=11 floor=12
+  player P0 class=Mage hp=70/70 atk=20 def=3 gold=0 dead=false fled=true freezeImmune=0 effects=[]
+  phase=1 gameOver=false anyDied=false bossPhase2=false
+  nextRand=2336222419191169341
