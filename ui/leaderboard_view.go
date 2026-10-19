@@ -59,80 +59,75 @@ func markIfMine(line, rowID, myID string) string {
 
 func renderLeaderboard(byFloor, byGold []store.RunRecord, daily []store.DailyRecord, tab, width, height int, playerName, fingerprint string) string {
 	title := styleHeader.Render("── 리더보드 ──")
-
-	tabs := []string{"층수", "골드", "일일"}
-	var tabLine string
-	for i, t := range tabs {
-		if i == tab {
-			tabLine += styleHeader.Render(fmt.Sprintf(" [%s] ", t))
-		} else {
-			tabLine += styleSystem.Render(fmt.Sprintf("  %s  ", t))
-		}
-	}
+	tabLine := renderLeaderboardTabs(tab)
 
 	var content string
-
 	switch tab {
 	case 0:
-		content += styleCoop.Render("  층수 순위") + "\n"
-		for i, r := range byFloor {
-			if i >= 10 {
-				break
-			}
-			medal := fmt.Sprintf("  %d.", i+1)
-			cls := ""
-			if r.Class != "" {
-				cls = fmt.Sprintf(" [%s]", r.Class)
-			}
-			party := ""
-			if len(r.Members) > 1 {
-				party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
-			}
-			line := fmt.Sprintf("  %s %s%s  B%d  %s%s",
-				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
-				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
-			content += markIfMine(line, r.Player, playerName) + "\n"
-		}
+		content = renderRunRanking("  층수 순위", byFloor, playerName)
 	case 1:
-		content += styleCoop.Render("  골드 순위") + "\n"
-		for i, r := range byGold {
-			if i >= 10 {
-				break
-			}
-			medal := fmt.Sprintf("  %d.", i+1)
-			cls := ""
-			if r.Class != "" {
-				cls = fmt.Sprintf(" [%s]", r.Class)
-			}
-			party := ""
-			if len(r.Members) > 1 {
-				party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
-			}
-			line := fmt.Sprintf("  %s %s%s  B%d  %s%s",
-				medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
-				r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
-			content += markIfMine(line, r.Player, playerName) + "\n"
-		}
+		content = renderRunRanking("  골드 순위", byGold, playerName)
 	case 2:
-		content += styleCoop.Render(fmt.Sprintf("  일일 도전 — %s", time.Now().Format("2006-01-02"))) + "\n"
-		if len(daily) == 0 {
-			content += "  오늘 일일 도전 기록이 없습니다.\n"
-		}
-		for i, r := range daily {
-			if i >= 20 {
-				break
-			}
-			medal := fmt.Sprintf("  %d.", i+1)
-			line := fmt.Sprintf("  %s %s  B%d  %s",
-				medal, stylePlayer.Render(r.PlayerName),
-				r.FloorReached, styleGold.Render(fmt.Sprintf("%dg", r.GoldEarned)))
-
-			content += markIfMine(line, r.Player, fingerprint) + "\n"
-		}
+		content = renderDailyRanking(daily, fingerprint)
 	}
 
 	footer := styleSystem.Render("\n[Tab] 탭 전환  [L] 뒤로")
 
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
 		lipgloss.JoinVertical(lipgloss.Center, title, tabLine, "", content, footer))
+}
+
+func renderLeaderboardTabs(activeTab int) string {
+	tabs := []string{"층수", "골드", "일일"}
+	var tabLine string
+	for i, t := range tabs {
+		if i == activeTab {
+			tabLine += styleHeader.Render(fmt.Sprintf(" [%s] ", t))
+		} else {
+			tabLine += styleSystem.Render(fmt.Sprintf("  %s  ", t))
+		}
+	}
+	return tabLine
+}
+
+func renderRunRanking(heading string, records []store.RunRecord, playerName string) string {
+	content := styleCoop.Render(heading) + "\n"
+	for i, r := range records {
+		if i >= 10 {
+			break
+		}
+		medal := fmt.Sprintf("  %d.", i+1)
+		cls := ""
+		if r.Class != "" {
+			cls = fmt.Sprintf(" [%s]", r.Class)
+		}
+		party := ""
+		if len(r.Members) > 1 {
+			party = styleSystem.Render(fmt.Sprintf(" (%s)", strings.Join(r.Members, ", ")))
+		}
+		line := fmt.Sprintf("  %s %s%s  B%d  %s%s",
+			medal, stylePlayer.Render(r.Player), styleSystem.Render(cls),
+			r.Floor, styleGold.Render(fmt.Sprintf("%dg", r.Score)), party)
+		content += markIfMine(line, r.Player, playerName) + "\n"
+	}
+	return content
+}
+
+func renderDailyRanking(daily []store.DailyRecord, fingerprint string) string {
+	content := styleCoop.Render(fmt.Sprintf("  일일 도전 — %s", time.Now().Format("2006-01-02"))) + "\n"
+	if len(daily) == 0 {
+		content += "  오늘 일일 도전 기록이 없습니다.\n"
+	}
+	for i, r := range daily {
+		if i >= 20 {
+			break
+		}
+		medal := fmt.Sprintf("  %d.", i+1)
+		line := fmt.Sprintf("  %s %s  B%d  %s",
+			medal, stylePlayer.Render(r.PlayerName),
+			r.FloorReached, styleGold.Render(fmt.Sprintf("%dg", r.GoldEarned)))
+
+		content += markIfMine(line, r.Player, fingerprint) + "\n"
+	}
+	return content
 }
