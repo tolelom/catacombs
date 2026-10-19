@@ -49,74 +49,82 @@ type AttackResult struct {
 }
 
 func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.Monster, coopBonus float64) []AttackResult {
-	targetCount := make(map[int]int)
-	targetOrder := make(map[int]int)
-	for i, intent := range intents {
-		if !intent.IsAoE {
-			targetCount[intent.TargetIdx]++
-			if _, ok := targetOrder[intent.TargetIdx]; !ok {
-				targetOrder[intent.TargetIdx] = i
-			}
-		}
-	}
+	attackerCount, firstAttacker := countSingleTargetAttackers(intents)
 
 	results := make([]AttackResult, len(intents))
 	for i, intent := range intents {
 		if intent.IsAoE {
-			totalDmg := 0
-			for _, m := range monsters {
-				if !m.IsDead() {
-					dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier)
-					if m.Vulnerable {
-						dmg = int(math.Round(float64(dmg) * 1.5))
-					}
-					m.TakeDamage(dmg)
-					totalDmg += dmg
-				}
+			results[i] = resolveAoEAttack(rng, intent, monsters)
+			continue
+		}
+		coopApplies := attackerCount[intent.TargetIdx] >= 2 && firstAttacker[intent.TargetIdx] != i
+		results[i] = resolveSingleTargetAttack(rng, intent, monsters, coopApplies, coopBonus)
+	}
+	return results
+}
+
+func countSingleTargetAttackers(intents []AttackIntent) (attackerCount, firstAttacker map[int]int) {
+	attackerCount = make(map[int]int)
+	firstAttacker = make(map[int]int)
+	for i, intent := range intents {
+		if !intent.IsAoE {
+			attackerCount[intent.TargetIdx]++
+			if _, ok := firstAttacker[intent.TargetIdx]; !ok {
+				firstAttacker[intent.TargetIdx] = i
 			}
-			results[i] = AttackResult{TargetIdx: -1, Damage: totalDmg, IsAoE: true}
-		} else {
-			if intent.TargetIdx < 0 || intent.TargetIdx >= len(monsters) {
-				results[i] = AttackResult{TargetIdx: -1}
-				continue
-			}
-			m := monsters[intent.TargetIdx]
-			if m.IsDead() {
-				results[i] = AttackResult{TargetIdx: -1}
-				continue
-			}
-			r := rngOrDefault(rng)
-			if !m.IsBoss && !m.IsMiniBoss {
-				roll := r.Float64()
-				if roll < 0.05 {
-					results[i] = AttackResult{TargetIdx: intent.TargetIdx, Missed: true}
-					continue
-				}
-				if roll < 0.10 {
-					dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier*0.5)
-					m.TakeDamage(dmg)
-					results[i] = AttackResult{TargetIdx: intent.TargetIdx, Damage: dmg, Glanced: true}
-					continue
-				}
-			}
+		}
+	}
+	return attackerCount, firstAttacker
+}
+
+func resolveAoEAttack(rng *rand.Rand, intent AttackIntent, monsters []*entity.Monster) AttackResult {
+	totalDmg := 0
+	for _, m := range monsters {
+		if !m.IsDead() {
 			dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier)
-			coopApplied := false
-			if targetCount[intent.TargetIdx] >= 2 && targetOrder[intent.TargetIdx] != i {
-				dmg = int(math.Round(float64(dmg) * (1.0 + coopBonus)))
-				coopApplied = true
-			}
 			if m.Vulnerable {
 				dmg = int(math.Round(float64(dmg) * 1.5))
 			}
 			m.TakeDamage(dmg)
-			results[i] = AttackResult{
-				TargetIdx:   intent.TargetIdx,
-				Damage:      dmg,
-				CoopApplied: coopApplied,
-			}
+			totalDmg += dmg
 		}
 	}
-	return results
+	return AttackResult{TargetIdx: -1, Damage: totalDmg, IsAoE: true}
+}
+
+func resolveSingleTargetAttack(rng *rand.Rand, intent AttackIntent, monsters []*entity.Monster, coopApplies bool, coopBonus float64) AttackResult {
+	if intent.TargetIdx < 0 || intent.TargetIdx >= len(monsters) {
+		return AttackResult{TargetIdx: -1}
+	}
+	m := monsters[intent.TargetIdx]
+	if m.IsDead() {
+		return AttackResult{TargetIdx: -1}
+	}
+	r := rngOrDefault(rng)
+	if !m.IsBoss && !m.IsMiniBoss {
+		roll := r.Float64()
+		if roll < 0.05 {
+			return AttackResult{TargetIdx: intent.TargetIdx, Missed: true}
+		}
+		if roll < 0.10 {
+			dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier*0.5)
+			m.TakeDamage(dmg)
+			return AttackResult{TargetIdx: intent.TargetIdx, Damage: dmg, Glanced: true}
+		}
+	}
+	dmg := CalcDamage(rng, intent.PlayerATK, m.DEF, intent.Multiplier)
+	if coopApplies {
+		dmg = int(math.Round(float64(dmg) * (1.0 + coopBonus)))
+	}
+	if m.Vulnerable {
+		dmg = int(math.Round(float64(dmg) * 1.5))
+	}
+	m.TakeDamage(dmg)
+	return AttackResult{
+		TargetIdx:   intent.TargetIdx,
+		Damage:      dmg,
+		CoopApplied: coopApplies,
+	}
 }
 
 func AttemptFlee(rng *rand.Rand, fleeChance float64) bool {
