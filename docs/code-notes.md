@@ -181,6 +181,21 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.AllocateSkillPoint`: MaxHPBoost nodes raise both MaxHP and current HP by the delta.
 - `GameSession.SendChat`: SendChat appends a chat message to the combat log
 
+## game/boss_phase.go
+
+- `GameSession.checkBossPhaseTransitions`: checkBossPhaseTransitions runs after damage to detect bosses entering Phase 2 and applies their unique enrage effects. Threshold defaults to 50% HP, raised to 70% by the Cruel curse. Caller holds s.mu.
+- `GameSession.enrageBossLocked`: B5 Guardian: berserk — ATK +50%, no more healing pattern
+- `GameSession.summonPhaseTwoSlimesLocked`: B10 Warden: split — summon 2 slimes scaled to floor. applyDifficultyMods covers HardMode/NG+/DailyMod so summons stay scary in late-game runs (the HP*2 boost happens BEFORE scaling so it survives multiplication).
+- `GameSession.summonPhaseTwoSlimesLocked`: tougher summons
+- `GameSession.exposeBossWeaknessLocked`: B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
+- `GameSession.curseBossFoesLocked`: B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
+
+## game/combat_outcome.go
+
+- `GameSession.advanceFloor`: Grant 1 skill point per floor clear
+- `GameSession.grantBossRelic`: Bosses also drop one set item per surviving player.
+- `randomSetItem`: randomSetItem rolls a random set item appropriate for the current floor.
+
 ## game/daily.go
 
 - `DailyModifier`: DailyModifier is a per-day game-wide tweak applied to daily challenge runs. Deterministic from the date string so all players today face the same one.
@@ -247,6 +262,12 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `buildRotatingLootChoice`: Roll inside Resolve (not deferred to the apply step) so RNG consumption stays independent of inventory state — daily-run determinism depends on a stable draw order.
 - `rollGearItem`: rollGearItem rolls one random weapon-or-armor drop using the standard treasure formulas.
 
+## game/monster_turn.go
+
+- `GameSession.applyBossPatternLocked`: Boss/mini-boss special pattern
+- `GameSession.monsterSingleAttackLocked`: Elite on-hit effects only apply when the strike actually connected — dodge/block/Sanctuary that reduced dmg to 0 shouldn't still inflict status (or heal vampiric for 0).
+- `GameSession.applyDamageMods`: applyDamageMods reduces incoming damage by coop reductions, returns 0 if invincible. Also applies class-based dodge/block rolls (Rogue +10% dodge, Warrior +10% block) and Smoke Bomb relic dodge bonus. Returns the final damage value (0 if dodged). Caller holds s.mu.
+
 ## game/mutation.go
 
 - `Mutation`: Mutation represents a weekly gameplay modifier. Effects are applied at runtime via GameSession.hasMutation() rather than mutating shared config, so concurrent sessions and week boundaries cannot leak state.
@@ -260,6 +281,15 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `Curse`: applied to gold rewards
 - `AvailableCurses`: AvailableCurses lists the 5 NG+ curses; one is rolled at NG+ start.
 - `PickCurse`: PickCurse returns one curse using the supplied RNG.
+
+## game/player_actions.go
+
+- `GameSession.pickHealTarget`: pickHealTarget returns the player a heal should land on: the explicitly chosen ally if it is alive and actually wounded, otherwise the most-wounded alive ally. Returns nil when no alive player needs healing — the caller then converts the heal into an offensive smite.
+- `GameSession.firstAliveMonsterIdx`: firstAliveMonsterIdx returns the index of the first living monster, or -1 if none are alive.
+- `GameSession.applyActiveRelic`: applyActiveRelic resolves an ActionRelic submission. choice is the UI's armed-relic cursor and selects which active relic in the player's inventory fires when more than one is owned. Once per combat per player. Caller holds s.mu.
+- `GameSession.applyCoopAbility`: applyCoopAbility resolves one player's coop ability use. Caller holds s.mu.
+- `GameSession.recordSoloAction`: recordSoloAction updates the solo-chain sequence state after a player's combat action resolves. actionType must reflect what actually happened — failed skills/coops, items-with-empty-bag, waits, freezes, and relic uses record "" and break every chain. No-op outside solo mode (party combos own that space). Caller holds s.mu.
+- `GameSession.mergeCoopReduction`: mergeCoopReduction merges incoming damage-reduction multipliers into the session map, taking the maximum per fingerprint.
 
 ## game/random_event.go
 
@@ -388,26 +418,8 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.endTurnLocked`: One-turn flags consumed during this turn — clear so they don't carry over.
 - `GameSession.endTurnLocked`: B15 phase 2 vulnerable window — flips every turn so the 1.5x damage buff alternates (per the design comment in checkBossPhaseTransitions); without this, Vulnerable would stay true permanently after entry.
 - `GameSession.resolveTurnLocked`: PendingLogs now contains all turn results — UI will reveal them one by one via RevealNextLog
-- `GameSession.advanceFloor`: Grant 1 skill point per floor clear
-- `GameSession.grantBossRelic`: Bosses also drop one set item per surviving player.
-- `randomSetItem`: randomSetItem rolls a random set item appropriate for the current floor.
-- `GameSession.applyBossPatternLocked`: Boss/mini-boss special pattern
-- `GameSession.monsterSingleAttackLocked`: Elite on-hit effects only apply when the strike actually connected — dodge/block/Sanctuary that reduced dmg to 0 shouldn't still inflict status (or heal vampiric for 0).
-- `GameSession.pickHealTarget`: pickHealTarget returns the player a heal should land on: the explicitly chosen ally if it is alive and actually wounded, otherwise the most-wounded alive ally. Returns nil when no alive player needs healing — the caller then converts the heal into an offensive smite.
-- `GameSession.firstAliveMonsterIdx`: firstAliveMonsterIdx returns the index of the first living monster, or -1 if none are alive.
-- `GameSession.applyDamageMods`: applyDamageMods reduces incoming damage by coop reductions, returns 0 if invincible. Also applies class-based dodge/block rolls (Rogue +10% dodge, Warrior +10% block) and Smoke Bomb relic dodge bonus. Returns the final damage value (0 if dodged). Caller holds s.mu.
 - `GameSession.runExtraActions`: runExtraActions performs one extra auto-attack per player who used Time Glass last turn. Skips if no monsters alive. Caller holds s.mu.
 - `GameSession.runExtraActions`: Find first alive monster
-- `GameSession.applyActiveRelic`: applyActiveRelic resolves an ActionRelic submission. choice is the UI's armed-relic cursor and selects which active relic in the player's inventory fires when more than one is owned. Once per combat per player. Caller holds s.mu.
-- `GameSession.applyCoopAbility`: applyCoopAbility resolves one player's coop ability use. Caller holds s.mu.
-- `GameSession.recordSoloAction`: recordSoloAction updates the solo-chain sequence state after a player's combat action resolves. actionType must reflect what actually happened — failed skills/coops, items-with-empty-bag, waits, freezes, and relic uses record "" and break every chain. No-op outside solo mode (party combos own that space). Caller holds s.mu.
-- `GameSession.mergeCoopReduction`: mergeCoopReduction merges incoming damage-reduction multipliers into the session map, taking the maximum per fingerprint.
-- `GameSession.checkBossPhaseTransitions`: checkBossPhaseTransitions runs after damage to detect bosses entering Phase 2 and applies their unique enrage effects. Threshold defaults to 50% HP, raised to 70% by the Cruel curse. Caller holds s.mu.
-- `GameSession.enrageBossLocked`: B5 Guardian: berserk — ATK +50%, no more healing pattern
-- `GameSession.summonPhaseTwoSlimesLocked`: B10 Warden: split — summon 2 slimes scaled to floor. applyDifficultyMods covers HardMode/NG+/DailyMod so summons stay scary in late-game runs (the HP*2 boost happens BEFORE scaling so it survives multiplication).
-- `GameSession.summonPhaseTwoSlimesLocked`: tougher summons
-- `GameSession.exposeBossWeaknessLocked`: B15 Overlord: vulnerable window every other turn (toggled in MonsterAI)
-- `GameSession.curseBossFoesLocked`: B20 Archlich: superchaos — all status patterns + ATK +30%, DEF +20%
 - `GameSession.applyCoopComboEffect`: applyCoopComboEffect propagates extended coop combo effects to session state. Caller holds s.mu.
 - `GameSession.handlePlayerDeathLocked`: handlePlayerDeathLocked handles a player's death uniformly: if the once-per-run solo-healer auto-revive applies, restores the player to 30% HP and logs the revive; otherwise logs the rip line and flips AnyPlayerDied for the no_death achievement. Burning the revive on event damage is intentional — any death counts per the Divine Grace design. Caller holds s.mu. Only call when p.IsDead() == true.
 
