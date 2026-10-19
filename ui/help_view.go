@@ -111,57 +111,83 @@ func helpPageExploration(inventoryLimit, maxFloors int) []helpSection {
 	}
 }
 
-func renderHelp(width, height int, cfg *config.Config, page int) string {
-	turnTimeout := 10
-	maxPlayers := 4
-	coopPct := 10
-	skillUses := 3
-	inventoryLimit := 10
-	maxFloors := 20
-	if cfg != nil {
-		if cfg.Game.TurnTimeoutSec > 0 {
-			turnTimeout = cfg.Game.TurnTimeoutSec
-		}
-		if cfg.Game.MaxPlayers > 0 {
-			maxPlayers = cfg.Game.MaxPlayers
-		}
-		if cfg.Game.CoopBonus > 0 {
-			coopPct = int(cfg.Game.CoopBonus * 100)
-		}
-		if cfg.Game.SkillUses > 0 {
-			skillUses = cfg.Game.SkillUses
-		}
-		if cfg.Game.InventoryLimit > 0 {
-			inventoryLimit = cfg.Game.InventoryLimit
-		}
-		if cfg.Game.MaxFloors > 0 {
-			maxFloors = cfg.Game.MaxFloors
-		}
-	}
+type helpSettings struct {
+	turnTimeout    int
+	maxPlayers     int
+	coopPct        int
+	skillUses      int
+	inventoryLimit int
+	maxFloors      int
+}
 
+func renderHelp(width, height int, cfg *config.Config, page int) string {
+	page = clampHelpPage(page)
+	pageTitle, sections := helpPage(page, resolveHelpSettings(cfg))
+
+	title := styleHeader.Render(fmt.Sprintf("── 도움말: %s (%d/%d) ──", pageTitle, page+1, helpPageCount))
+	content := renderHelpSections(sections)
+	footer := styleSystem.Render("[←/→] 페이지  [H] 뒤로")
+
+	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
+		lipgloss.JoinVertical(lipgloss.Center, title, "", content, footer))
+}
+
+func resolveHelpSettings(cfg *config.Config) helpSettings {
+	settings := helpSettings{
+		turnTimeout:    10,
+		maxPlayers:     4,
+		coopPct:        10,
+		skillUses:      3,
+		inventoryLimit: 10,
+		maxFloors:      20,
+	}
+	if cfg == nil {
+		return settings
+	}
+	if cfg.Game.TurnTimeoutSec > 0 {
+		settings.turnTimeout = cfg.Game.TurnTimeoutSec
+	}
+	if cfg.Game.MaxPlayers > 0 {
+		settings.maxPlayers = cfg.Game.MaxPlayers
+	}
+	if cfg.Game.CoopBonus > 0 {
+		settings.coopPct = int(cfg.Game.CoopBonus * 100)
+	}
+	if cfg.Game.SkillUses > 0 {
+		settings.skillUses = cfg.Game.SkillUses
+	}
+	if cfg.Game.InventoryLimit > 0 {
+		settings.inventoryLimit = cfg.Game.InventoryLimit
+	}
+	if cfg.Game.MaxFloors > 0 {
+		settings.maxFloors = cfg.Game.MaxFloors
+	}
+	return settings
+}
+
+func clampHelpPage(page int) int {
 	if page < 0 {
 		page = 0
 	}
 	if page >= helpPageCount {
 		page = helpPageCount - 1
 	}
+	return page
+}
 
-	var sections []helpSection
-	var pageTitle string
+func helpPage(page int, settings helpSettings) (string, []helpSection) {
 	switch page {
 	case 0:
-		pageTitle = "조작법·직업"
-		sections = helpPageControls(turnTimeout)
+		return "조작법·직업", helpPageControls(settings.turnTimeout)
 	case 1:
-		pageTitle = "전투 시스템"
-		sections = helpPageCombat(skillUses, maxPlayers, coopPct)
+		return "전투 시스템", helpPageCombat(settings.skillUses, settings.maxPlayers, settings.coopPct)
 	case 2:
-		pageTitle = "탐험·경제"
-		sections = helpPageExploration(inventoryLimit, maxFloors)
+		return "탐험·경제", helpPageExploration(settings.inventoryLimit, settings.maxFloors)
 	}
+	return "", nil
+}
 
-	title := styleHeader.Render(fmt.Sprintf("── 도움말: %s (%d/%d) ──", pageTitle, page+1, helpPageCount))
-
+func renderHelpSections(sections []helpSection) string {
 	var content string
 	headerStyle := lipgloss.NewStyle().Foreground(colorCyan).Bold(true)
 	bodyStyle := lipgloss.NewStyle().Foreground(colorWhite)
@@ -170,9 +196,5 @@ func renderHelp(width, height int, cfg *config.Config, page int) string {
 		content += headerStyle.Render(s.header) + "\n"
 		content += bodyStyle.Render(s.body) + "\n\n"
 	}
-
-	footer := styleSystem.Render("[←/→] 페이지  [H] 뒤로")
-
-	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center,
-		lipgloss.JoinVertical(lipgloss.Center, title, "", content, footer))
+	return content
 }
