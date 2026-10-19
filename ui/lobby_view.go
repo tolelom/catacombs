@@ -85,112 +85,134 @@ func (s *LobbyScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 		s.refreshLobby(ctx)
 		return s, s.pollLobby(ctx)
 	}
-	if key, ok := msg.(tea.KeyMsg); ok {
+	key, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return s, nil
+	}
+	if s.joining {
+		return s.handleCodeEntryKey(key, ctx)
+	}
+	return s.handleLobbyKey(key, ctx)
+}
 
-		if s.joining {
-			if isEnter(key) && len(s.codeInput) == 4 {
-				if ctx.Lobby != nil {
-					if err := ctx.Lobby.JoinRoom(s.codeInput, ctx.PlayerName, ctx.Fingerprint); err == nil {
-						ctx.RoomCode = s.codeInput
-						s.errMsg = ""
-						return NewClassSelectScreen(), nil
-					} else {
-						s.errMsg = err.Error()
-					}
-				}
-				s.joining = false
-				s.codeInput = ""
-			} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
-				s.joining = false
-				s.codeInput = ""
-			} else if key.Type == tea.KeyBackspace && len(s.codeInput) > 0 {
-				s.codeInput = s.codeInput[:len(s.codeInput)-1]
-			} else if len(key.Runes) == 1 && len(s.codeInput) < 4 {
-				ch := strings.ToUpper(string(key.Runes))
-				s.codeInput += ch
-			}
-			return s, nil
-		}
-
-		if isKey(key, "c") {
-			if ctx.Lobby != nil {
-				code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+"의 방")
-				if err != nil {
-					s.errMsg = err.Error()
-					return s, nil
-				}
-				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
-
-					s.errMsg = "방 참가 실패: " + err.Error()
-					return s, nil
-				}
-				ctx.RoomCode = code
+func (s *LobbyScreen) handleCodeEntryKey(key tea.KeyMsg, ctx *Context) (Screen, tea.Cmd) {
+	if isEnter(key) && len(s.codeInput) == 4 {
+		if ctx.Lobby != nil {
+			if err := ctx.Lobby.JoinRoom(s.codeInput, ctx.PlayerName, ctx.Fingerprint); err == nil {
+				ctx.RoomCode = s.codeInput
+				s.errMsg = ""
 				return NewClassSelectScreen(), nil
+			} else {
+				s.errMsg = err.Error()
 			}
-		} else if isKey(key, "j") {
-			s.joining = true
-			s.codeInput = ""
-		} else if isUp(key) {
-			if s.cursor > 0 {
-				s.cursor--
-			}
-		} else if isDown(key) {
-			if s.cursor < len(s.rooms)-1 {
-				s.cursor++
-			}
-		} else if isEnter(key) {
-			if ctx.Lobby != nil && len(s.rooms) > 0 {
-				r := s.rooms[s.cursor]
-				if err := ctx.Lobby.JoinRoom(r.Code, ctx.PlayerName, ctx.Fingerprint); err == nil {
-					ctx.RoomCode = r.Code
-					s.errMsg = ""
-					return NewClassSelectScreen(), nil
-				} else {
-					s.errMsg = err.Error()
-				}
-			}
-		} else if isKey(key, "d") {
-
-			if ctx.Lobby != nil {
-				if s.dailyDate == "" {
-					s.dailyDate = time.Now().Format("2006-01-02")
-					s.dailyMod = game.PickDailyModifier(s.dailyDate)
-				}
-				dailyDate, dailyMod := s.dailyDate, s.dailyMod
-				code, err := ctx.Lobby.CreatePrivateRoom(ctx.Fingerprint, ctx.PlayerName+"의 일일 도전")
-				if err != nil {
-					s.errMsg = err.Error()
-					return s, nil
-				}
-				if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err == nil {
-					ctx.RoomCode = code
-					session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
-						gs := game.NewGameSession(ctx.Lobby.Cfg())
-						gs.DailyMode = true
-						gs.DailyDate = dailyDate
-						gs.DailyMod = &dailyMod
-						gs.ApplyWeeklyMutation()
-						return gs
-					})
-					if session != nil {
-						ctx.Session = session
-					}
-					return NewClassSelectScreen(), nil
-				}
-			}
-		} else if isKey(key, "h") && s.hardUnlocked {
-			s.hardMode = !s.hardMode
-			ctx.HardMode = s.hardMode
-		} else if isKey(key, "s") {
-			return NewSoulsScreen(), nil
-		} else if isKey(key, "q") {
-			if ctx.Lobby != nil {
-				ctx.Lobby.PlayerOffline(ctx.Fingerprint)
-			}
-			return NewTitleScreen(), nil
 		}
+		s.joining = false
+		s.codeInput = ""
+	} else if isKey(key, "esc") || key.Type == tea.KeyEsc {
+		s.joining = false
+		s.codeInput = ""
+	} else if key.Type == tea.KeyBackspace && len(s.codeInput) > 0 {
+		s.codeInput = s.codeInput[:len(s.codeInput)-1]
+	} else if len(key.Runes) == 1 && len(s.codeInput) < 4 {
+		ch := strings.ToUpper(string(key.Runes))
+		s.codeInput += ch
 	}
 	return s, nil
+}
+
+func (s *LobbyScreen) handleLobbyKey(key tea.KeyMsg, ctx *Context) (Screen, tea.Cmd) {
+	if isKey(key, "c") {
+		return s.createAndJoinRoom(ctx)
+	} else if isKey(key, "j") {
+		s.joining = true
+		s.codeInput = ""
+	} else if isUp(key) {
+		if s.cursor > 0 {
+			s.cursor--
+		}
+	} else if isDown(key) {
+		if s.cursor < len(s.rooms)-1 {
+			s.cursor++
+		}
+	} else if isEnter(key) {
+		return s.joinSelectedRoom(ctx)
+	} else if isKey(key, "d") {
+		return s.startDailyChallenge(ctx)
+	} else if isKey(key, "h") && s.hardUnlocked {
+		s.hardMode = !s.hardMode
+		ctx.HardMode = s.hardMode
+	} else if isKey(key, "s") {
+		return NewSoulsScreen(), nil
+	} else if isKey(key, "q") {
+		if ctx.Lobby != nil {
+			ctx.Lobby.PlayerOffline(ctx.Fingerprint)
+		}
+		return NewTitleScreen(), nil
+	}
+	return s, nil
+}
+
+func (s *LobbyScreen) createAndJoinRoom(ctx *Context) (Screen, tea.Cmd) {
+	if ctx.Lobby == nil {
+		return s, nil
+	}
+	code, err := ctx.Lobby.CreateRoom(ctx.Fingerprint, ctx.PlayerName+"의 방")
+	if err != nil {
+		s.errMsg = err.Error()
+		return s, nil
+	}
+	if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
+		s.errMsg = "방 참가 실패: " + err.Error()
+		return s, nil
+	}
+	ctx.RoomCode = code
+	return NewClassSelectScreen(), nil
+}
+
+func (s *LobbyScreen) joinSelectedRoom(ctx *Context) (Screen, tea.Cmd) {
+	if ctx.Lobby == nil || len(s.rooms) == 0 {
+		return s, nil
+	}
+	r := s.rooms[s.cursor]
+	if err := ctx.Lobby.JoinRoom(r.Code, ctx.PlayerName, ctx.Fingerprint); err != nil {
+		s.errMsg = err.Error()
+		return s, nil
+	}
+	ctx.RoomCode = r.Code
+	s.errMsg = ""
+	return NewClassSelectScreen(), nil
+}
+
+func (s *LobbyScreen) startDailyChallenge(ctx *Context) (Screen, tea.Cmd) {
+	if ctx.Lobby == nil {
+		return s, nil
+	}
+	if s.dailyDate == "" {
+		s.dailyDate = time.Now().Format("2006-01-02")
+		s.dailyMod = game.PickDailyModifier(s.dailyDate)
+	}
+	dailyDate, dailyMod := s.dailyDate, s.dailyMod
+	code, err := ctx.Lobby.CreatePrivateRoom(ctx.Fingerprint, ctx.PlayerName+"의 일일 도전")
+	if err != nil {
+		s.errMsg = err.Error()
+		return s, nil
+	}
+	if err := ctx.Lobby.JoinRoom(code, ctx.PlayerName, ctx.Fingerprint); err != nil {
+		return s, nil
+	}
+	ctx.RoomCode = code
+	session := ctx.Lobby.EnsureSession(code, func() *game.GameSession {
+		gs := game.NewGameSession(ctx.Lobby.Cfg())
+		gs.DailyMode = true
+		gs.DailyDate = dailyDate
+		gs.DailyMod = &dailyMod
+		gs.ApplyWeeklyMutation()
+		return gs
+	})
+	if session != nil {
+		ctx.Session = session
+	}
+	return NewClassSelectScreen(), nil
 }
 
 func (s *LobbyScreen) View(ctx *Context) string {
