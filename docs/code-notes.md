@@ -73,7 +73,7 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `buildCorridorVisibility`: buildCorridorVisibility flood-fills corridor visibility from visible/visited rooms. Returns a map of (y,x) → Visibility for all corridor tiles.
 - `buildCorridorVisibility`: Seed: corridor tiles adjacent to visible/visited rooms
 - `buildCorridorVisibility`: Flood-fill along corridor tiles (4-directional)
-- `wallVisible`: wallVisibility determines if a wall tile should be shown based on adjacent rooms/corridors.
+- `wallVisibility`: wallVisibility determines if a wall tile should be shown based on adjacent rooms/corridors.
 - `roomMarkers`: Show current room and its neighbors (so player knows where to go)
 - `playerPosition`: Player position at center of current room
 - `renderCell`: Visited but not current — dim

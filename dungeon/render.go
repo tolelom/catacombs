@@ -111,7 +111,7 @@ func buildCorridorVisibility(floor *Floor, owner [][]int) [][]Visibility {
 	return vis
 }
 
-func wallVisible(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) Visibility {
+func wallVisibility(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) Visibility {
 	best := Hidden
 	for dy := -1; dy <= 1; dy++ {
 		for dx := -1; dx <= 1; dx++ {
@@ -182,7 +182,7 @@ func roomMarkers(floor *Floor, currentRoom int, showFog bool) map[[2]int]mapMark
 			}
 		}
 		if showRoom {
-			sym, col := roomMarker(room, i, i == currentRoom)
+			sym, col := roomMarker(room, i)
 			markers[[2]int{cy, cx}] = mapMarker{sym, col}
 		}
 	}
@@ -212,7 +212,7 @@ func tileVisibility(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y in
 	case TileCorridor:
 		return corrVis[y][x]
 	case TileWall:
-		return wallVisible(floor, owner, corrVis, x, y)
+		return wallVisibility(floor, owner, corrVis, x, y)
 	default:
 		return Hidden
 	}
@@ -263,7 +263,7 @@ func tileGlyph(tile Tile) byte {
 	}
 }
 
-func roomMarker(room *Room, roomIdx int, isCurrent bool) (string, string) {
+func roomMarker(room *Room, roomIdx int) (string, string) {
 	num := fmt.Sprintf("%d", roomIdx)
 	if room.Cleared {
 		return num, ansiFgGray
