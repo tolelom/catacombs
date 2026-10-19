@@ -537,6 +537,16 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `EventScreen`: EventScreen handles the random-event vote phase. Mirrors ShopScreen's poll-based update pattern so other players' votes show up in real time.
 - `EventScreen.submitVote`: Vote triggered resolution; the next tick will follow phase out.
 
+## ui/game_hud.go
+
+- `renderMap`: Count explored rooms
+- `soloChainHint`: soloChainHint renders the one-line solo-chain status for the combat HUD, or "" when nothing is armed. Nil chain (party mode / out of combat) shows nothing.
+
+## ui/game_panels.go
+
+- `renderEnemyPanel`: ASCII art
+- `renderEnemyPanel`: Name + HP
+
 ## ui/game_view.go
 
 - `GameScreen`: GameScreen handles the main gameplay: exploration, combat, and chat.
@@ -544,10 +554,6 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameScreen`: index into local player's active relics; cycled with [r]
 - `file`: countCoopCombos returns how many of the 6 coop pair combos appear in the run-scoped combo set.
 - `playerActiveRelics`: playerActiveRelics returns the local player's active (triggerable) relics in inventory order. Used by the [r] cycle key and the HUD armed-relic readout.
-- `renderMap`: Count explored rooms
-- `soloChainHint`: soloChainHint renders the one-line solo-chain status for the combat HUD, or "" when nothing is armed. Nil chain (party mode / out of combat) shows nothing.
-- `renderEnemyPanel`: ASCII art
-- `renderEnemyPanel`: Name + HP
 - `file`: --- best-effort persistence helpers --------------------------------------- These store writes fire from the UI tick and have no user-facing error channel; silently dropping them meant lost codex entries, souls, and achievements with zero trace. Logging keeps failures visible to the operator without interrupting play.
 
 ## ui/help_view.go
