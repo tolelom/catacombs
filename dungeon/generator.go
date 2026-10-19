@@ -23,11 +23,33 @@ type bspNode struct {
 }
 
 func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
+	tiles := newWallTiles()
+	leaves := pickRoomLeaves(rng)
+	rooms := placeRooms(leaves, rng)
+	assignFixedRoomTypes(rooms, floorNum)
+	carveRooms(tiles, rooms)
+	connectRoomsInChain(tiles, rooms)
+	addExtraConnections(tiles, rooms, rng)
+
+	return &Floor{
+		Number:      floorNum,
+		Rooms:       rooms,
+		CurrentRoom: 0,
+		Tiles:       tiles,
+		Width:       MapWidth,
+		Height:      MapHeight,
+	}
+}
+
+func newWallTiles() [][]Tile {
 	tiles := make([][]Tile, MapHeight)
 	for y := 0; y < MapHeight; y++ {
 		tiles[y] = make([]Tile, MapWidth)
 	}
+	return tiles
+}
 
+func pickRoomLeaves(rng *rand.Rand) []*bspNode {
 	root := &bspNode{x: 0, y: 0, w: MapWidth, h: MapHeight}
 	splitBSP(root, 0, rng)
 
@@ -50,62 +72,71 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 		}
 		return leaves[i].x+leaves[i].w/2 < leaves[j].x+leaves[j].w/2
 	})
+	return leaves
+}
 
+func placeRooms(leaves []*bspNode, rng *rand.Rand) []*Room {
 	rooms := make([]*Room, len(leaves))
 	for i, leaf := range leaves {
-		maxW := leaf.w - 2*RoomPad
-		maxH := leaf.h - 2*RoomPad
-		if maxW < MinRoomW {
-			maxW = MinRoomW
-		}
-		if maxH < MinRoomH {
-			maxH = MinRoomH
-		}
-
-		rw := MinRoomW
-		if maxW > MinRoomW {
-			rw = MinRoomW + rng.Intn(maxW-MinRoomW+1)
-		}
-		rh := MinRoomH
-		if maxH > MinRoomH {
-			rh = MinRoomH + rng.Intn(maxH-MinRoomH+1)
-		}
-
-		rx := leaf.x + RoomPad
-		if leaf.w-2*RoomPad > rw {
-			rx += rng.Intn(leaf.w - 2*RoomPad - rw + 1)
-		}
-		ry := leaf.y + RoomPad
-		if leaf.h-2*RoomPad > rh {
-			ry += rng.Intn(leaf.h - 2*RoomPad - rh + 1)
-		}
-
-		if rx+rw > MapWidth-1 {
-			rw = MapWidth - 1 - rx
-		}
-		if ry+rh > MapHeight-1 {
-			rh = MapHeight - 1 - ry
-		}
-		if rx < 1 {
-			rx = 1
-		}
-		if ry < 1 {
-			ry = 1
-		}
-
-		rt := RandomRoomType(rng)
-		rooms[i] = &Room{
-			Type:      rt,
-			X:         rx,
-			Y:         ry,
-			W:         rw,
-			H:         rh,
-			Neighbors: []int{},
-		}
+		rooms[i] = placeRoomInLeaf(leaf, rng)
 		leaf.room = rooms[i]
 		leaf.roomIdx = i
 	}
+	return rooms
+}
 
+func placeRoomInLeaf(leaf *bspNode, rng *rand.Rand) *Room {
+	maxW := leaf.w - 2*RoomPad
+	maxH := leaf.h - 2*RoomPad
+	if maxW < MinRoomW {
+		maxW = MinRoomW
+	}
+	if maxH < MinRoomH {
+		maxH = MinRoomH
+	}
+
+	rw := MinRoomW
+	if maxW > MinRoomW {
+		rw = MinRoomW + rng.Intn(maxW-MinRoomW+1)
+	}
+	rh := MinRoomH
+	if maxH > MinRoomH {
+		rh = MinRoomH + rng.Intn(maxH-MinRoomH+1)
+	}
+
+	rx := leaf.x + RoomPad
+	if leaf.w-2*RoomPad > rw {
+		rx += rng.Intn(leaf.w - 2*RoomPad - rw + 1)
+	}
+	ry := leaf.y + RoomPad
+	if leaf.h-2*RoomPad > rh {
+		ry += rng.Intn(leaf.h - 2*RoomPad - rh + 1)
+	}
+
+	if rx+rw > MapWidth-1 {
+		rw = MapWidth - 1 - rx
+	}
+	if ry+rh > MapHeight-1 {
+		rh = MapHeight - 1 - ry
+	}
+	if rx < 1 {
+		rx = 1
+	}
+	if ry < 1 {
+		ry = 1
+	}
+
+	return &Room{
+		Type:      RandomRoomType(rng),
+		X:         rx,
+		Y:         ry,
+		W:         rw,
+		H:         rh,
+		Neighbors: []int{},
+	}
+}
+
+func assignFixedRoomTypes(rooms []*Room, floorNum int) {
 	rooms[0].Type = RoomEmpty
 
 	rooms[len(rooms)-1].Type = RoomBoss
@@ -115,7 +146,9 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 			rooms[1].Type = RoomMiniBoss
 		}
 	}
+}
 
+func carveRooms(tiles [][]Tile, rooms []*Room) {
 	for _, room := range rooms {
 		for dy := 0; dy < room.H; dy++ {
 			for dx := 0; dx < room.W; dx++ {
@@ -127,13 +160,17 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 			}
 		}
 	}
+}
 
+func connectRoomsInChain(tiles [][]Tile, rooms []*Room) {
 	for i := 0; i < len(rooms)-1; i++ {
 		rooms[i].Neighbors = append(rooms[i].Neighbors, i+1)
 		rooms[i+1].Neighbors = append(rooms[i+1].Neighbors, i)
 		carveCorridor(tiles, rooms[i], rooms[i+1])
 	}
+}
 
+func addExtraConnections(tiles [][]Tile, rooms []*Room, rng *rand.Rand) {
 	extras := 1 + rng.Intn(2)
 	for e := 0; e < extras; e++ {
 		a := rng.Intn(len(rooms))
@@ -143,15 +180,6 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 			rooms[b].Neighbors = append(rooms[b].Neighbors, a)
 			carveCorridor(tiles, rooms[a], rooms[b])
 		}
-	}
-
-	return &Floor{
-		Number:      floorNum,
-		Rooms:       rooms,
-		CurrentRoom: 0,
-		Tiles:       tiles,
-		Width:       MapWidth,
-		Height:      MapHeight,
 	}
 }
 
