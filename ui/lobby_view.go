@@ -258,10 +258,31 @@ func renderLobby(state lobbyState, width, height int) string {
 		Padding(0, 1)
 
 	header := headerStyle.Render(fmt.Sprintf("── 로비 ── %d명 접속중 ──", state.online))
-	dailyHint := ""
-	if state.dailyMod.Name != "" {
-		dailyHint = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("오늘의 일일 변이: %s — %s", state.dailyMod.Name, state.dailyMod.Desc))
+
+	parts := []string{
+		header,
+		"",
+		renderDailyHint(state.dailyMod),
+		"",
+		roomStyle.Render(renderRoomList(state)),
+		"",
+		lobbyMenu(state),
 	}
+	if state.errMsg != "" {
+		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
+		parts = append(parts, "", errStyle.Render("! "+state.errMsg))
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+}
+
+func renderDailyHint(dailyMod game.DailyModifier) string {
+	if dailyMod.Name == "" {
+		return ""
+	}
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(fmt.Sprintf("오늘의 일일 변이: %s — %s", dailyMod.Name, dailyMod.Desc))
+}
+
+func lobbyMenu(state lobbyState) string {
 	menu := "[C] 방 만들기  [J] 코드로 참가  [D] 일일 도전  [S] 영혼의 제단  [Up/Down] 선택  [Enter] 참가  [Q] 뒤로"
 	if state.hardUnlocked {
 		hardStatus := "OFF"
@@ -270,7 +291,10 @@ func renderLobby(state lobbyState, width, height int) string {
 		}
 		menu += fmt.Sprintf("  [H] 하드 모드: %s", hardStatus)
 	}
+	return menu
+}
 
+func renderRoomList(state lobbyState) string {
 	roomList := ""
 	for i, r := range state.rooms {
 		marker := "  "
@@ -281,17 +305,7 @@ func renderLobby(state lobbyState, width, height int) string {
 			marker, r.Name, r.Code, len(r.Players), r.Status)
 
 		if i == state.cursor {
-			for _, p := range r.Players {
-				cls := p.Class
-				if cls == "" {
-					cls = "..."
-				}
-				readyMark := "  "
-				if p.Ready {
-					readyMark = "✓ "
-				}
-				roomList += fmt.Sprintf("    %s%s (%s)\n", readyMark, p.Name, cls)
-			}
+			roomList += renderRoomMembers(r.Players)
 		}
 	}
 	if roomList == "" {
@@ -301,19 +315,21 @@ func renderLobby(state lobbyState, width, height int) string {
 		inputStr := state.codeInput + strings.Repeat("_", 4-len(state.codeInput))
 		roomList += fmt.Sprintf("\n  방 코드 입력: [%s]  (Esc로 취소)\n", inputStr)
 	}
+	return roomList
+}
 
-	parts := []string{
-		header,
-		"",
-		dailyHint,
-		"",
-		roomStyle.Render(roomList),
-		"",
-		menu,
+func renderRoomMembers(players []playerInfo) string {
+	var members string
+	for _, p := range players {
+		cls := p.Class
+		if cls == "" {
+			cls = "..."
+		}
+		readyMark := "  "
+		if p.Ready {
+			readyMark = "✓ "
+		}
+		members += fmt.Sprintf("    %s%s (%s)\n", readyMark, p.Name, cls)
 	}
-	if state.errMsg != "" {
-		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
-		parts = append(parts, "", errStyle.Render("! "+state.errMsg))
-	}
-	return lipgloss.JoinVertical(lipgloss.Left, parts...)
+	return members
 }
