@@ -1,6 +1,7 @@
 package game
 
 import (
+	"maps"
 	"time"
 
 	"github.com/tolelom/catacombs/dungeon"
@@ -101,139 +102,10 @@ func (s *GameSession) GetState() GameState {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	var players []*entity.Player
-	if n := len(s.state.Players); n > 0 {
-		players = make([]*entity.Player, n)
-		for i, p := range s.state.Players {
-			cp := *p
-			if len(p.Inventory) > 0 {
-				cp.Inventory = make([]entity.Item, len(p.Inventory))
-				copy(cp.Inventory, p.Inventory)
-			} else {
-				cp.Inventory = nil
-			}
-			if len(p.Relics) > 0 {
-				cp.Relics = make([]entity.Relic, len(p.Relics))
-				copy(cp.Relics, p.Relics)
-			} else {
-				cp.Relics = nil
-			}
-			if len(p.Effects) > 0 {
-				cp.Effects = make([]entity.ActiveEffect, len(p.Effects))
-				copy(cp.Effects, p.Effects)
-			} else {
-				cp.Effects = nil
-			}
-			if p.Skills != nil {
-				skillsCopy := *p.Skills
-				cp.Skills = &skillsCopy
-			}
-			players[i] = &cp
-		}
-	}
-
-	var monsters []*entity.Monster
-	if n := len(s.state.Monsters); n > 0 {
-		monsters = make([]*entity.Monster, n)
-		for i, m := range s.state.Monsters {
-			cm := *m
-			monsters[i] = &cm
-		}
-	}
-
-	var floorCopy *dungeon.Floor
-	if s.state.Floor != nil {
-		fc := *s.state.Floor
-		fc.Rooms = make([]*dungeon.Room, len(s.state.Floor.Rooms))
-		for i, r := range s.state.Floor.Rooms {
-			rc := *r
-			if len(r.Neighbors) > 0 {
-				rc.Neighbors = make([]int, len(r.Neighbors))
-				copy(rc.Neighbors, r.Neighbors)
-			} else {
-				rc.Neighbors = nil
-			}
-			fc.Rooms[i] = &rc
-		}
-		floorCopy = &fc
-	}
-
-	var logCopy []string
-	if n := len(s.state.CombatLog); n > 0 {
-		logCopy = make([]string, n)
-		copy(logCopy, s.state.CombatLog)
-	}
-
-	var submittedCopy map[string]string
-	if n := len(s.state.SubmittedActions); n > 0 {
-		submittedCopy = make(map[string]string, n)
-		for k, v := range s.state.SubmittedActions {
-			submittedCopy[k] = v
-		}
-	}
-
-	var moveVotesCopy map[string]int
-	if n := len(s.state.MoveVotes); n > 0 {
-		moveVotesCopy = make(map[string]int, n)
-		for k, v := range s.state.MoveVotes {
-			moveVotesCopy[k] = v
-		}
-	}
-
-	var eventVotesCopy map[string]int
-	if s.state.EventVotes != nil {
-		n := len(s.state.EventVotes)
-		eventVotesCopy = make(map[string]int, n)
-		for k, v := range s.state.EventVotes {
-			eventVotesCopy[k] = v
-		}
-	}
-
-	var pendingEventCopy *PendingEventView
-	if src := s.state.PendingEvent; src != nil {
-		choices := make([]EventChoiceView, len(src.Choices))
-		for i, c := range src.Choices {
-			tags := make([]ChoiceTag, len(c.Tags))
-			copy(tags, c.Tags)
-			choices[i] = EventChoiceView{Label: c.Label, Tags: tags}
-		}
-		pendingEventCopy = &PendingEventView{
-			Name:        src.Name,
-			Description: src.Description,
-			PerPlayer:   src.PerPlayer,
-			Choices:     choices,
-		}
-	}
-
-	var shopLeaversCopy map[string]bool
-	if n := len(s.shopLeavers); n > 0 {
-		shopLeaversCopy = make(map[string]bool, n)
-		for k, v := range s.shopLeavers {
-			shopLeaversCopy[k] = v
-		}
-	}
-
-	var pendingCopy []string
-	if n := len(s.state.PendingLogs); n > 0 {
-		pendingCopy = make([]string, n)
-		copy(pendingCopy, s.state.PendingLogs)
-	}
-
-	var shopItemsCopy []entity.Item
-	if n := len(s.state.ShopItems); n > 0 {
-		shopItemsCopy = make([]entity.Item, n)
-		copy(shopItemsCopy, s.state.ShopItems)
-	}
-	var shopSoldCopy []bool
-	if n := len(s.state.ShopSold); n > 0 {
-		shopSoldCopy = make([]bool, n)
-		copy(shopSoldCopy, s.state.ShopSold)
-	}
-
 	return GameState{
-		Floor:               floorCopy,
-		Players:             players,
-		Monsters:            monsters,
+		Floor:               copyFloor(s.state.Floor),
+		Players:             copyPlayers(s.state.Players),
+		Monsters:            copyMonsters(s.state.Monsters),
 		Phase:               s.state.Phase,
 		FloorNum:            s.state.FloorNum,
 		TurnNum:             s.state.TurnNum,
@@ -241,32 +113,108 @@ func (s *GameSession) GetState() GameState {
 		SoloMode:            s.state.SoloMode,
 		GameOver:            s.state.GameOver,
 		Victory:             s.state.Victory,
-		ShopItems:           shopItemsCopy,
-		ShopSold:            shopSoldCopy,
-		CombatLog:           logCopy,
+		ShopItems:           copySliceOrNil(s.state.ShopItems),
+		ShopSold:            copySliceOrNil(s.state.ShopSold),
+		CombatLog:           copySliceOrNil(s.state.CombatLog),
 		TurnDeadline:        s.state.TurnDeadline,
-		SubmittedActions:    submittedCopy,
-		PendingLogs:         pendingCopy,
+		SubmittedActions:    copyMapOrNil(s.state.SubmittedActions),
+		PendingLogs:         copySliceOrNil(s.state.PendingLogs),
 		TurnResolving:       s.state.TurnResolving,
 		BossKilled:          s.state.BossKilled,
 		FleeSucceeded:       s.state.FleeSucceeded,
 		AnyPlayerDied:       s.state.AnyPlayerDied,
 		StartingPartySize:   s.state.StartingPartySize,
 		LastEventName:       s.state.LastEventName,
-		MoveVotes:           moveVotesCopy,
-		PendingEvent:        pendingEventCopy,
-		EventVotes:          eventVotesCopy,
-		ShopLeavers:         shopLeaversCopy,
+		MoveVotes:           copyMapOrNil(s.state.MoveVotes),
+		PendingEvent:        copyPendingEvent(s.state.PendingEvent),
+		EventVotes:          maps.Clone(s.state.EventVotes),
+		ShopLeavers:         copyMapOrNil(s.shopLeavers),
 		NextRoomPreview:     s.nextRoomPreview,
 		CoopAvailable:       s.computeCoopAvailable(),
 		SoloChain:           s.soloChainView(),
-		CombosFiredThisRun:  copyStringBoolMap(s.state.CombosFiredThisRun),
+		CombosFiredThisRun:  copyMapOrNil(s.state.CombosFiredThisRun),
 		BossPhase2Reached:   s.state.BossPhase2Reached,
 		MimicKilled:         s.state.MimicKilled,
 		AltarUsedThisRun:    s.state.AltarUsedThisRun,
 		RevivesThisRun:      s.state.RevivesThisRun,
-		BossesKilledThisRun: copyStringBoolMap(s.state.BossesKilledThisRun),
+		BossesKilledThisRun: copyMapOrNil(s.state.BossesKilledThisRun),
 	}
+}
+
+func copyPlayers(src []*entity.Player) []*entity.Player {
+	if len(src) == 0 {
+		return nil
+	}
+	players := make([]*entity.Player, len(src))
+	for i, p := range src {
+		players[i] = copyPlayer(p)
+	}
+	return players
+}
+
+func copyPlayer(p *entity.Player) *entity.Player {
+	cp := *p
+	cp.Inventory = copySliceOrNil(p.Inventory)
+	cp.Relics = copySliceOrNil(p.Relics)
+	cp.Effects = copySliceOrNil(p.Effects)
+	if p.Skills != nil {
+		skillsCopy := *p.Skills
+		cp.Skills = &skillsCopy
+	}
+	return &cp
+}
+
+func copyMonsters(src []*entity.Monster) []*entity.Monster {
+	if len(src) == 0 {
+		return nil
+	}
+	monsters := make([]*entity.Monster, len(src))
+	for i, m := range src {
+		cm := *m
+		monsters[i] = &cm
+	}
+	return monsters
+}
+
+func copyFloor(src *dungeon.Floor) *dungeon.Floor {
+	if src == nil {
+		return nil
+	}
+	fc := *src
+	fc.Rooms = make([]*dungeon.Room, len(src.Rooms))
+	for i, r := range src.Rooms {
+		rc := *r
+		rc.Neighbors = copySliceOrNil(r.Neighbors)
+		fc.Rooms[i] = &rc
+	}
+	return &fc
+}
+
+func copyPendingEvent(src *PendingEventView) *PendingEventView {
+	if src == nil {
+		return nil
+	}
+	choices := make([]EventChoiceView, len(src.Choices))
+	for i, c := range src.Choices {
+		tags := make([]ChoiceTag, len(c.Tags))
+		copy(tags, c.Tags)
+		choices[i] = EventChoiceView{Label: c.Label, Tags: tags}
+	}
+	return &PendingEventView{
+		Name:        src.Name,
+		Description: src.Description,
+		PerPlayer:   src.PerPlayer,
+		Choices:     choices,
+	}
+}
+
+func copySliceOrNil[T any](src []T) []T {
+	if len(src) == 0 {
+		return nil
+	}
+	out := make([]T, len(src))
+	copy(out, src)
+	return out
 }
 
 func (s *GameSession) soloChainView() *SoloChainView {
@@ -279,15 +227,11 @@ func (s *GameSession) soloChainView() *SoloChainView {
 	}
 }
 
-func copyStringBoolMap(in map[string]bool) map[string]bool {
-	if len(in) == 0 {
+func copyMapOrNil[K comparable, V any](src map[K]V) map[K]V {
+	if len(src) == 0 {
 		return nil
 	}
-	out := make(map[string]bool, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
-	return out
+	return maps.Clone(src)
 }
 
 func (s *GameSession) computeCoopAvailable() map[string]bool {
