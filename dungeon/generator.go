@@ -18,8 +18,6 @@ const (
 type bspNode struct {
 	x, y, w, h  int
 	left, right *bspNode
-	room        *Room
-	roomIdx     int
 }
 
 func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
@@ -79,8 +77,6 @@ func placeRooms(leaves []*bspNode, rng *rand.Rand) []*Room {
 	rooms := make([]*Room, len(leaves))
 	for i, leaf := range leaves {
 		rooms[i] = placeRoomInLeaf(leaf, rng)
-		leaf.room = rooms[i]
-		leaf.roomIdx = i
 	}
 	return rooms
 }
