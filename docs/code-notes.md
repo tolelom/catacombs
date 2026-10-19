@@ -208,28 +208,6 @@ Explanations that used to live in production-code comments, grouped by file and 
 
 ## game/event.go
 
-- `GameSession.enterRoomLocked`: enterRoomLocked performs room entry logic. Caller must hold s.mu.
-- `GameSession.enterRoomLocked`: room.Cleared flipped after all picks resolve in resolveEventVote
-- `GameSession.enterRoomLocked`: room.Cleared flipped after vote quorum in resolveEventVote
-- `GameSession.handleMimic`: handleMimic: 50% it's actually a treasure, 50% an ambush by a tough monster (1.5x stat scaling). The room is marked Cleared on the treasure path; combat path defers to combat clear.
-- `GameSession.handleGamble`: handleGamble: each player can bet 50 gold. Outcome: - 50%: lose the 50 gold - 30%: win 100 gold (+50 net) - 20%: win a random item
-- `GameSession.handleCursedAltar`: handleCursedAltar: each player loses 30% MaxHP, gains random permanent stat boost (ATK+5 / DEF+3 / Gold+100).
-- `GameSession.handleWanderingMerchant`: handleWanderingMerchant: rare items at 2x normal price (one-time stock).
-- `GameSession.applySoloScaling`: applySoloScaling weakens a monster for single-player runs: HP and DEF are reduced by SoloHPReduction (squishier) and ATK by SoloATKReduction (hits softer). The ATK cut compensates for a solo party having no healer sustain or coop combos — without it, fragile classes cannot survive late bosses long enough to kill them. No-op outside solo mode.
-- `GameSession.earlyThreatMult`: earlyThreatMult returns a HP/ATK multiplier that compresses the trivial early-game "warmup". It is a smooth bump: 1.0 on the onboarding floors (1-2), rising to a mid-early peak (~floor 6), then tapering back to 1.0 by floor 10 where the exponential min-floor scaling takes over. This brings tension forward to ~floor 4-5 without creating a difficulty discontinuity at floor 10. EarlyThreatRamp == 0 disables it entirely.
-- `GameSession.earlyThreatMult`: ramp returns to 1.0 here, merging into base scaling
-- `GameSession.applyEarlyThreat`: applyEarlyThreat scales a regular monster's HP and ATK (not DEF — the subtractive damage formula makes DEF lifts disproportionately punishing) by earlyThreatMult. No-op once the multiplier is 1.0.
-- `GameSession.resetPerCombatStateLocked`: resetPerCombatStateLocked refreshes every map and flag scoped to a single combat encounter: skill uses, coop-used, active-relic-used, Time Glass extra actions, the solo chain sequence, plus the pending Venomous Edge poison application. Without the extraActionNext reset, Time Glass would carry a free attack from the prior combat into this one. Every combat-entry site (spawnMonsters, spawnBoss, spawnMiniBoss, handleMimic) calls this so adding a new per-combat flag means editing one place, not four. Caller holds s.mu.
-- `GameSession.spawnBoss`: Swamp theme
-- `GameSession.spawnBoss`: Volcano theme
-- `GameSession.spawnBoss`: Glacier theme
-- `GameSession.spawnBoss`: Inferno theme (+ natural AoE every 3 turns)
-- `GameSession.applyPoisonNextCombatIfPending`: applyPoisonNextCombatIfPending applies the Venomous Edge combo's effect at combat start: every spawned monster gets a 3-turn poison stack. Caller holds s.mu.
-- `GameSession.grantTreasure`: 10% chance: drop a set item instead of regular gear.
-- `GameSession.generateShopItems`: Weapon bonus scales: base 3-8 + floor/3
-- `GameSession.generateShopItems`: Armor bonus scales: base 2-5 + floor/4
-- `GameSession.generateShopItems`: Prices scale with power
-- `GameSession.generateShopItems`: Potion heals more on higher floors
 - `GameSession.applyEventOutcome`: applyEventOutcome applies an event outcome to the party per the rules in the design spec: HPChange to each alive player, GoldChange split evenly (remainder to the first alive player), ItemDrop one rolled item per alive player (skip if inventory full). Caller holds s.mu.
 - `GameSession.consumeCharmsAgainstLossLocked`: Lucky charm: one charm voids ALL of a player's losses from a single gambled outcome (one result = one insurance claim — same invariant as applyOutcomeToPlayer). Consumed once here, then both the HP and gold loss branches honor the protection.
 - `GameSession.applyEventHPChangeLocked`: HP change: each alive player heals/takes damage of the full amount.
@@ -246,9 +224,6 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.resolveLootPicksLocked`: resolveLootPicksLocked applies each alive player's own pick. Iterates s.state.Players (not the vote map) so RNG consumption order is deterministic for daily runs. Voteless alive players (disconnect-sweep edge) are skipped. Caller holds s.mu.
 - `GameSession.applyOutcomeToPlayer`: applyOutcomeToPlayer applies a loot outcome to a single player. Unlike applyEventOutcome (party-wide), gold goes entirely to the picker, and a concrete Item grant converts to bonus*5 gold when the inventory is full (mirrors handleGamble's jackpot fallback; consistent with the shop price formula 40+bonus*5). Loot outcomes always carry concrete items (o.Item), never deferred ItemDrop rolls — see buildRotatingLootChoice. A player killed by the HP cost still receives the item/gold: pick and price are one transaction, and a revive keeps the loot. Caller holds s.mu.
 - `GameSession.applyOutcomeToPlayer`: Lucky charm: one charm voids ALL losses of a single gambled outcome (one result = one insurance claim). Fixed costs pass through.
-- `GameSession.grantSecretTreasure`: Double treasure: grant two items per player
-- `GameSession.spawnMiniBoss`: Use same pattern as the subsequent boss
-- `GameSession.applyDifficultyMods`: applyDifficultyMods scales a monster's HP/ATK by HardMode, NG+ level, and the active daily challenge modifier. SoloMode is intentionally NOT applied here — solo balance is handled per-spawn-context (regular spawns and bosses reduce HP for solo, but B10 phase-2 summons stay tough by design). Caller holds s.mu.
 
 ## game/loot.go
 
@@ -309,6 +284,22 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GetRandomEvents`: Premium roll: base bonus floor +2 above the regular ItemDrop weapon formula (3+...).
 - `GetRandomEvents`: Humble snack tier: below the shop potion (30+floor) on every floor so a free pick never beats a bought one.
 
+## game/room_entry.go
+
+- `GameSession.enterRoomLocked`: enterRoomLocked performs room entry logic. Caller must hold s.mu.
+- `GameSession.enterRoomLocked`: room.Cleared flipped after all picks resolve in resolveEventVote
+- `GameSession.enterRoomLocked`: room.Cleared flipped after vote quorum in resolveEventVote
+- `GameSession.handleMimic`: handleMimic: 50% it's actually a treasure, 50% an ambush by a tough monster (1.5x stat scaling). The room is marked Cleared on the treasure path; combat path defers to combat clear.
+- `GameSession.handleGamble`: handleGamble: each player can bet 50 gold. Outcome: - 50%: lose the 50 gold - 30%: win 100 gold (+50 net) - 20%: win a random item
+- `GameSession.handleCursedAltar`: handleCursedAltar: each player loses 30% MaxHP, gains random permanent stat boost (ATK+5 / DEF+3 / Gold+100).
+- `GameSession.handleWanderingMerchant`: handleWanderingMerchant: rare items at 2x normal price (one-time stock).
+- `GameSession.grantTreasure`: 10% chance: drop a set item instead of regular gear.
+- `GameSession.generateShopItems`: Weapon bonus scales: base 3-8 + floor/3
+- `GameSession.generateShopItems`: Armor bonus scales: base 2-5 + floor/4
+- `GameSession.generateShopItems`: Prices scale with power
+- `GameSession.generateShopItems`: Potion heals more on higher floors
+- `GameSession.grantSecretTreasure`: Double treasure: grant two items per player
+
 ## game/session.go
 
 - `GameSession`: playerName -> action
@@ -362,6 +353,21 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.tallyShopLeaversLocked`: tallyShopLeaversLocked returns true when every available (non-out) player has signaled they are ready to leave the shop. Treats a zero- available party as ready so a wipe in the shop doesn't deadlock. Empty-fingerprint players are counted through the "" key rather than skipped, so their quorum slot stays fillable. Caller holds s.mu.
 - `GameSession.LeaveShop`: LeaveShop marks the calling player as ready to leave the shop. The phase only flips back to PhaseExploring once every available (non-out) player has pressed leave, so one impatient player can't yank others out mid-browse. Returns true if the call triggered the actual transition.
 - `GameSession.LeaveShop`: Empty-fingerprint players (legacy/test path) signal under the "" key, mirroring move votes — excluding them entirely would make their quorum slot unfillable and deadlock the shop for the whole party.
+
+## game/spawn.go
+
+- `GameSession.applySoloScaling`: applySoloScaling weakens a monster for single-player runs: HP and DEF are reduced by SoloHPReduction (squishier) and ATK by SoloATKReduction (hits softer). The ATK cut compensates for a solo party having no healer sustain or coop combos — without it, fragile classes cannot survive late bosses long enough to kill them. No-op outside solo mode.
+- `GameSession.earlyThreatMult`: earlyThreatMult returns a HP/ATK multiplier that compresses the trivial early-game "warmup". It is a smooth bump: 1.0 on the onboarding floors (1-2), rising to a mid-early peak (~floor 6), then tapering back to 1.0 by floor 10 where the exponential min-floor scaling takes over. This brings tension forward to ~floor 4-5 without creating a difficulty discontinuity at floor 10. EarlyThreatRamp == 0 disables it entirely.
+- `GameSession.earlyThreatMult`: ramp returns to 1.0 here, merging into base scaling
+- `GameSession.applyEarlyThreat`: applyEarlyThreat scales a regular monster's HP and ATK (not DEF — the subtractive damage formula makes DEF lifts disproportionately punishing) by earlyThreatMult. No-op once the multiplier is 1.0.
+- `GameSession.resetPerCombatStateLocked`: resetPerCombatStateLocked refreshes every map and flag scoped to a single combat encounter: skill uses, coop-used, active-relic-used, Time Glass extra actions, the solo chain sequence, plus the pending Venomous Edge poison application. Without the extraActionNext reset, Time Glass would carry a free attack from the prior combat into this one. Every combat-entry site (spawnMonsters, spawnBoss, spawnMiniBoss, handleMimic) calls this so adding a new per-combat flag means editing one place, not four. Caller holds s.mu.
+- `GameSession.spawnBoss`: Swamp theme
+- `GameSession.spawnBoss`: Volcano theme
+- `GameSession.spawnBoss`: Glacier theme
+- `GameSession.spawnBoss`: Inferno theme (+ natural AoE every 3 turns)
+- `GameSession.applyPoisonNextCombatIfPending`: applyPoisonNextCombatIfPending applies the Venomous Edge combo's effect at combat start: every spawned monster gets a 3-turn poison stack. Caller holds s.mu.
+- `GameSession.spawnMiniBoss`: Use same pattern as the subsequent boss
+- `GameSession.applyDifficultyMods`: applyDifficultyMods scales a monster's HP/ATK by HardMode, NG+ level, and the active daily challenge modifier. SoloMode is intentionally NOT applied here — solo balance is handled per-spawn-context (regular spawns and bosses reduce HP for solo, but B10 phase-2 summons stay tough by design). Caller holds s.mu.
 
 ## game/state.go
 
