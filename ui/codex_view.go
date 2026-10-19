@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -79,109 +80,13 @@ func (s *CodexScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 
 func (s *CodexScreen) View(ctx *Context) string {
 	title := styleHeader.Render("-- 도감 --")
+	tabBar := renderCodexTabBar(s.tab)
 
-	tabNames := []string{"몬스터", "아이템", "이벤트", "보스 트로피"}
-	var tabs []string
-	for i, name := range tabNames {
-		if i == s.tab {
-			tabs = append(tabs, lipgloss.NewStyle().
-				Foreground(colorYellow).Bold(true).
-				Render(fmt.Sprintf("[ %s ]", name)))
-		} else {
-			tabs = append(tabs, lipgloss.NewStyle().
-				Foreground(colorGray).
-				Render(fmt.Sprintf("  %s  ", name)))
-		}
-	}
-	tabBar := lipgloss.JoinHorizontal(lipgloss.Center, tabs...)
-
-	var entries string
-	var discovered map[string]bool
-	var allNames []string
-	var total int
-
-	switch s.tab {
-	case 0:
-		discovered = s.codex.Monsters
-		allNames = allMonsters
-		total = totalMonsters
-	case 1:
-		discovered = s.codex.Items
-		allNames = allItems
-		total = totalItems
-	case 2:
-		discovered = s.codex.Events
-		allNames = allEvents
-		total = totalEvents
-	case 3:
-		var b string
-		killCount := 0
-		for _, name := range bossNames {
-			n := s.bossKills[name]
-			if n > 0 {
-				killCount++
-				b += fmt.Sprintf("  🏆 %s — %d회 처치\n", lipgloss.NewStyle().Foreground(colorYellow).Bold(true).Render(name), n)
-				if lore := monsterLore(name); lore != "" {
-					b += "      " + styleSystem.Render(lore) + "\n"
-				}
-			} else {
-				b += fmt.Sprintf("  [ ] %s\n", lipgloss.NewStyle().Foreground(colorGray).Render("???"))
-			}
-		}
-		footer := styleSystem.Render("[Tab/Left/Right] 탭 전환  [Esc] 뒤로")
-		completion := lipgloss.NewStyle().Foreground(colorCyan).Render(fmt.Sprintf("트로피: %d/%d", killCount, len(bossNames)))
-		content := lipgloss.JoinVertical(lipgloss.Center, title, "", tabBar, "", completion, "", b, "", footer)
-		return lipgloss.Place(ctx.Width, ctx.Height, lipgloss.Center, lipgloss.Center, content)
-	}
-
-	count := len(discovered)
-	pct := 0.0
-	if total > 0 {
-		pct = float64(count) / float64(total) * 100
-	}
-
-	completion := lipgloss.NewStyle().Foreground(colorCyan).
-		Render(fmt.Sprintf("발견: %d/%d (%.0f%%)", count, total, pct))
-
-	discoveredKeys := make([]string, 0, len(discovered))
-	for k := range discovered {
-		discoveredKeys = append(discoveredKeys, k)
-	}
-	sort.Strings(discoveredKeys)
-
-	discoveredSet := discovered
-
-	for _, name := range allNames {
-		if discoveredSet[name] {
-			entries += fmt.Sprintf("  [x] %s\n", lipgloss.NewStyle().Foreground(colorGreen).Render(name))
-			var lore string
-			switch s.tab {
-			case 0:
-				lore = monsterLore(name)
-			case 1:
-				lore = itemLore(name)
-			case 2:
-				lore = eventLore(name)
-			}
-			if lore != "" {
-				entries += "      " + styleSystem.Render(lore) + "\n"
-			}
-		} else {
-			entries += fmt.Sprintf("  [ ] %s\n", lipgloss.NewStyle().Foreground(colorGray).Render("???"))
-		}
-	}
-
-	for _, k := range discoveredKeys {
-		found := false
-		for _, name := range allNames {
-			if name == k {
-				found = true
-				break
-			}
-		}
-		if !found {
-			entries += fmt.Sprintf("  [x] %s\n", lipgloss.NewStyle().Foreground(colorGreen).Render(k))
-		}
+	var completion, entries string
+	if s.tab == 3 {
+		completion, entries = s.renderBossTrophies()
+	} else {
+		completion, entries = s.renderDiscoveries()
 	}
 
 	footer := styleSystem.Render("[Tab/Left/Right] 탭 전환  [Esc] 뒤로")
@@ -199,4 +104,109 @@ func (s *CodexScreen) View(ctx *Context) string {
 	)
 
 	return lipgloss.Place(ctx.Width, ctx.Height, lipgloss.Center, lipgloss.Center, content)
+}
+
+func renderCodexTabBar(activeTab int) string {
+	tabNames := []string{"몬스터", "아이템", "이벤트", "보스 트로피"}
+	var tabs []string
+	for i, name := range tabNames {
+		if i == activeTab {
+			tabs = append(tabs, lipgloss.NewStyle().
+				Foreground(colorYellow).Bold(true).
+				Render(fmt.Sprintf("[ %s ]", name)))
+		} else {
+			tabs = append(tabs, lipgloss.NewStyle().
+				Foreground(colorGray).
+				Render(fmt.Sprintf("  %s  ", name)))
+		}
+	}
+	return lipgloss.JoinHorizontal(lipgloss.Center, tabs...)
+}
+
+func (s *CodexScreen) renderBossTrophies() (completion, entries string) {
+	killCount := 0
+	for _, name := range bossNames {
+		n := s.bossKills[name]
+		if n > 0 {
+			killCount++
+			entries += fmt.Sprintf("  🏆 %s — %d회 처치\n", lipgloss.NewStyle().Foreground(colorYellow).Bold(true).Render(name), n)
+			if lore := monsterLore(name); lore != "" {
+				entries += "      " + styleSystem.Render(lore) + "\n"
+			}
+		} else {
+			entries += fmt.Sprintf("  [ ] %s\n", lipgloss.NewStyle().Foreground(colorGray).Render("???"))
+		}
+	}
+	completion = lipgloss.NewStyle().Foreground(colorCyan).Render(fmt.Sprintf("트로피: %d/%d", killCount, len(bossNames)))
+	return completion, entries
+}
+
+func (s *CodexScreen) renderDiscoveries() (completion, entries string) {
+	var discovered map[string]bool
+	var allNames []string
+	var total int
+	switch s.tab {
+	case 0:
+		discovered = s.codex.Monsters
+		allNames = allMonsters
+		total = totalMonsters
+	case 1:
+		discovered = s.codex.Items
+		allNames = allItems
+		total = totalItems
+	case 2:
+		discovered = s.codex.Events
+		allNames = allEvents
+		total = totalEvents
+	}
+
+	count := len(discovered)
+	pct := 0.0
+	if total > 0 {
+		pct = float64(count) / float64(total) * 100
+	}
+	completion = lipgloss.NewStyle().Foreground(colorCyan).
+		Render(fmt.Sprintf("발견: %d/%d (%.0f%%)", count, total, pct))
+
+	for _, name := range allNames {
+		entries += s.renderKnownEntry(name, discovered[name])
+	}
+	entries += renderUnlistedDiscoveries(discovered, allNames)
+	return completion, entries
+}
+
+func (s *CodexScreen) renderKnownEntry(name string, found bool) string {
+	if !found {
+		return fmt.Sprintf("  [ ] %s\n", lipgloss.NewStyle().Foreground(colorGray).Render("???"))
+	}
+	entry := fmt.Sprintf("  [x] %s\n", lipgloss.NewStyle().Foreground(colorGreen).Render(name))
+	var lore string
+	switch s.tab {
+	case 0:
+		lore = monsterLore(name)
+	case 1:
+		lore = itemLore(name)
+	case 2:
+		lore = eventLore(name)
+	}
+	if lore != "" {
+		entry += "      " + styleSystem.Render(lore) + "\n"
+	}
+	return entry
+}
+
+func renderUnlistedDiscoveries(discovered map[string]bool, allNames []string) string {
+	discoveredKeys := make([]string, 0, len(discovered))
+	for k := range discovered {
+		discoveredKeys = append(discoveredKeys, k)
+	}
+	sort.Strings(discoveredKeys)
+
+	var entries string
+	for _, k := range discoveredKeys {
+		if !slices.Contains(allNames, k) {
+			entries += fmt.Sprintf("  [x] %s\n", lipgloss.NewStyle().Foreground(colorGreen).Render(k))
+		}
+	}
+	return entries
 }
