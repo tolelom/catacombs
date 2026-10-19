@@ -137,20 +137,37 @@ func wallVisible(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) 
 	return best
 }
 
+type mapMarker struct {
+	symbol string
+	color  string
+}
+
 func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 	if floor == nil || floor.Tiles == nil {
 		return ""
 	}
 	theme := GetFloorTheme(floor.Number)
-
 	owner := roomOwnership(floor)
+	markers := roomMarkers(floor, currentRoom, showFog)
+	playerPos := playerPosition(floor, currentRoom)
+	corrVis := buildCorridorVisibility(floor, owner)
 
-	type marker struct {
-		symbol string
-		color  string
+	buf := make([]byte, 0, floor.Width*floor.Height*4)
+	for y := 0; y < floor.Height; y++ {
+		for x := 0; x < floor.Width; x++ {
+			vis := tileVisibility(floor, owner, corrVis, x, y, showFog)
+			pos := [2]int{y, x}
+			marker, hasMarker := markers[pos]
+			buf = append(buf, renderCell(floor.Tiles[y][x], vis, theme, pos == playerPos, marker, hasMarker)...)
+		}
+		buf = append(buf, '\n')
 	}
-	markers := make(map[[2]int]marker)
 
+	return string(buf)
+}
+
+func roomMarkers(floor *Floor, currentRoom int, showFog bool) map[[2]int]mapMarker {
+	markers := make(map[[2]int]mapMarker)
 	for i, room := range floor.Rooms {
 		cx := room.X + room.W/2
 		cy := room.Y + room.H/2
@@ -166,95 +183,84 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 		}
 		if showRoom {
 			sym, col := roomMarker(room, i, i == currentRoom)
-			markers[[2]int{cy, cx}] = marker{sym, col}
+			markers[[2]int{cy, cx}] = mapMarker{sym, col}
 		}
 	}
+	return markers
+}
 
+func playerPosition(floor *Floor, currentRoom int) [2]int {
 	var playerPos [2]int
 	if currentRoom >= 0 && currentRoom < len(floor.Rooms) {
 		r := floor.Rooms[currentRoom]
 		playerPos = [2]int{r.Y + r.H/2, r.X + r.W/2}
 	}
+	return playerPos
+}
 
-	corrVis := buildCorridorVisibility(floor, owner)
-
-	buf := make([]byte, 0, floor.Width*floor.Height*4)
-
-	for y := 0; y < floor.Height; y++ {
-		for x := 0; x < floor.Width; x++ {
-			tile := floor.Tiles[y][x]
-
-			var vis Visibility
-			if showFog {
-				switch tile {
-				case TileFloor:
-					ri := owner[y][x]
-					if ri >= 0 {
-						vis = GetRoomVisibility(floor, ri)
-					} else {
-						vis = Hidden
-					}
-				case TileCorridor:
-					vis = corrVis[y][x]
-				case TileWall:
-					vis = wallVisible(floor, owner, corrVis, x, y)
-				default:
-					vis = Hidden
-				}
-			} else {
-				vis = Visible
-			}
-
-			if vis == Hidden {
-				buf = append(buf, ' ')
-				continue
-			}
-
-			if y == playerPos[0] && x == playerPos[1] {
-				buf = append(buf, []byte(fmt.Sprintf("%s%s@%s", ansiBright, ansiFgGreen, ansiReset))...)
-				continue
-			}
-
-			if m, ok := markers[[2]int{y, x}]; ok {
-				if vis == Visible {
-					buf = append(buf, []byte(fmt.Sprintf("%s%s%s", m.color, m.symbol, ansiReset))...)
-				} else {
-					buf = append(buf, []byte(fmt.Sprintf("%s%s%s", ansiFgGray, m.symbol, ansiReset))...)
-				}
-				continue
-			}
-
-			var ch byte
-			switch tile {
-			case TileWall:
-				ch = '#'
-			case TileFloor:
-				ch = '.'
-			case TileCorridor:
-				ch = '+'
-			case TileDoor:
-				ch = '/'
-			default:
-				ch = ' '
-			}
-
-			if vis == Visible {
-				switch tile {
-				case TileWall:
-					buf = append(buf, []byte(fmt.Sprintf("\033[38;5;%sm%c\033[0m", theme.WallColor, ch))...)
-				case TileFloor:
-					buf = append(buf, []byte(fmt.Sprintf("\033[38;5;%sm%c\033[0m", theme.FloorColor, ch))...)
-				default:
-					buf = append(buf, []byte(fmt.Sprintf("%s%s%c%s", ansiBright, ansiFgWhite, ch, ansiReset))...)
-				}
-			} else {
-				buf = append(buf, []byte(fmt.Sprintf("%s%c%s", ansiFgGray, ch, ansiReset))...)
-			}
+func tileVisibility(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int, showFog bool) Visibility {
+	if !showFog {
+		return Visible
+	}
+	switch floor.Tiles[y][x] {
+	case TileFloor:
+		ri := owner[y][x]
+		if ri >= 0 {
+			return GetRoomVisibility(floor, ri)
 		}
-		buf = append(buf, '\n')
+		return Hidden
+	case TileCorridor:
+		return corrVis[y][x]
+	case TileWall:
+		return wallVisible(floor, owner, corrVis, x, y)
+	default:
+		return Hidden
+	}
+}
+
+func renderCell(tile Tile, vis Visibility, theme FloorTheme, isPlayer bool, marker mapMarker, hasMarker bool) string {
+	if vis == Hidden {
+		return " "
 	}
 
-	return string(buf)
+	if isPlayer {
+		return fmt.Sprintf("%s%s@%s", ansiBright, ansiFgGreen, ansiReset)
+	}
+
+	if hasMarker {
+		if vis == Visible {
+			return fmt.Sprintf("%s%s%s", marker.color, marker.symbol, ansiReset)
+		}
+		return fmt.Sprintf("%s%s%s", ansiFgGray, marker.symbol, ansiReset)
+	}
+
+	ch := tileGlyph(tile)
+	if vis != Visible {
+		return fmt.Sprintf("%s%c%s", ansiFgGray, ch, ansiReset)
+	}
+	switch tile {
+	case TileWall:
+		return fmt.Sprintf("\033[38;5;%sm%c\033[0m", theme.WallColor, ch)
+	case TileFloor:
+		return fmt.Sprintf("\033[38;5;%sm%c\033[0m", theme.FloorColor, ch)
+	default:
+		return fmt.Sprintf("%s%s%c%s", ansiBright, ansiFgWhite, ch, ansiReset)
+	}
+}
+
+func tileGlyph(tile Tile) byte {
+	switch tile {
+	case TileWall:
+		return '#'
+	case TileFloor:
+		return '.'
+	case TileCorridor:
+		return '+'
+	case TileDoor:
+		return '/'
+	default:
+		return ' '
+	}
 }
 
 func roomMarker(room *Room, roomIdx int, isCurrent bool) (string, string) {
