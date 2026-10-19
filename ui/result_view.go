@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/tolelom/catacombs/entity"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
 )
@@ -100,7 +101,16 @@ func findPlayerRank(rankings []store.RunRecord, playerName string) int {
 
 func renderResult(state game.GameState, rankings []store.RunRecord, playerName string) string {
 	var sb strings.Builder
+	writeResultBanner(&sb, state)
+	writePartySummary(&sb, state.Players)
+	if len(rankings) > 0 {
+		writeBestRecords(&sb, rankings, playerName)
+	}
+	writeResultFooter(&sb, state.Victory)
+	return sb.String()
+}
 
+func writeResultBanner(sb *strings.Builder, state game.GameState) {
 	if state.Victory {
 		sb.WriteString(styleHeal.Render("  ✦ 승리 ✦  ") + "\n\n")
 		sb.WriteString(styleSystem.Render("  카타콤을 정복했습니다!") + "\n\n")
@@ -108,57 +118,59 @@ func renderResult(state game.GameState, rankings []store.RunRecord, playerName s
 		sb.WriteString(styleDamage.Render("  ✦ 패배 ✦  ") + "\n\n")
 		sb.WriteString(styleSystem.Render(fmt.Sprintf("  B%d층에서 쓰러졌습니다", state.FloorNum)) + "\n\n")
 	}
+}
 
+func writePartySummary(sb *strings.Builder, players []*entity.Player) {
 	sb.WriteString(styleHeader.Render("── 파티 요약 ──") + "\n\n")
 	totalGold := 0
-	for _, p := range state.Players {
+	for _, p := range players {
 		status := styleHeal.Render("생존")
 		if p.IsDead() {
 			status = styleDamage.Render("사망")
 		}
-		fmt.Fprintf(&sb, "  %s (%s)  %s  골드: %d  아이템: %d  유물: %d\n",
+		fmt.Fprintf(sb, "  %s (%s)  %s  골드: %d  아이템: %d  유물: %d\n",
 			stylePlayer.Render(p.Name), p.Class, status, p.Gold, len(p.Inventory), len(p.Relics))
 		totalGold += p.Gold
 	}
-	fmt.Fprintf(&sb, "\n  총 골드: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold)))
+	fmt.Fprintf(sb, "\n  총 골드: %s\n", styleGold.Render(fmt.Sprintf("%d", totalGold)))
+}
 
-	if len(rankings) > 0 {
-		sb.WriteString("\n" + styleHeader.Render("── 최고 기록 ──") + "\n\n")
-		myRank := findPlayerRank(rankings, playerName)
-		for i, r := range rankings {
-			medal := "  "
-			switch i {
-			case 0:
-				medal = styleGold.Render("🥇")
-			case 1:
-				medal = styleSystem.Render("🥈")
-			case 2:
-				medal = styleGold.Render("🥉")
-			}
-			party := ""
-			if len(r.Members) > 1 {
-				party = fmt.Sprintf(" (%s)", strings.Join(r.Members, ", "))
-			}
-			line := fmt.Sprintf("  %s %s  B%d층  점수: %d%s", medal, r.Player, r.Floor, r.Score, party)
+func writeBestRecords(sb *strings.Builder, rankings []store.RunRecord, playerName string) {
+	sb.WriteString("\n" + styleHeader.Render("── 최고 기록 ──") + "\n\n")
+	myRank := findPlayerRank(rankings, playerName)
+	for i, r := range rankings {
+		medal := "  "
+		switch i {
+		case 0:
+			medal = styleGold.Render("🥇")
+		case 1:
+			medal = styleSystem.Render("🥈")
+		case 2:
+			medal = styleGold.Render("🥉")
+		}
+		party := ""
+		if len(r.Members) > 1 {
+			party = fmt.Sprintf(" (%s)", strings.Join(r.Members, ", "))
+		}
+		line := fmt.Sprintf("  %s %s  B%d층  점수: %d%s", medal, r.Player, r.Floor, r.Score, party)
 
-			if i+1 == myRank {
-				line = stylePlayer.Render(line + "  ←")
-			}
-			sb.WriteString(line + "\n")
+		if i+1 == myRank {
+			line = stylePlayer.Render(line + "  ←")
 		}
-		if myRank > 0 {
-			fmt.Fprintf(&sb, "\n  당신의 순위: %s\n",
-				styleGold.Render(fmt.Sprintf("%d위", myRank)))
-		} else {
-			sb.WriteString(styleSystem.Render("\n  이번 기록은 상위 10위 밖입니다.\n"))
-		}
+		sb.WriteString(line + "\n")
 	}
+	if myRank > 0 {
+		fmt.Fprintf(sb, "\n  당신의 순위: %s\n",
+			styleGold.Render(fmt.Sprintf("%d위", myRank)))
+	} else {
+		sb.WriteString(styleSystem.Render("\n  이번 기록은 상위 10위 밖입니다.\n"))
+	}
+}
 
-	if state.Victory {
+func writeResultFooter(sb *strings.Builder, victory bool) {
+	if victory {
 		sb.WriteString("\n" + styleAction.Render("  [Enter] 로비로 돌아가기  [N] New Game+ (저주 1개 + 적 +25%)") + "\n")
 	} else {
 		sb.WriteString("\n" + styleAction.Render("  [Enter] 로비로 돌아가기") + "\n")
 	}
-
-	return sb.String()
 }
