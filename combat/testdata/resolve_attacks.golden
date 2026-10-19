@@ -1,0 +1,600 @@
+seed=1 next=1976235410884491574
+  result 0 {TargetIdx:0 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:31 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=28
+  monster 2 hp=374
+  monster 3 hp=78
+  monster 4 hp=0
+seed=2 next=3400128663520715358
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:12 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 2 {TargetIdx:1 Damage:27 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=26
+  monster 2 hp=372
+  monster 3 hp=78
+  monster 4 hp=0
+seed=3 next=7535824983337395850
+  result 0 {TargetIdx:0 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:34 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=31
+  monster 2 hp=370
+  monster 3 hp=78
+  monster 4 hp=0
+seed=4 next=872768430288900027
+  result 0 {TargetIdx:0 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:36 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:24 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=29
+  monster 2 hp=369
+  monster 3 hp=76
+  monster 4 hp=0
+seed=5 next=5020873633606455779
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:33 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=28
+  monster 2 hp=369
+  monster 3 hp=78
+  monster 4 hp=0
+seed=6 next=6435482746875870991
+  result 0 {TargetIdx:0 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:30 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:27 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=26
+  monster 2 hp=371
+  monster 3 hp=77
+  monster 4 hp=0
+seed=7 next=1336974230205902639
+  result 0 {TargetIdx:0 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:36 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=32
+  monster 2 hp=370
+  monster 3 hp=78
+  monster 4 hp=0
+seed=8 next=1025752801159343192
+  result 0 {TargetIdx:0 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:28 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=30
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=9 next=3494699235828254846
+  result 0 {TargetIdx:0 Damage:0 CoopApplied:false IsAoE:false Missed:true Glanced:false}
+  result 1 {TargetIdx:0 Damage:32 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=32
+  monster 2 hp=369
+  monster 3 hp=76
+  monster 4 hp=0
+seed=10 next=6572216194930989236
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:31 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:27 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=26
+  monster 2 hp=370
+  monster 3 hp=76
+  monster 4 hp=0
+seed=11 next=6118637534854712544
+  result 0 {TargetIdx:0 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 1 {TargetIdx:0 Damage:33 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=32
+  monster 2 hp=368
+  monster 3 hp=77
+  monster 4 hp=0
+seed=12 next=4062436879796483593
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:30 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=30
+  monster 2 hp=371
+  monster 3 hp=78
+  monster 4 hp=0
+seed=13 next=3741279003049753417
+  result 0 {TargetIdx:0 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:16 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 2 {TargetIdx:1 Damage:24 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=29
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=14 next=388059175673701749
+  result 0 {TargetIdx:0 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:33 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:26 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=27
+  monster 2 hp=370
+  monster 3 hp=78
+  monster 4 hp=0
+seed=15 next=1662494294306285213
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 2 {TargetIdx:1 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=32
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=16 next=8682561032445661902
+  result 0 {TargetIdx:0 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:31 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=30
+  monster 2 hp=369
+  monster 3 hp=78
+  monster 4 hp=0
+seed=17 next=6053674113637467130
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:28 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=28
+  monster 2 hp=374
+  monster 3 hp=76
+  monster 4 hp=0
+seed=18 next=5018546365416176930
+  result 0 {TargetIdx:0 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 1 {TargetIdx:0 Damage:0 CoopApplied:false IsAoE:false Missed:true Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:15 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=9
+  monster 1 hp=30
+  monster 2 hp=369
+  monster 3 hp=78
+  monster 4 hp=0
+seed=19 next=2374285044494283342
+  result 0 {TargetIdx:0 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:36 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:27 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=26
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=20 next=2495036692103883375
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:0 CoopApplied:false IsAoE:false Missed:true Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:14 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=28
+  monster 2 hp=374
+  monster 3 hp=77
+  monster 4 hp=0
+seed=21 next=9090209277681868696
+  result 0 {TargetIdx:0 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:30 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:24 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=29
+  monster 2 hp=369
+  monster 3 hp=78
+  monster 4 hp=0
+seed=22 next=8043896679296977348
+  result 0 {TargetIdx:0 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:31 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=43
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=23 next=4843052040210156276
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:28 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:27 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=26
+  monster 2 hp=371
+  monster 3 hp=76
+  monster 4 hp=0
+seed=24 next=2645643366997047069
+  result 0 {TargetIdx:0 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:34 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=32
+  monster 2 hp=374
+  monster 3 hp=77
+  monster 4 hp=0
+seed=25 next=4629669072961468489
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:35 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=30
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=26 next=8332941213749421449
+  result 0 {TargetIdx:0 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:33 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=28
+  monster 2 hp=370
+  monster 3 hp=77
+  monster 4 hp=0
+seed=27 next=1100821683850432107
+  result 0 {TargetIdx:0 Damage:0 CoopApplied:false IsAoE:false Missed:true Glanced:false}
+  result 1 {TargetIdx:0 Damage:32 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:27 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=26
+  monster 2 hp=371
+  monster 3 hp=76
+  monster 4 hp=0
+seed=28 next=5816262807048851934
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:36 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=31
+  monster 2 hp=369
+  monster 3 hp=76
+  monster 4 hp=0
+seed=29 next=7232695735262332430
+  result 0 {TargetIdx:0 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:28 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=30
+  monster 2 hp=367
+  monster 3 hp=76
+  monster 4 hp=0
+seed=30 next=4030577866921770810
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:34 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=28
+  monster 2 hp=369
+  monster 3 hp=78
+  monster 4 hp=0
+seed=31 next=1825050460230300002
+  result 0 {TargetIdx:0 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:14 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 2 {TargetIdx:1 Damage:26 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=27
+  monster 2 hp=372
+  monster 3 hp=76
+  monster 4 hp=0
+seed=32 next=3816416094411939459
+  result 0 {TargetIdx:0 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:33 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:14 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=32
+  monster 2 hp=373
+  monster 3 hp=78
+  monster 4 hp=0
+seed=33 next=7384407002026778287
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:30 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:23 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=30
+  monster 2 hp=369
+  monster 3 hp=77
+  monster 4 hp=0
+seed=34 next=145030163416665047
+  result 0 {TargetIdx:0 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:36 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:24 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=29
+  monster 2 hp=368
+  monster 3 hp=76
+  monster 4 hp=0
+seed=35 next=4861004806872631555
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:32 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:26 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=27
+  monster 2 hp=372
+  monster 3 hp=77
+  monster 4 hp=0
+seed=36 next=6859313857281571380
+  result 0 {TargetIdx:0 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:true}
+  result 1 {TargetIdx:0 Damage:0 CoopApplied:false IsAoE:false Missed:true Glanced:false}
+  result 2 {TargetIdx:1 Damage:25 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:14 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=9
+  monster 1 hp=28
+  monster 2 hp=369
+  monster 3 hp=78
+  monster 4 hp=0
+seed=37 next=754387092094510684
+  result 0 {TargetIdx:0 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:31 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:22 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:10 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=31
+  monster 2 hp=369
+  monster 3 hp=77
+  monster 4 hp=0
+seed=38 next=2604346049868081032
+  result 0 {TargetIdx:0 Damage:19 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:28 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:24 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:15 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:11 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=29
+  monster 2 hp=372
+  monster 3 hp=76
+  monster 4 hp=0
+seed=39 next=563774651448710344
+  result 0 {TargetIdx:0 Damage:21 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:29 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:26 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:12 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:11 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=27
+  monster 2 hp=368
+  monster 3 hp=76
+  monster 4 hp=0
+seed=40 next=7004788422804575985
+  result 0 {TargetIdx:0 Damage:18 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 1 {TargetIdx:0 Damage:35 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 2 {TargetIdx:1 Damage:20 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 3 {TargetIdx:2 Damage:17 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 4 {TargetIdx:2 Damage:9 CoopApplied:true IsAoE:false Missed:false Glanced:false}
+  result 5 {TargetIdx:3 Damage:9 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 6 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 7 {TargetIdx:-1 Damage:0 CoopApplied:false IsAoE:false Missed:false Glanced:false}
+  result 8 {TargetIdx:-1 Damage:7 CoopApplied:false IsAoE:true Missed:false Glanced:false}
+  monster 0 hp=0
+  monster 1 hp=33
+  monster 2 hp=372
+  monster 3 hp=78
+  monster 4 hp=0
