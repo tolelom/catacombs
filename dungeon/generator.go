@@ -16,30 +16,25 @@ const (
 )
 
 type bspNode struct {
-	x, y, w, h int
+	x, y, w, h  int
 	left, right *bspNode
 	room        *Room
 	roomIdx     int
 }
 
 func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
-	// Create tile map filled with walls
 	tiles := make([][]Tile, MapHeight)
 	for y := 0; y < MapHeight; y++ {
 		tiles[y] = make([]Tile, MapWidth)
-		// TileWall is 0, so already initialized
 	}
 
-	// BSP tree
 	root := &bspNode{x: 0, y: 0, w: MapWidth, h: MapHeight}
 	splitBSP(root, 0, rng)
 
-	// Collect leaf nodes
 	var leaves []*bspNode
 	collectLeaves(root, &leaves)
 
-	// We want 5-8 rooms. If we have more leaves, shuffle and trim.
-	targetRooms := 5 + rng.Intn(4) // 5..8
+	targetRooms := 5 + rng.Intn(4)
 	if len(leaves) > targetRooms {
 		rng.Shuffle(len(leaves), func(i, j int) {
 			leaves[i], leaves[j] = leaves[j], leaves[i]
@@ -47,8 +42,6 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 		leaves = leaves[:targetRooms]
 	}
 
-	// Sort leaves by physical position (left-to-right, top-to-bottom)
-	// so room indices match their map positions
 	sort.Slice(leaves, func(i, j int) bool {
 		ci := leaves[i].y + leaves[i].h/2
 		cj := leaves[j].y + leaves[j].h/2
@@ -57,12 +50,9 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 		}
 		return leaves[i].x+leaves[i].w/2 < leaves[j].x+leaves[j].w/2
 	})
-	// If we somehow have fewer than 5, that's fine — the BSP with 60x20 and min 12x8 gives ~5-8 naturally.
 
-	// Place rooms inside each leaf
 	rooms := make([]*Room, len(leaves))
 	for i, leaf := range leaves {
-		// Room with padding inside the leaf
 		maxW := leaf.w - 2*RoomPad
 		maxH := leaf.h - 2*RoomPad
 		if maxW < MinRoomW {
@@ -81,7 +71,6 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 			rh = MinRoomH + rng.Intn(maxH-MinRoomH+1)
 		}
 
-		// Position room within the leaf
 		rx := leaf.x + RoomPad
 		if leaf.w-2*RoomPad > rw {
 			rx += rng.Intn(leaf.w - 2*RoomPad - rw + 1)
@@ -91,7 +80,6 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 			ry += rng.Intn(leaf.h - 2*RoomPad - rh + 1)
 		}
 
-		// Clamp to map bounds
 		if rx+rw > MapWidth-1 {
 			rw = MapWidth - 1 - rx
 		}
@@ -118,21 +106,16 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 		leaf.roomIdx = i
 	}
 
-	// First room is always empty (safe starting area)
 	rooms[0].Type = RoomEmpty
 
-	// Last room is boss
 	rooms[len(rooms)-1].Type = RoomBoss
 
-	// On floors 4, 9, 14, 19: assign one room as mini-boss
 	if floorNum == 4 || floorNum == 9 || floorNum == 14 || floorNum == 19 {
-		// Pick the second room (index 1), or any non-first non-last room
 		if len(rooms) > 2 {
 			rooms[1].Type = RoomMiniBoss
 		}
 	}
 
-	// Carve rooms into tile map
 	for _, room := range rooms {
 		for dy := 0; dy < room.H; dy++ {
 			for dx := 0; dx < room.W; dx++ {
@@ -145,14 +128,12 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 		}
 	}
 
-	// Connect rooms: linear chain for guaranteed connectivity
 	for i := 0; i < len(rooms)-1; i++ {
 		rooms[i].Neighbors = append(rooms[i].Neighbors, i+1)
 		rooms[i+1].Neighbors = append(rooms[i+1].Neighbors, i)
 		carveCorridor(tiles, rooms[i], rooms[i+1])
 	}
 
-	// Add 1-2 extra connections
 	extras := 1 + rng.Intn(2)
 	for e := 0; e < extras; e++ {
 		a := rng.Intn(len(rooms))
@@ -175,7 +156,6 @@ func GenerateFloor(floorNum int, rng *rand.Rand) *Floor {
 }
 
 func splitBSP(node *bspNode, depth int, rng *rand.Rand) {
-	// Stop conditions
 	if depth > 4 {
 		return
 	}
@@ -183,12 +163,10 @@ func splitBSP(node *bspNode, depth int, rng *rand.Rand) {
 		return
 	}
 
-	// Random chance to stop splitting (more likely at deeper levels)
 	if depth > 2 && rng.Float64() < 0.3 {
 		return
 	}
 
-	// Decide split direction
 	horizontal := rng.Float64() < 0.5
 	if node.w < MinLeafW*2 {
 		horizontal = true
@@ -230,13 +208,11 @@ func collectLeaves(node *bspNode, leaves *[]*bspNode) {
 }
 
 func carveCorridor(tiles [][]Tile, a, b *Room) {
-	// L-shaped corridor from center of a to center of b
 	ax := a.X + a.W/2
 	ay := a.Y + a.H/2
 	bx := b.X + b.W/2
 	by := b.Y + b.H/2
 
-	// Go horizontal first, then vertical
 	x := ax
 	for x != bx {
 		if y := ay; y >= 0 && y < MapHeight && x >= 0 && x < MapWidth {
@@ -263,7 +239,6 @@ func carveCorridor(tiles [][]Tile, a, b *Room) {
 			y--
 		}
 	}
-	// Place final tile
 	if bx >= 0 && bx < MapWidth && by >= 0 && by < MapHeight {
 		if tiles[by][bx] == TileWall {
 			tiles[by][bx] = TileCorridor

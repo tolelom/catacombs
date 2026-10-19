@@ -6,31 +6,27 @@ import (
 	"github.com/tolelom/catacombs/entity"
 )
 
-// ChoiceTag classifies an event choice's possible outcomes for UI hints.
-// One choice can carry multiple tags (e.g. altar pray = Heal + Harm + Gamble).
 type ChoiceTag int
 
 const (
-	TagHeal     ChoiceTag = iota // ❤  HP recovery possible
-	TagHarm                      // 🔥 HP loss risk
-	TagGoldGain                  // 💰+ gold gain
-	TagGoldCost                  // 💰- gold cost
-	TagItem                      // ✨ item drop
-	TagGamble                    // 🎲 outcome branches on RNG
-	TagSkip                      // ⤳ no effect (safe pass)
+	TagHeal ChoiceTag = iota
+	TagHarm
+	TagGoldGain
+	TagGoldCost
+	TagItem
+	TagGamble
+	TagSkip
 )
 
-// EventOutcome describes the result of choosing an event option.
 type EventOutcome struct {
 	HPChange    int
 	GoldChange  int
-	ItemDrop    bool         // roll a random gear item per recipient
-	Item        *entity.Item // grant this specific item (loot picks reveal values up front)
-	Gambled     bool         // outcome came from a TagGamble choice — lucky charms block its losses
+	ItemDrop    bool
+	Item        *entity.Item
+	Gambled     bool
 	Description string
 }
 
-// tagsContain reports whether want appears in tags.
 func tagsContain(tags []ChoiceTag, want ChoiceTag) bool {
 	for _, t := range tags {
 		if t == want {
@@ -40,23 +36,18 @@ func tagsContain(tags []ChoiceTag, want ChoiceTag) bool {
 	return false
 }
 
-// EventChoice represents a single choice the player can make during an event.
-// Resolve receives the session RNG so daily-challenge runs stay deterministic;
-// callers must not use the package-level rand inside Resolve.
 type EventChoice struct {
 	Label   string
 	Tags    []ChoiceTag
 	Resolve func(floor int, rng *rand.Rand) EventOutcome
 }
 
-// RandomEvent represents a random event with multiple choices.
 type RandomEvent struct {
 	Name        string
 	Description string
 	Choices     []EventChoice
 }
 
-// GetRandomEvents returns all 8 defined random events.
 func GetRandomEvents() []RandomEvent {
 	return []RandomEvent{
 		{
@@ -333,8 +324,6 @@ func GetRandomEvents() []RandomEvent {
 					Tags:  []ChoiceTag{TagItem, TagHarm, TagGamble},
 					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
 						if rng.Float64() < 0.6 {
-							// Premium roll: base bonus floor +2 above the
-							// regular ItemDrop weapon formula (3+...).
 							item := entity.Item{
 								Name:  "대장장이의 " + weaponName(floor),
 								Type:  entity.ItemWeapon,
@@ -420,8 +409,6 @@ func GetRandomEvents() []RandomEvent {
 					Label: "음식 싸가기",
 					Tags:  []ChoiceTag{TagItem},
 					Resolve: func(floor int, rng *rand.Rand) EventOutcome {
-						// Humble snack tier: below the shop potion (30+floor) on
-						// every floor so a free pick never beats a bought one.
 						item := entity.Item{Name: "여행 도시락", Type: entity.ItemConsumable, Bonus: 20 + floor/2}
 						return EventOutcome{Item: &item, Description: "음식을 포장해 챙겼습니다."}
 					},
@@ -438,7 +425,6 @@ func GetRandomEvents() []RandomEvent {
 	}
 }
 
-// PickRandomEvent returns a random event from the list using the provided RNG.
 func PickRandomEvent(rng *rand.Rand) RandomEvent {
 	events := GetRandomEvents()
 	return events[rng.Intn(len(events))]

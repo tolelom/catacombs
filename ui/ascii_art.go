@@ -2,7 +2,6 @@ package ui
 
 import "github.com/tolelom/catacombs/entity"
 
-// MonsterArt returns ASCII art lines for a monster type.
 func MonsterArt(mt entity.MonsterType) []string {
 	switch mt {
 	case entity.MonsterSlime:

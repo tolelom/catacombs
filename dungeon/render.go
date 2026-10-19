@@ -21,7 +21,6 @@ func GetFloorTheme(floorNum int) FloorTheme {
 	}
 }
 
-// ANSI color codes
 const (
 	ansiReset     = "\033[0m"
 	ansiBright    = "\033[1m"
@@ -36,7 +35,6 @@ const (
 	ansiFgMagenta = "\033[95m"
 )
 
-// roomOwnership maps each tile coordinate to the room index that contains it (-1 = none).
 func roomOwnership(floor *Floor) [][]int {
 	owner := make([][]int, floor.Height)
 	for y := 0; y < floor.Height; y++ {
@@ -59,15 +57,12 @@ func roomOwnership(floor *Floor) [][]int {
 	return owner
 }
 
-// buildCorridorVisibility flood-fills corridor visibility from visible/visited rooms.
-// Returns a map of (y,x) → Visibility for all corridor tiles.
 func buildCorridorVisibility(floor *Floor, owner [][]int) [][]Visibility {
 	vis := make([][]Visibility, floor.Height)
 	for y := 0; y < floor.Height; y++ {
 		vis[y] = make([]Visibility, floor.Width)
 	}
 
-	// Seed: corridor tiles adjacent to visible/visited rooms
 	type pos struct{ y, x int }
 	queue := []pos{}
 
@@ -98,7 +93,6 @@ func buildCorridorVisibility(floor *Floor, owner [][]int) [][]Visibility {
 		}
 	}
 
-	// Flood-fill along corridor tiles (4-directional)
 	dirs := [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
 	for len(queue) > 0 {
 		cur := queue[0]
@@ -117,7 +111,6 @@ func buildCorridorVisibility(floor *Floor, owner [][]int) [][]Visibility {
 	return vis
 }
 
-// wallVisibility determines if a wall tile should be shown based on adjacent rooms/corridors.
 func wallVisible(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) Visibility {
 	best := Hidden
 	for dy := -1; dy <= 1; dy++ {
@@ -144,7 +137,6 @@ func wallVisible(floor *Floor, owner [][]int, corrVis [][]Visibility, x, y int) 
 	return best
 }
 
-// RenderFloor renders the tile map as a colored ASCII string.
 func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 	if floor == nil || floor.Tiles == nil {
 		return ""
@@ -153,7 +145,6 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 
 	owner := roomOwnership(floor)
 
-	// Find room centers for content markers
 	type marker struct {
 		symbol string
 		color  string
@@ -164,7 +155,6 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 		cx := room.X + room.W/2
 		cy := room.Y + room.H/2
 		vis := GetRoomVisibility(floor, i)
-		// Show current room and its neighbors (so player knows where to go)
 		showRoom := !showFog || vis != Hidden
 		if !showRoom && currentRoom >= 0 && currentRoom < len(floor.Rooms) {
 			for _, n := range floor.Rooms[currentRoom].Neighbors {
@@ -180,14 +170,12 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 		}
 	}
 
-	// Player position at center of current room
 	var playerPos [2]int
 	if currentRoom >= 0 && currentRoom < len(floor.Rooms) {
 		r := floor.Rooms[currentRoom]
 		playerPos = [2]int{r.Y + r.H/2, r.X + r.W/2}
 	}
 
-	// Pre-compute corridor visibility via flood-fill
 	corrVis := buildCorridorVisibility(floor, owner)
 
 	buf := make([]byte, 0, floor.Width*floor.Height*4)
@@ -196,7 +184,6 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 		for x := 0; x < floor.Width; x++ {
 			tile := floor.Tiles[y][x]
 
-			// Determine visibility of this tile
 			var vis Visibility
 			if showFog {
 				switch tile {
@@ -223,13 +210,11 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 				continue
 			}
 
-			// Check for player marker
 			if y == playerPos[0] && x == playerPos[1] {
 				buf = append(buf, []byte(fmt.Sprintf("%s%s@%s", ansiBright, ansiFgGreen, ansiReset))...)
 				continue
 			}
 
-			// Check for room content marker
 			if m, ok := markers[[2]int{y, x}]; ok {
 				if vis == Visible {
 					buf = append(buf, []byte(fmt.Sprintf("%s%s%s", m.color, m.symbol, ansiReset))...)
@@ -239,7 +224,6 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 				continue
 			}
 
-			// Render tile
 			var ch byte
 			switch tile {
 			case TileWall:
@@ -264,7 +248,6 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 					buf = append(buf, []byte(fmt.Sprintf("%s%s%c%s", ansiBright, ansiFgWhite, ch, ansiReset))...)
 				}
 			} else {
-				// Visited but not current — dim
 				buf = append(buf, []byte(fmt.Sprintf("%s%c%s", ansiFgGray, ch, ansiReset))...)
 			}
 		}
@@ -275,7 +258,6 @@ func RenderFloor(floor *Floor, currentRoom int, showFog bool) string {
 }
 
 func roomMarker(room *Room, roomIdx int, isCurrent bool) (string, string) {
-	// Show room index number so player knows which key to press
 	num := fmt.Sprintf("%d", roomIdx)
 	if room.Cleared {
 		return num, ansiFgGray
@@ -294,7 +276,7 @@ func roomMarker(room *Room, roomIdx int, isCurrent bool) (string, string) {
 	case RoomEmpty:
 		return num, ansiFgGray
 	case RoomMimic:
-		return num, ansiFgYellow // looks like treasure on the map
+		return num, ansiFgYellow
 	case RoomGamble:
 		return num, ansiFgYellow
 	case RoomCursedAltar:

@@ -10,16 +10,14 @@ func DailySeed(date string) int64 {
 	return int64(binary.BigEndian.Uint64(h[:8]))
 }
 
-// DailyModifier is a per-day game-wide tweak applied to daily challenge runs.
-// Deterministic from the date string so all players today face the same one.
 type DailyModifier struct {
-	ID            string
-	Name          string
-	Desc          string
-	GoldMult      float64 // 1.0 = no change
-	MonsterHPMult float64 // 1.0 = no change (e.g. 0.75 for slow_enemy weakness)
+	ID             string
+	Name           string
+	Desc           string
+	GoldMult       float64
+	MonsterHPMult  float64
 	MonsterATKMult float64
-	SkillUseDelta int
+	SkillUseDelta  int
 	StartGoldBonus int
 }
 
@@ -31,7 +29,6 @@ var dailyModifiers = []DailyModifier{
 	{ID: "rich_start", Name: "풍족한 시작", Desc: "시작 골드 +200", GoldMult: 1.0, MonsterHPMult: 1.0, MonsterATKMult: 1.0, StartGoldBonus: 200},
 }
 
-// PickDailyModifier returns the deterministic daily modifier for a date.
 func PickDailyModifier(date string) DailyModifier {
 	if date == "" {
 		return dailyModifiers[0]

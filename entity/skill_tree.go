@@ -5,7 +5,6 @@ import (
 	"fmt"
 )
 
-// SkillEffect represents the type of bonus a skill node provides.
 type SkillEffect int
 
 const (
@@ -17,15 +16,12 @@ const (
 	EffectHealBoost
 )
 
-// SkillNode is a single node in a skill tree.
 type SkillNode struct {
 	Name   string
 	Effect SkillEffect
 	Value  int
 }
 
-// EffectLabel renders the node's bonus as a short HUD string (e.g. "+3 DEF",
-// "치명타 +15%") so fork choices can be compared at a glance.
 func (n SkillNode) EffectLabel() string {
 	switch n.Effect {
 	case EffectATKBoost:
@@ -41,24 +37,9 @@ func (n SkillNode) EffectLabel() string {
 	case EffectHealBoost:
 		return fmt.Sprintf("힐 +%d", n.Value)
 	}
-	// Unknown effect (new SkillEffect without a label): show the raw value so
-	// the HUD never renders an empty "()" pair.
 	return fmt.Sprintf("+%d", n.Value)
 }
 
-// SkillTree is one branch's diamond-shaped skill tree:
-//
-//	    T1 (auto)
-//	     |
-//	  /     \
-//	T2A    T2B    (first fork)
-//	  \     /
-//	    T3 (auto)
-//	     |
-//	  /     \
-//	T4A    T4B    (capstone fork)
-//
-// Index 0 of T2/T4 is the 'A' choice; index 1 is 'B'.
 type SkillTree struct {
 	Name string
 	T1   SkillNode
@@ -67,31 +48,17 @@ type SkillTree struct {
 	T4   [2]SkillNode
 }
 
-// PlayerSkills tracks a player's skill tree state for the current run.
-//
-// Allocated is the count of skill points spent in the chosen branch (0..4).
-// Choices is the recorded fork selections: empty before T2, length 1 between
-// T2 and T4, length 2 after the capstone. Each char is 'A' or 'B'.
-//
-// Invariant: len(Choices) == 0 when Allocated < 2; 1 when Allocated 2 or 3; 2 when Allocated == 4.
 type PlayerSkills struct {
-	BranchIndex int    // -1 = not chosen, 0 or 1
-	Points      int    // total points earned this run
-	Allocated   int    // points spent in chosen branch (0..4)
-	Choices     string // fork choices, 0..2 chars, each 'A' or 'B'
+	BranchIndex int
+	Points      int
+	Allocated   int
+	Choices     string
 }
 
-// NewPlayerSkills returns an initialized PlayerSkills with no branch chosen.
 func NewPlayerSkills() *PlayerSkills {
 	return &PlayerSkills{BranchIndex: -1}
 }
 
-// branchTrees holds the two trees for each class. Tier 1 and Tier 3 are
-// unconditional; Tier 2 and Tier 4 are forks (A at index 0, B at index 1).
-//
-// Design intent per spec: T2[A] keeps each branch's stay-on-theme identity
-// (i.e. extends the original linear progression). T2[B] dips into a
-// complementary stat. T4 doubles down on whichever sub-identity was chosen.
 var branchTrees = map[Class][2]SkillTree{
 	ClassWarrior: {
 		{
@@ -207,17 +174,10 @@ var branchTrees = map[Class][2]SkillTree{
 	},
 }
 
-// GetBranches returns the two skill trees for the given class.
 func GetBranches(class Class) [2]SkillTree {
 	return branchTrees[class]
 }
 
-// Allocate spends one skill point. choice is interpreted only at fork tiers
-// (T2 and T4); it is ignored at auto tiers (T1 and T3). At a fork, choice
-// must be 'A' or 'B'.
-//
-// Returns errors for: invalid branchIdx, no points available, mid-run branch
-// switch, fully allocated, or fork tier with missing/invalid choice byte.
 func (ps *PlayerSkills) Allocate(branchIdx int, class Class, choice byte) error {
 	if ps == nil {
 		return errors.New("skills not initialized")
@@ -234,27 +194,21 @@ func (ps *PlayerSkills) Allocate(branchIdx int, class Class, choice byte) error 
 	if ps.BranchIndex != -1 && ps.BranchIndex != branchIdx {
 		return errors.New("cannot switch branch after first allocation")
 	}
-	// Bind branch on first allocation.
 	if ps.BranchIndex == -1 {
 		ps.BranchIndex = branchIdx
 	}
-	// Advance based on current Allocated count.
 	switch ps.Allocated {
 	case 0:
-		// T1 auto.
 		ps.Allocated = 1
 	case 1:
-		// T2 fork.
 		if choice != 'A' && choice != 'B' {
 			return errors.New("T2 requires choice 'A' or 'B'")
 		}
 		ps.Choices += string(choice)
 		ps.Allocated = 2
 	case 2:
-		// T3 auto.
 		ps.Allocated = 3
 	case 3:
-		// T4 capstone fork.
 		if choice != 'A' && choice != 'B' {
 			return errors.New("T4 capstone requires choice 'A' or 'B'")
 		}
@@ -264,9 +218,6 @@ func (ps *PlayerSkills) Allocate(branchIdx int, class Class, choice byte) error 
 	return nil
 }
 
-// NextIsBranch reports whether the next Allocate call will land on a fork
-// (T2 or T4). The UI uses this to decide whether to prompt for an A/B
-// choice or treat both keys equivalently.
 func (ps *PlayerSkills) NextIsBranch() bool {
 	if ps == nil || ps.Allocated >= 4 {
 		return false
@@ -274,8 +225,6 @@ func (ps *PlayerSkills) NextIsBranch() bool {
 	return ps.Allocated == 1 || ps.Allocated == 3
 }
 
-// choiceToIdx maps a recorded choice byte to the array index of the chosen
-// fork node. 'A' -> 0, 'B' -> 1.
 func choiceToIdx(c byte) int {
 	if c == 'B' {
 		return 1
@@ -283,8 +232,6 @@ func choiceToIdx(c byte) int {
 	return 0
 }
 
-// allocatedNodes returns the nodes the player has unlocked in their chosen
-// branch, walking the tree path defined by Choices.
 func (ps *PlayerSkills) allocatedNodes(class Class) []SkillNode {
 	if ps == nil || ps.BranchIndex < 0 || ps.Allocated == 0 {
 		return nil
@@ -317,32 +264,26 @@ func (ps *PlayerSkills) sumEffect(class Class, effect SkillEffect) int {
 	return total
 }
 
-// GetATKBonus returns the total ATK bonus from allocated skill nodes.
 func (ps *PlayerSkills) GetATKBonus(class Class) int {
 	return ps.sumEffect(class, EffectATKBoost)
 }
 
-// GetDEFBonus returns the total DEF bonus from allocated skill nodes.
 func (ps *PlayerSkills) GetDEFBonus(class Class) int {
 	return ps.sumEffect(class, EffectDEFBoost)
 }
 
-// GetMaxHPBonus returns the total MaxHP bonus from allocated skill nodes.
 func (ps *PlayerSkills) GetMaxHPBonus(class Class) int {
 	return ps.sumEffect(class, EffectMaxHPBoost)
 }
 
-// GetSkillPower returns the total SkillPower bonus from allocated skill nodes.
 func (ps *PlayerSkills) GetSkillPower(class Class) int {
 	return ps.sumEffect(class, EffectSkillPower)
 }
 
-// GetCritChance returns the total CritChance bonus from allocated skill nodes.
 func (ps *PlayerSkills) GetCritChance(class Class) int {
 	return ps.sumEffect(class, EffectCritChance)
 }
 
-// GetHealBoost returns the total HealBoost bonus from allocated skill nodes.
 func (ps *PlayerSkills) GetHealBoost(class Class) int {
 	return ps.sumEffect(class, EffectHealBoost)
 }

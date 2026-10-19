@@ -24,7 +24,6 @@ var AchievementDefs = []Achievement{
 	{ID: "full_party", Name: "동료들", Description: "4명으로 게임 시작"},
 	{ID: "relic_collector", Name: "유물 수집가", Description: "한 번의 플레이에서 유물 3개 이상 수집"},
 	{ID: "flee_master", Name: "전략적 후퇴", Description: "전투에서 도주 성공"},
-	// Coop & content additions
 	{ID: "coop_first", Name: "연계의 시작", Description: "콤보 1회 발동"},
 	{ID: "coop_master", Name: "합주", Description: "한 런에서 6쌍 콤보 모두 발동"},
 	{ID: "revive_5", Name: "불사조", Description: "신성 가호 부활 5회 누적"},
@@ -49,7 +48,6 @@ func (d *DB) UnlockAchievement(player, achievementID string) (bool, error) {
 		}
 		return b.Put(key, []byte("1"))
 	})
-	// Returns true if newly unlocked (not already had it)
 	return !alreadyUnlocked, err
 }
 

@@ -2,7 +2,6 @@ package ui
 
 import "github.com/charmbracelet/lipgloss"
 
-// Colors
 var (
 	colorRed     = lipgloss.Color("196")
 	colorGreen   = lipgloss.Color("46")
@@ -14,7 +13,6 @@ var (
 	colorPink    = lipgloss.Color("205")
 )
 
-// Text styles
 var (
 	styleDamage = lipgloss.NewStyle().Foreground(colorRed).Bold(true)
 	styleHeal   = lipgloss.NewStyle().Foreground(colorGreen).Bold(true)

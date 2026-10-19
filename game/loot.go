@@ -7,19 +7,13 @@ import (
 	"github.com/tolelom/catacombs/entity"
 )
 
-// Mystery box odds and trap damage for the rotating loot slot.
 const (
-	mysteryBoxSetChance  = 0.35 // set item
-	mysteryBoxGearChance = 0.40 // regular gear (cumulative 0.75); remainder is a trap
-	mysteryBoxTrapBase   = 12   // trap damage = base + floor
-	cursedWeaponBonusUp  = 5    // cursed weapon ATK bonus on top of the regular roll
+	mysteryBoxSetChance  = 0.35
+	mysteryBoxGearChance = 0.40
+	mysteryBoxTrapBase   = 12
+	cursedWeaponBonusUp  = 5
 )
 
-// BuildLootEvent rolls a treasure-room loot table: a weapon and an armor with
-// their bonuses revealed in the labels, plus one rotating third slot (gold /
-// heal / cursed weapon / mystery box). Items are rolled at build time so the
-// labels show exact values — picking is an informed decision, not a slot
-// machine. All randomness comes from the session RNG for daily determinism.
 func BuildLootEvent(floor int, rng *rand.Rand) RandomEvent {
 	weapon := entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: 3 + rng.Intn(6) + floor/3}
 	armor := entity.Item{Name: armorName(floor), Type: entity.ItemArmor, Bonus: 2 + rng.Intn(4) + floor/4}
@@ -51,8 +45,6 @@ func BuildLootEvent(floor int, rng *rand.Rand) RandomEvent {
 	}
 }
 
-// buildRotatingLootChoice rolls the third loot slot: one of gold pouch,
-// healing water, cursed weapon, or mystery box.
 func buildRotatingLootChoice(floor int, rng *rand.Rand) EventChoice {
 	switch rng.Intn(4) {
 	case 0:
@@ -99,9 +91,6 @@ func buildRotatingLootChoice(floor int, rng *rand.Rand) EventChoice {
 					item := randomSetItem(rng, floor)
 					return EventOutcome{Item: &item, Description: "상자에서 세트 아이템이 나왔습니다!"}
 				case r < mysteryBoxSetChance+mysteryBoxGearChance:
-					// Roll inside Resolve (not deferred to the apply step) so
-					// RNG consumption stays independent of inventory state —
-					// daily-run determinism depends on a stable draw order.
 					item := rollGearItem(floor, rng)
 					return EventOutcome{Item: &item, Description: "상자에서 장비가 나왔습니다."}
 				default:
@@ -112,8 +101,6 @@ func buildRotatingLootChoice(floor int, rng *rand.Rand) EventChoice {
 	}
 }
 
-// rollGearItem rolls one random weapon-or-armor drop using the standard
-// treasure formulas.
 func rollGearItem(floor int, rng *rand.Rand) entity.Item {
 	if rng.Float64() < 0.5 {
 		return entity.Item{Name: weaponName(floor), Type: entity.ItemWeapon, Bonus: 3 + rng.Intn(6) + floor/3}

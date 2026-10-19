@@ -7,21 +7,20 @@ import (
 type ElitePrefixType int
 
 const (
-	PrefixVenomous  ElitePrefixType = iota // poison on hit
-	PrefixBurning                           // burn on hit
-	PrefixFreezing                          // freeze on hit
-	PrefixBleeding                          // bleed on hit
-	PrefixVampiric                          // heals self on hit
+	PrefixVenomous ElitePrefixType = iota
+	PrefixBurning
+	PrefixFreezing
+	PrefixBleeding
+	PrefixVampiric
 )
 
 type ElitePrefixDef struct {
 	Name    string
 	HPMult  float64
 	ATKMult float64
-	OnHit   StatusEffect // -1 for vampiric (special)
+	OnHit   StatusEffect
 }
 
-// ElitePrefixDefs is exported so game/turn.go can access for on-hit effects.
 var ElitePrefixDefs = map[ElitePrefixType]ElitePrefixDef{
 	PrefixVenomous: {"Venomous", 1.3, 1.0, StatusPoison},
 	PrefixBurning:  {"Burning", 1.2, 1.1, StatusBurn},
@@ -34,9 +33,6 @@ func (p ElitePrefixType) String() string {
 	return ElitePrefixDefs[p].Name
 }
 
-// defaultEliteRng is a fixed-seed fallback for RandomPrefix when callers
-// (mostly tests) pass nil. Production paths thread the per-session RNG
-// through to keep daily challenges deterministic.
 var defaultEliteRng = rand.New(rand.NewSource(1))
 
 func RandomPrefix(rng *rand.Rand) ElitePrefixType {

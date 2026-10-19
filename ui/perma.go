@@ -5,9 +5,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// applyPermaUpgrades reads the player's purchased permanent upgrades from the
-// store and applies their effects to the freshly-created Player. Safe when
-// store is nil or the player has no upgrades.
 func applyPermaUpgrades(ctx *Context, p *entity.Player) {
 	if ctx == nil || ctx.Store == nil || p == nil || p.Fingerprint == "" {
 		return
@@ -32,7 +29,6 @@ func applyPermaUpgrades(ctx *Context, p *entity.Player) {
 		}
 		p.Skills.Points += lvl
 	}
-	// Class mastery: cumulative bonus by class run count
 	runs, _ := ctx.Store.GetCounter(p.Fingerprint, store.MasteryCounterKey(p.Class.String()))
 	if runs > 0 {
 		reward := store.ClassMasteryRewards(p.Class.String(), int(runs))

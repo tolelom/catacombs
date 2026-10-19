@@ -4,22 +4,21 @@ import "github.com/tolelom/catacombs/entity"
 
 type ComboAction struct {
 	Class      entity.Class
-	ActionType string // "attack", "skill", "item"
+	ActionType string
 }
 
 type ComboEffect struct {
-	DamageMultiplier float64 // multiplied onto each AttackIntent.Multiplier
-	BonusDamage      int     // added to each AttackIntent.PlayerATK
-	HealAll          int     // heal all players after resolution
-	Message          string  // shown in combat log
+	DamageMultiplier float64
+	BonusDamage      int
+	HealAll          int
+	Message          string
 
-	// Coop combo extensions
-	HealMultiplier         float64 // multiplies Divine Grace heal (Crusader)
-	WarriorBulwarkOverride float64 // overrides warrior damage reduction (Iron Aegis)
-	GuaranteeCritNextTurn  bool    // next-turn party crit (Expose Weakness)
-	InvincibleHealTarget   bool    // 1-turn invincibility on heal target (Sanctuary)
-	EnemyMissNextTurn      bool    // 50% enemy miss next turn (Mirage)
-	PoisonNextCombat       bool    // next combat: 15% MaxHP poison hit (Venomous Edge)
+	HealMultiplier         float64
+	WarriorBulwarkOverride float64
+	GuaranteeCritNextTurn  bool
+	InvincibleHealTarget   bool
+	EnemyMissNextTurn      bool
+	PoisonNextCombat       bool
 }
 
 type ComboDef struct {
@@ -70,16 +69,12 @@ var comboDefs = []ComboDef{
 		},
 		Effect: ComboEffect{HealAll: 20, Message: "💚 RESTORATION! 합동 치유가 폭발적으로 발동!"},
 	},
-	// Coop pair combos (ActionType "coop")
 	{
 		Name: "Iron Aegis",
 		Required: []ComboAction{
 			{Class: entity.ClassWarrior, ActionType: "coop"},
 			{Class: entity.ClassMage, ActionType: "coop"},
 		},
-		// 0.75 matches solo Bulwark for the warrior (no-op on them via the
-		// max-wins merge), but it spreads that reduction to every party
-		// member who otherwise has no coop reduction this turn.
 		Effect: ComboEffect{WarriorBulwarkOverride: 0.75, Message: "🛡️ IRON AEGIS! 강철결계가 파티 전원을 감쌉니다!"},
 	},
 	{

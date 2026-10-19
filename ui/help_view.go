@@ -8,11 +8,8 @@ import (
 	"github.com/tolelom/catacombs/config"
 )
 
-// helpPageCount is the number of help pages: controls/classes, combat
-// systems, exploration & economy.
 const helpPageCount = 3
 
-// HelpScreen shows controls and tips across paginated pages.
 type HelpScreen struct {
 	page int
 }
@@ -24,8 +21,6 @@ func NewHelpScreen() *HelpScreen {
 func (s *HelpScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 	if key, ok := msg.(tea.KeyMsg); ok {
 		switch {
-		// No vi h/l motions here: 'h' exits (long-standing binding), so 'l'
-		// paging would make the pair asymmetric. Arrows/Tab only.
 		case key.Type == tea.KeyRight || key.Type == tea.KeyTab:
 			if s.page < helpPageCount-1 {
 				s.page++
@@ -51,7 +46,6 @@ func (s *HelpScreen) View(ctx *Context) string {
 
 type helpSection struct{ header, body string }
 
-// helpPageControls — page 1: keys per screen + class roster.
 func helpPageControls(turnTimeout int) []helpSection {
 	return []helpSection{
 		{"로비", `  [C]  방 만들기     [J]  코드로 참가
@@ -77,7 +71,6 @@ func helpPageControls(turnTimeout int) []helpSection {
 	}
 }
 
-// helpPageCombat — page 2: solo chains, skill forks, party play.
 func helpPageCombat(skillUses, maxPlayers, coopPct int) []helpSection {
 	return []helpSection{
 		{"솔로 연계 (혼자 플레이 시)", `  직전 행동이 다음 공격을 강화합니다:
@@ -101,7 +94,6 @@ func helpPageCombat(skillUses, maxPlayers, coopPct int) []helpSection {
 	}
 }
 
-// helpPageExploration — page 3: event votes, loot picks, charm, economy.
 func helpPageExploration(inventoryLimit, maxFloors int) []helpSection {
 	return []helpSection{
 		{"이벤트 방", `  선택지는 파티 다수결 투표로 결정됩니다 (동률은 무작위)

@@ -38,25 +38,25 @@ const (
 
 type ActiveEffect struct {
 	Type     StatusEffect
-	Duration int // remaining turns
-	Value    int // damage per turn or effect strength
+	Duration int
+	Value    int
 }
 
 type Player struct {
-	Name        string
-	Fingerprint string
-	Class       Class
-	HP, MaxHP   int
-	ATK, DEF    int
-	Gold        int
-	Inventory   []Item
-	Relics      []Relic
-	Effects     []ActiveEffect
+	Name         string
+	Fingerprint  string
+	Class        Class
+	HP, MaxHP    int
+	ATK, DEF     int
+	Gold         int
+	Inventory    []Item
+	Relics       []Relic
+	Effects      []ActiveEffect
 	Dead         bool
 	Fled         bool
-	SkillUses    int // remaining skill uses this combat
+	SkillUses    int
 	Skills       *PlayerSkills
-	FreezeImmune int // turns of freeze immunity remaining (prevents perma-freeze)
+	FreezeImmune int
 }
 
 func NewPlayer(name string, class Class) *Player {
@@ -113,9 +113,6 @@ func (p *Player) Revive(hpPercent float64) {
 	}
 }
 
-// ConsumeCharm removes one lucky charm from the inventory and reports whether
-// one was found. Charms are auto-triggered insurance — callers invoke this at
-// the moment a gambled loss would land.
 func (p *Player) ConsumeCharm() bool {
 	for i, item := range p.Inventory {
 		if item.Type == ItemCharm {
@@ -126,10 +123,6 @@ func (p *Player) ConsumeCharm() bool {
 	return false
 }
 
-// bestBonus returns the highest Bonus among inventory items of the given type,
-// or 0 if none. Only the single best weapon/armor contributes its raw bonus —
-// stacking spares does not add stats, so hoarding duplicates is not a dominant
-// strategy. (Item sets are a separate mechanic handled by SetBonus*.)
 func bestBonus(inv []Item, t ItemType) int {
 	best := 0
 	for _, item := range inv {
@@ -167,20 +160,17 @@ func (p *Player) EffectiveDEF() int {
 }
 
 func (p *Player) AddEffect(e ActiveEffect) {
-	// Freeze immunity prevents perma-freeze
 	if e.Type == StatusFreeze && p.FreezeImmune > 0 {
 		return
 	}
-	// Check relic immunities
 	for _, r := range p.Relics {
 		if e.Type == StatusPoison && r.Effect == RelicPoisonImmunity {
-			return // immune
+			return
 		}
 		if e.Type == StatusBurn && r.Effect == RelicBurnResist {
-			e.Value = e.Value / 2 // halve burn damage
+			e.Value = e.Value / 2
 		}
 	}
-	// Don't stack same type, refresh duration
 	for i, existing := range p.Effects {
 		if existing.Type == e.Type {
 			p.Effects[i] = e
@@ -201,18 +191,17 @@ func (p *Player) HasEffect(t StatusEffect) bool {
 
 func (p *Player) TickEffects() []string {
 	var msgs []string
-	// Tick freeze immunity
 	if p.FreezeImmune > 0 {
 		p.FreezeImmune--
 	}
-	remaining := p.Effects[:0] // reuse underlying array
+	remaining := p.Effects[:0]
 	for i := 0; i < len(p.Effects); i++ {
 		e := &p.Effects[i]
 		switch e.Type {
 		case StatusPoison:
 			p.HP -= e.Value
 			if p.HP <= 0 {
-				p.HP = 1 // Poison can't kill, leaves at 1 HP
+				p.HP = 1
 			}
 			msgs = append(msgs, fmt.Sprintf("%s 독 피해 %d", p.Name, e.Value))
 		case StatusBurn:
@@ -227,9 +216,6 @@ func (p *Player) TickEffects() []string {
 		case StatusBleed:
 			p.HP -= e.Value
 			msgs = append(msgs, fmt.Sprintf("%s 출혈 피해 %d", p.Name, e.Value))
-			// Bleed escalates per turn while a single application is active;
-			// note that AddEffect replaces an existing Bleed rather than
-			// stacking, so a fresh hit resets the intensification.
 			e.Value++
 		case StatusCurse:
 			msgs = append(msgs, fmt.Sprintf("%s 저주 상태! 회복량 감소", p.Name))
@@ -241,7 +227,6 @@ func (p *Player) TickEffects() []string {
 		if e.Duration > 0 {
 			remaining = append(remaining, *e)
 		} else if e.Type == StatusFreeze {
-			// Grant 2 turns of freeze immunity after freeze expires
 			p.FreezeImmune = 2
 		}
 	}

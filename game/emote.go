@@ -16,7 +16,6 @@ var emotes = map[string]string{
 	"/rage":   "🤬 분노!",
 }
 
-// EmoteList returns the list of available emote shortcuts (sorted-ish by usage).
 func EmoteList() []string {
 	return []string{
 		"/hi", "/gg", "/go", "/wait", "/help",

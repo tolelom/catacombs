@@ -9,7 +9,6 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// AchievementsScreen shows the player's achievements.
 type AchievementsScreen struct{}
 
 func NewAchievementsScreen() *AchievementsScreen {
@@ -50,14 +49,12 @@ func renderAchievements(playerName string, achievements []store.Achievement, wid
 		content += styleSystem.Render("    "+a.Description) + "\n"
 	}
 
-	// Visual progress bar so users see at-a-glance how close they are to
-	// 100% completion. 20-cell width matches HUD HP bars.
 	const barWidth = 20
 	filled := 0
 	if len(achievements) > 0 {
 		filled = unlocked * barWidth / len(achievements)
 		if unlocked > 0 && filled == 0 {
-			filled = 1 // always show some fill when at least one is unlocked
+			filled = 1
 		}
 	}
 	bar := lipgloss.NewStyle().Foreground(colorYellow).Render(strings.Repeat("█", filled)) +

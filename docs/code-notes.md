@@ -1,6 +1,177 @@
 # Code notes
 
-Explanations that used to live in production-code comments, grouped by file and declaration. The code no longer carries comments (project convention); keep design notes here instead. Moved verbatim on 2026-10-16, so a note may describe the code as it was at that point.
+Explanations that used to live in production-code comments, grouped by file and declaration. The code no longer carries comments (project convention); keep design notes here instead. Moved verbatim on 2026-10-16 (game/, ui/) and 2026-10-20 (the remaining packages), so a note may describe the code as it was at that point.
+
+## combat/combat.go
+
+- `rngOrDefault`: rngOrDefault returns the supplied rng, or a process-global fallback when callers (mostly tests) pass nil. Production paths thread the per-session RNG through so daily challenges remain deterministic.
+- `MinDamageFraction`: MinDamageFraction guarantees an attacker always lands at least this fraction of its raw attack power (ATK*multiplier) regardless of the target's defense. Without it, the subtractive formula floors out-DEF'd damage at 1, and because monster DEF scales exponentially (1.15x/floor) while player gear grows only linearly, time-to-kill exploded super-linearly on late floors — a difficulty cliff. With this floor, under-geared damage degrades gracefully instead. Normal engagements (DEF below ~85% of ATK*mult) are unaffected: the subtractive term dominates there, so existing balance is fully preserved.
+- `CalcDamage`: CalcDamage: max(ATK*mult*MinDamageFraction, ATK*mult - DEF), never below 1, then * random(0.85~1.15).
+- `AttackResult.Missed`: monster dodged
+- `AttackResult.Glanced`: partial hit (50% damage)
+- `ResolveAttacks`: 5% dodge, 5% glance — non-elite/non-boss only (so bosses stay reliable)
+- `MonsterAI`: Phase 2 bosses AoE every 2 turns; base bosses + mini-bosses every 3.
+
+## combat/combo.go
+
+- `ComboAction.ActionType`: "attack", "skill", "item"
+- `ComboEffect.DamageMultiplier`: multiplied onto each AttackIntent.Multiplier
+- `ComboEffect.BonusDamage`: added to each AttackIntent.PlayerATK
+- `ComboEffect.HealAll`: heal all players after resolution
+- `ComboEffect.Message`: shown in combat log
+- `ComboEffect.HealMultiplier`: multiplies Divine Grace heal (Crusader)
+- `ComboEffect.WarriorBulwarkOverride`: overrides warrior damage reduction (Iron Aegis)
+- `ComboEffect.GuaranteeCritNextTurn`: next-turn party crit (Expose Weakness)
+- `ComboEffect.InvincibleHealTarget`: 1-turn invincibility on heal target (Sanctuary)
+- `ComboEffect.EnemyMissNextTurn`: 50% enemy miss next turn (Mirage)
+- `ComboEffect.PoisonNextCombat`: next combat: 15% MaxHP poison hit (Venomous Edge)
+- `comboDefs`: Coop pair combos (ActionType "coop")
+- `comboDefs`: 0.75 matches solo Bulwark for the warrior (no-op on them via the max-wins merge), but it spreads that reduction to every party member who otherwise has no coop reduction this turn.
+
+## combat/coop.go
+
+- `CoopApplyResult`: CoopApplyResult describes what one coop activation does. The session layer reads this and mutates the appropriate maps; combat package stays pure.
+- `ApplyWarriorCoop`: ApplyWarriorCoop — Bulwark: warrior takes -75% damage this turn (self only).
+- `ApplyMageCoop`: ApplyMageCoop — Ward: party takes -50% damage this turn. Solo: self only.
+- `ApplyHealerCoop`: ApplyHealerCoop — Divine Grace: revive a dead ally if any (1/run cap), else heal party 30%. Solo: self heal handled outside.
+- `ApplyHealerCoop`: signal caller to compute MaxHP*0.30 per ally
+
+## combat/solo_chain.go
+
+- `SoloChain`: SoloChain is a solo-mode action-sequence combo: the player's own action order across turns replaces the cross-class party combos that are impossible to trigger alone. Values sit slightly below their party-combo counterparts because a solo player can set them up at will, while party combos need coordination between two or more players.
+- `SoloChain.DamageMultiplier`: multiplied onto the attack's Multiplier
+- `SoloChain.BonusDamage`: added to the attack's PlayerATK
+- `SoloChain.GuaranteeCrit`: attack crits (2.0x) if it hasn't already
+- `soloEchoStrike`: Echo Strike — skill → attack (party counterpart: Ice Shatter 1.5x).
+- `soloCounterStance`: Counter Stance — coop → attack (party counterpart: Expose Weakness).
+- `soloRelentless`: Relentless Assault — 3rd+ consecutive attack (party counterpart: Full Assault 1.3x +5).
+- `DetectSoloChain`: DetectSoloChain returns the chain triggered by an attack that follows lastAction, with attackStreak consecutive attacks made BEFORE this one (streak 2 means this attack is the 3rd in a row). lastAction must reflect the previous turn's *successful* action — failed skills/coops, items, waiting, and freezes record "" and break every chain. Returns an independent copy, or nil when no chain fires.
+
+## dungeon/fov.go
+
+- `UpdateVisibility`: UpdateVisibility marks the floor's current room as visited. Callers can pass a freshly-generated floor where CurrentRoom may be -1 or out of range; in that case this is a no-op.
+- `GetRoomVisibility`: Neighbors of current room are dimly visible (so player can see where to go)
+
+## dungeon/generator.go
+
+- `GenerateFloor`: We want 5-8 rooms. If we have more leaves, shuffle and trim.
+- `GenerateFloor`: Sort leaves by physical position (left-to-right, top-to-bottom) so room indices match their map positions
+- `GenerateFloor`: If we somehow have fewer than 5, that's fine — the BSP with 60x20 and min 12x8 gives ~5-8 naturally.
+- `GenerateFloor`: First room is always empty (safe starting area)
+- `GenerateFloor`: Last room is boss
+- `GenerateFloor`: On floors 4, 9, 14, 19: assign one room as mini-boss
+- `GenerateFloor`: Pick the second room (index 1), or any non-first non-last room
+- `GenerateFloor`: Connect rooms: linear chain for guaranteed connectivity
+- `GenerateFloor`: Add 1-2 extra connections
+- `splitBSP`: Random chance to stop splitting (more likely at deeper levels)
+- `carveCorridor`: L-shaped corridor from center of a to center of b
+- `carveCorridor`: Go horizontal first, then vertical
+
+## dungeon/render.go
+
+- `roomOwnership`: roomOwnership maps each tile coordinate to the room index that contains it (-1 = none).
+- `buildCorridorVisibility`: buildCorridorVisibility flood-fills corridor visibility from visible/visited rooms. Returns a map of (y,x) → Visibility for all corridor tiles.
+- `buildCorridorVisibility`: Seed: corridor tiles adjacent to visible/visited rooms
+- `buildCorridorVisibility`: Flood-fill along corridor tiles (4-directional)
+- `wallVisible`: wallVisibility determines if a wall tile should be shown based on adjacent rooms/corridors.
+- `RenderFloor`: Show current room and its neighbors (so player knows where to go)
+- `RenderFloor`: Player position at center of current room
+- `RenderFloor`: Visited but not current — dim
+- `roomMarker`: Show room index number so player knows which key to press
+- `roomMarker`: looks like treasure on the map
+
+## dungeon/room.go
+
+- `Room.X`: top-left in tile space
+- `Room.W`: dimensions in tiles
+
+## dungeon/theme.go
+
+- `ThemeModifier`: ThemeModifier defines gameplay modifiers for a range of floors.
+- `ThemeModifier.StatusBoost`: which status is boosted (-1 = all for Inferno)
+
+## entity/coop.go
+
+- `CoopAbility`: CoopAbility describes a class's coop ability. Effect logic lives in combat/coop.go; this file only carries display metadata.
+
+## entity/elite.go
+
+- `PrefixVenomous`: poison on hit
+- `PrefixBurning`: burn on hit
+- `PrefixFreezing`: freeze on hit
+- `PrefixBleeding`: bleed on hit
+- `PrefixVampiric`: heals self on hit
+- `ElitePrefixDef.OnHit`: -1 for vampiric (special)
+- `ElitePrefixDefs`: ElitePrefixDefs is exported so game/turn.go can access for on-hit effects.
+- `defaultEliteRng`: defaultEliteRng is a fixed-seed fallback for RandomPrefix when callers (mostly tests) pass nil. Production paths thread the per-session RNG through to keep daily challenges deterministic.
+
+## entity/item.go
+
+- `ItemCharm`: one-shot insurance: auto-blocks one gambled loss while held
+- `ItemSet`: ItemSet identifies a 2-piece set; 0 = no set.
+- `SetBonusATK`: SetBonusATK returns the cumulative ATK bonus from completed 2-piece sets in inventory. Each completed set adds +5 ATK.
+- `SetBonusDEF`: SetBonusDEF returns the cumulative DEF bonus from completed 2-piece sets.
+- `CompletedSets`: CompletedSets returns the set IDs whose 2-piece bonus is active.
+- `RelicPoisonImmunity`: immune to poison
+- `RelicBurnResist`: halve burn damage
+- `RelicLifeSteal`: heal 10% of damage dealt
+- `RelicActiveSmokeBomb`: Active relics — triggered by player via ActionUseRelic, consumed once per combat
+- `RelicActiveSmokeBomb`: 1턴 파티 회피 +30%
+- `RelicActiveBloodstone`: 즉시 30% MaxHP 회복
+- `RelicActiveTimeGlass`: 자신 다음 턴 추가 1회 행동
+- `RelicEffect.IsActive`: IsActive returns true for relics that are triggered by the player rather than auto-applied. Active relics have a per-combat cooldown.
+- `NewLuckyCharm`: NewLuckyCharm rolls the shop's RNG-hedge consumable: while held, it auto-blocks one gambled loss (TagGamble event outcomes, gambling-den bets) and is consumed. Fixed trade-off costs are prices, not gambles — the charm ignores them.
+
+## entity/monster.go
+
+- `BossPattern` constants: All bosses already AoE every third turn via combat.MonsterAI; the patterns below are the optional follow-up effect that fires after that AoE. Values are not persisted — Monster lives only in memory — so reordering is safe.
+- `PatternPoison`: applies poison to all players after AoE
+- `PatternBurn`: applies burn to all players after AoE
+- `PatternHeal`: heals self for 10% MaxHP after AoE
+- `PatternFreeze`: applies freeze to all players after AoE
+- `Monster.Phase`: 1 = base; 2 = enraged (boss < 50% HP)
+- `Monster.PhaseTransitioned`: true once Phase 2 effects have been applied
+- `Monster.Vulnerable`: toggles every turn while B15 boss is in phase 2 — open windows take 1.5x damage
+- `Monster.AddEffect`: AddEffect refreshes an existing effect of the same type or appends a new one.
+- `Monster.TickEffects`: TickEffects advances per-turn status effects on the monster, applying damage and decrementing duration. Returns log messages.
+- `Monster.TickEffects`: AddEffect replaces an existing Bleed rather than stacking, so the intensification only escalates between re-applications.
+- `Monster.CheckPhaseTransition`: CheckPhaseTransition returns true if a boss should enter phase 2 this turn. Mini-bosses (IsMiniBoss) intentionally do NOT enrage — only true bosses (floors 5/10/15/20). Phase 2 default threshold is 50% HP. Pass thresholdPercent (e.g. 70 for the Cruel curse) to trigger earlier.
+- `Monster.CheckPhaseTransitionAt`: CheckPhaseTransitionAt allows the caller to override the HP percentage at which Phase 2 fires.
+- `Monster.BaseName`: BaseName returns the unprefixed monster name (without elite affixes), so the codex can record one entry per monster type instead of a separate entry for every elite variant.
+
+## entity/player.go
+
+- `ActiveEffect.Duration`: remaining turns
+- `ActiveEffect.Value`: damage per turn or effect strength
+- `Player.SkillUses`: remaining skill uses this combat
+- `Player.FreezeImmune`: turns of freeze immunity remaining (prevents perma-freeze)
+- `Player.ConsumeCharm`: ConsumeCharm removes one lucky charm from the inventory and reports whether one was found. Charms are auto-triggered insurance — callers invoke this at the moment a gambled loss would land.
+- `bestBonus`: bestBonus returns the highest Bonus among inventory items of the given type, or 0 if none. Only the single best weapon/armor contributes its raw bonus — stacking spares does not add stats, so hoarding duplicates is not a dominant strategy. (Item sets are a separate mechanic handled by SetBonus*.)
+- `Player.AddEffect`: Freeze immunity prevents perma-freeze
+- `Player.AddEffect`: halve burn damage
+- `Player.AddEffect`: Don't stack same type, refresh duration
+- `Player.TickEffects`: reuse underlying array
+- `Player.TickEffects`: Poison can't kill, leaves at 1 HP
+- `Player.TickEffects`: Bleed escalates per turn while a single application is active; note that AddEffect replaces an existing Bleed rather than stacking, so a fresh hit resets the intensification.
+- `Player.TickEffects`: Grant 2 turns of freeze immunity after freeze expires
+
+## entity/skill_tree.go
+
+- `SkillNode.EffectLabel`: EffectLabel renders the node's bonus as a short HUD string (e.g. "+3 DEF", "치명타 +15%") so fork choices can be compared at a glance.
+- `SkillNode.EffectLabel`: Unknown effect (new SkillEffect without a label): show the raw value so the HUD never renders an empty "()" pair.
+- `SkillTree`: SkillTree is one branch's diamond-shaped skill tree: T1 (auto) | / \ T2A T2B (first fork) \ / T3 (auto) | / \ T4A T4B (capstone fork) Index 0 of T2/T4 is the 'A' choice; index 1 is 'B'.
+- `PlayerSkills`: PlayerSkills tracks a player's skill tree state for the current run. Allocated is the count of skill points spent in the chosen branch (0..4). Choices is the recorded fork selections: empty before T2, length 1 between T2 and T4, length 2 after the capstone. Each char is 'A' or 'B'. Invariant: len(Choices) == 0 when Allocated < 2; 1 when Allocated 2 or 3; 2 when Allocated == 4.
+- `PlayerSkills.BranchIndex`: -1 = not chosen, 0 or 1
+- `PlayerSkills.Points`: total points earned this run
+- `PlayerSkills.Allocated`: points spent in chosen branch (0..4)
+- `PlayerSkills.Choices`: fork choices, 0..2 chars, each 'A' or 'B'
+- `NewPlayerSkills`: NewPlayerSkills returns an initialized PlayerSkills with no branch chosen.
+- `branchTrees`: branchTrees holds the two trees for each class. Tier 1 and Tier 3 are unconditional; Tier 2 and Tier 4 are forks (A at index 0, B at index 1). Design intent per spec: T2[A] keeps each branch's stay-on-theme identity (i.e. extends the original linear progression). T2[B] dips into a complementary stat. T4 doubles down on whichever sub-identity was chosen.
+- `PlayerSkills.Allocate`: Allocate spends one skill point. choice is interpreted only at fork tiers (T2 and T4); it is ignored at auto tiers (T1 and T3). At a fork, choice must be 'A' or 'B'. Returns errors for: invalid branchIdx, no points available, mid-run branch switch, fully allocated, or fork tier with missing/invalid choice byte.
+- `PlayerSkills.Allocate`: Bind branch on first allocation.
+- `PlayerSkills.NextIsBranch`: NextIsBranch reports whether the next Allocate call will land on a fork (T2 or T4). The UI uses this to decide whether to prompt for an A/B choice or treat both keys equivalently.
+- `choiceToIdx`: choiceToIdx maps a recorded choice byte to the array index of the chosen fork node. 'A' -> 0, 'B' -> 1.
+- `PlayerSkills.allocatedNodes`: allocatedNodes returns the nodes the player has unlocked in their chosen branch, walking the tree path defined by Choices.
 
 ## game/actions.go
 
@@ -9,6 +180,16 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.AllocateSkillPoint`: AllocateSkillPoint spends one skill point into the given branch for the player.
 - `GameSession.AllocateSkillPoint`: MaxHPBoost nodes raise both MaxHP and current HP by the delta.
 - `GameSession.SendChat`: SendChat appends a chat message to the combat log
+
+## game/daily.go
+
+- `DailyModifier`: DailyModifier is a per-day game-wide tweak applied to daily challenge runs. Deterministic from the date string so all players today face the same one.
+- `DailyModifier.GoldMult`: 1.0 = no change
+- `DailyModifier.MonsterHPMult`: 1.0 = no change (e.g. 0.75 for slow_enemy weakness)
+
+## game/emote.go
+
+- `EmoteList`: EmoteList returns the list of available emote shortcuts (sorted-ish by usage).
 
 ## game/event.go
 
@@ -54,6 +235,23 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.spawnMiniBoss`: Use same pattern as the subsequent boss
 - `GameSession.applyDifficultyMods`: applyDifficultyMods scales a monster's HP/ATK by HardMode, NG+ level, and the active daily challenge modifier. SoloMode is intentionally NOT applied here — solo balance is handled per-spawn-context (regular spawns and bosses reduce HP for solo, but B10 phase-2 summons stay tough by design). Caller holds s.mu.
 
+## game/loot.go
+
+- mystery box constants: Mystery box odds and trap damage for the rotating loot slot.
+- `mysteryBoxSetChance`: set item
+- `mysteryBoxGearChance`: regular gear (cumulative 0.75); remainder is a trap
+- `mysteryBoxTrapBase`: trap damage = base + floor
+- `cursedWeaponBonusUp`: cursed weapon ATK bonus on top of the regular roll
+- `BuildLootEvent`: BuildLootEvent rolls a treasure-room loot table: a weapon and an armor with their bonuses revealed in the labels, plus one rotating third slot (gold / heal / cursed weapon / mystery box). Items are rolled at build time so the labels show exact values — picking is an informed decision, not a slot machine. All randomness comes from the session RNG for daily determinism.
+- `buildRotatingLootChoice`: buildRotatingLootChoice rolls the third loot slot: one of gold pouch, healing water, cursed weapon, or mystery box.
+- `buildRotatingLootChoice`: Roll inside Resolve (not deferred to the apply step) so RNG consumption stays independent of inventory state — daily-run determinism depends on a stable draw order.
+- `rollGearItem`: rollGearItem rolls one random weapon-or-armor drop using the standard treasure formulas.
+
+## game/mutation.go
+
+- `Mutation`: Mutation represents a weekly gameplay modifier. Effects are applied at runtime via GameSession.hasMutation() rather than mutating shared config, so concurrent sessions and week boundaries cannot leak state.
+- `GetWeeklyMutation`: GetWeeklyMutation returns the mutation for the current week, determined by a SHA-256 hash of the year and ISO week number.
+
 ## game/ngplus.go
 
 - `Curse`: Curse is an end-game handicap with an upside, applied at NG+ start.
@@ -62,6 +260,24 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `Curse`: applied to gold rewards
 - `AvailableCurses`: AvailableCurses lists the 5 NG+ curses; one is rolled at NG+ start.
 - `PickCurse`: PickCurse returns one curse using the supplied RNG.
+
+## game/random_event.go
+
+- `ChoiceTag`: ChoiceTag classifies an event choice's possible outcomes for UI hints. One choice can carry multiple tags (e.g. altar pray = Heal + Harm + Gamble).
+- `TagHeal`: ❤ HP recovery possible
+- `TagHarm`: 🔥 HP loss risk
+- `TagGoldGain`: 💰+ gold gain
+- `TagGoldCost`: 💰- gold cost
+- `TagItem`: ✨ item drop
+- `TagGamble`: 🎲 outcome branches on RNG
+- `TagSkip`: ⤳ no effect (safe pass)
+- `EventOutcome.ItemDrop`: roll a random gear item per recipient
+- `EventOutcome.Item`: grant this specific item (loot picks reveal values up front)
+- `EventOutcome.Gambled`: outcome came from a TagGamble choice — lucky charms block its losses
+- `EventChoice`: EventChoice represents a single choice the player can make during an event. Resolve receives the session RNG so daily-challenge runs stay deterministic; callers must not use the package-level rand inside Resolve.
+- `GetRandomEvents`: GetRandomEvents returns all 8 defined random events.
+- `GetRandomEvents`: Premium roll: base bonus floor +2 above the regular ItemDrop weapon formula (3+...).
+- `GetRandomEvents`: Humble snack tier: below the shop potion (30+floor) on every floor so a free pick never beats a bought one.
 
 ## game/session.go
 
@@ -210,9 +426,88 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameSession.SubmitEventVote`: Anonymous single-player test path: the caller passed no fingerprint so the vote did not land in s.eventVotes — treat this call as the sole alive vote.
 - `GameSession.clearPendingEventLocked`: clearPendingEventLocked clears all pending-event state and optionally marks the current event room as cleared. Caller holds s.mu.
 
+## store/achievements.go
+
+- `DB.UnlockAchievement`: Returns true if newly unlocked (not already had it)
+
+## store/backup.go
+
+- `DB.Backup`: Backup creates a consistent snapshot of the database in destDir. Returns the path to the backup file.
+- `DB.Backup`: BoltDB View transaction provides a consistent snapshot
+- `PruneBackups`: PruneBackups deletes the oldest catacombs-*.db files in destDir until at most keep entries remain. Returns the number of files deleted. A long running deployment that runs the scheduled backup hourly otherwise grows the backup directory unboundedly.
+- `PruneBackups`: Don't abort prune on a single failure (perm issue, file in use); log and keep going so the rest of the rotation works.
+
+## store/codex.go
+
+- `DB.RecordCodexEntry`: Ensure maps are initialized after unmarshal
+
+## store/counters.go
+
+- `DB.IncCounter`: IncCounter atomically adds delta to a per-fingerprint named counter.
+
+## store/daily.go
+
+- `DB.SaveDaily`: SaveDaily persists a daily-challenge record, preserving the player's best attempt for the day. A later attempt only overwrites the existing record when it reaches a higher floor, or the same floor with more gold. This matches the leaderboard sort and prevents a worse retry from clobbering a better score earlier in the day.
+
+## store/db.go
+
+- `RunRecord.Members`: party member names (empty for solo)
+- `DB.CountMultiplayerRuns`: CountMultiplayerRuns returns the number of runs in the ranking bucket where the named player participated alongside at least one other party member. Used by the team_player title trigger; scanning the bucket is cheap relative to game-over latency since rankings are bounded.
+
+## store/errors.go
+
+- `ErrNotEnoughSouls`: ErrNotEnoughSouls is returned by BuyUpgrade when the balance is insufficient.
+- `ErrAtMaxLevel`: ErrAtMaxLevel is returned when trying to buy past max level.
+- `ErrMissingUpgrade`: ErrMissingUpgrade is returned for unknown upgrade IDs.
+
+## store/mastery.go
+
+- `MasteryMilestones`: MasteryMilestones lists the run-count thresholds at which a mastery reward fires for a given class. Cumulative — beating tier 3 gives all 3 rewards.
+- `MasteryReward`: MasteryReward describes the per-class permanent boost at each milestone. Each class gets a different stat focused on their identity.
+- `ClassMasteryRewards`: ClassMasteryRewards returns the cumulative reward applied at the player's current mastery tier (0..3) for a given class string ("Warrior" etc).
+
+## store/passwords.go
+
+- `dummyHash`: dummyHash is a bcrypt hash run against the unknown-user code path so a timing observer can't distinguish "user does not exist" (instant return) from "user exists, password mismatch" (slow bcrypt). Computed once at startup; if generation somehow fails (extremely unlikely) the timing leak remains but the rest of auth still works.
+- `DB.SavePassword`: SavePassword stores a bcrypt-hashed password for the given nickname.
+- `DB.CheckPassword`: CheckPassword verifies a password against the stored bcrypt hash.
+- `DB.CheckPassword`: Run the dummy hash so an attacker can't enumerate accounts by measuring the early-return latency. We discard the result.
+
+## store/souls.go
+
+- `PermaUpgrade`: PermaUpgrade lists the per-fingerprint upgrades purchased so far. Each entry stores the level (number of times bought).
+- `DB.EnsureSoulsBuckets`: EnsureSoulsBuckets creates the souls/upgrades buckets if missing. Called from Open via the catch-all CreateBucketIfNotExists block.
+- `DB.AddSouls`: AddSouls credits souls to a fingerprint. Idempotent on positive deltas only; callers shouldn't pass negative.
+- `DB.BuyUpgrade`: BuyUpgrade attempts to spend souls to raise an upgrade by 1 level. Returns (newLevel, error). Errors: not enough souls, max level reached, unknown id.
+- `DB.BuyUpgrade`: Corrupted data must abort the buy: proceeding with zeroed levels would let the player re-buy from level 0 and then overwrite their real progression on Put.
+
+## store/titles.go
+
+- `DB.EarnTitle`: Auto-set first earned title as active
+
+## ui/achievements_view.go
+
+- `renderAchievements`: Visual progress bar so users see at-a-glance how close they are to 100% completion. 20-cell width matches HUD HP bars.
+- `renderAchievements`: always show some fill when at least one is unlocked
+
 ## ui/class_view.go
 
 - `ClassSelectScreen`: ClassSelectScreen lets the player choose a class before entering the game.
+
+## ui/codex_view.go
+
+- `allMonsters`: Canonical entry names match what the game actually records. Monsters use entity.Monster.BaseName, items match Item.Name and Relic.Name as written in event.go/turn.go, and events use RandomEvent.Name from random_event.go.
+- `allMonsters`: Regular (Mimic spawns from mimic rooms — 50% ambush)
+- `allMonsters`: Mini-bosses (floors 4/9/14/19)
+- `allMonsters`: Bosses (floors 5/10/15/20)
+- `allItems`: Consumables / charms (shop entries are codex-recorded on shop entry)
+- `allItems`: Relics (boss drops)
+- `allEvents`: allEvents must stay in sync with the Name fields in game.GetRandomEvents — codex completion counts len(allEvents) and entries are recorded by name.
+- `bossNames`: bossNames is the codex-display order for the boss trophy tab. Kept here so the lookup (NewCodexScreen) and the renderer agree.
+- `CodexScreen.tab`: 0=monsters, 1=items, 2=events, 3=bosses
+- `CodexScreen.View`: Boss trophy tab — render directly and return early.
+- `CodexScreen.View`: Sort discovered keys for consistent display
+- `CodexScreen.View`: Show any discovered entries not in the known list
 
 ## ui/context.go
 
@@ -237,6 +532,14 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `renderEnemyPanel`: Name + HP
 - `file`: --- best-effort persistence helpers --------------------------------------- These store writes fire from the UI tick and have no user-facing error channel; silently dropping them meant lost codex entries, souls, and achievements with zero trace. Logging keeps failures visible to the operator without interrupting play.
 
+## ui/help_view.go
+
+- `helpPageCount`: helpPageCount is the number of help pages: controls/classes, combat systems, exploration & economy.
+- `HelpScreen.Update`: No vi h/l motions here: 'h' exits (long-standing binding), so 'l' paging would make the pair asymmetric. Arrows/Tab only.
+- `helpPageControls`: helpPageControls — page 1: keys per screen + class roster.
+- `helpPageCombat`: helpPageCombat — page 2: solo chains, skill forks, party play.
+- `helpPageExploration`: helpPageExploration — page 3: event votes, loot picks, charm, economy.
+
 ## ui/leaderboard_view.go
 
 - `LeaderboardScreen`: LeaderboardScreen shows the top runs.
@@ -257,6 +560,11 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `LobbyScreen.Update`: Daily Challenge: create a private solo daily session
 - `renderLobby`: Show players in selected room
 
+## ui/lore.go
+
+- `monsterLore`: monsterLore returns flavor text for a monster name. Empty string means "no lore yet" and the codex falls back to the entry name only.
+- `itemLore`: itemLore returns flavor text for items / relics / set pieces.
+
 ## ui/nickname_view.go
 
 - `nicknamePhase`: nicknamePhase tracks the current step of the nickname/login screen.
@@ -275,6 +583,11 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `NicknameScreen.finishLogin`: Check for active session to reconnect.
 - `webFingerprint`: webFingerprint produces a deterministic fingerprint for a web user.
 
+## ui/perma.go
+
+- `applyPermaUpgrades`: applyPermaUpgrades reads the player's purchased permanent upgrades from the store and applies their effects to the freshly-created Player. Safe when store is nil or the player has no upgrades.
+- `applyPermaUpgrades`: Class mastery: cumulative bonus by class run count
+
 ## ui/result_view.go
 
 - `ResultScreen`: ResultScreen shows the end-of-run summary and rankings.
@@ -284,6 +597,10 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `renderResult`: Player summary
 - `renderResult`: Rankings
 - `renderResult`: Highlight the current player's row so they can find themselves.
+
+## ui/screen.go
+
+- `Screen`: Screen represents an independent screen with its own Update and View logic. Update returns the next Screen (can return itself or a different screen for transitions) plus a tea.Cmd for async operations.
 
 ## ui/shop_view.go
 

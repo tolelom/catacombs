@@ -12,8 +12,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-// Backup creates a consistent snapshot of the database in destDir.
-// Returns the path to the backup file.
 func (d *DB) Backup(destDir string) (string, error) {
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return "", fmt.Errorf("create backup dir: %w", err)
@@ -28,7 +26,6 @@ func (d *DB) Backup(destDir string) (string, error) {
 		return "", fmt.Errorf("create backup file: %w", err)
 	}
 
-	// BoltDB View transaction provides a consistent snapshot
 	err = d.db.View(func(tx *bolt.Tx) error {
 		_, err := tx.WriteTo(f)
 		return err
@@ -44,10 +41,6 @@ func (d *DB) Backup(destDir string) (string, error) {
 	return destPath, nil
 }
 
-// PruneBackups deletes the oldest catacombs-*.db files in destDir until at
-// most keep entries remain. Returns the number of files deleted. A long
-// running deployment that runs the scheduled backup hourly otherwise grows
-// the backup directory unboundedly.
 func PruneBackups(destDir string, keep int) (int, error) {
 	if keep < 1 {
 		keep = 1
@@ -88,8 +81,6 @@ func PruneBackups(destDir string, keep int) (int, error) {
 	for i := 0; i < len(backups)-keep; i++ {
 		path := filepath.Join(destDir, backups[i].name)
 		if err := os.Remove(path); err != nil {
-			// Don't abort prune on a single failure (perm issue, file in
-			// use); log and keep going so the rest of the rotation works.
 			slog.Warn("backup prune remove failed", "path", path, "error", err)
 			continue
 		}

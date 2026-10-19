@@ -22,7 +22,7 @@ type RunRecord struct {
 	Floor   int      `json:"floor"`
 	Score   int      `json:"score"`
 	Class   string   `json:"class,omitempty"`
-	Members []string `json:"members,omitempty"` // party member names (empty for solo)
+	Members []string `json:"members,omitempty"`
 }
 
 func Open(path string) (*DB, error) {
@@ -141,10 +141,6 @@ type PlayerStats struct {
 	Victories  int
 }
 
-// CountMultiplayerRuns returns the number of runs in the ranking bucket
-// where the named player participated alongside at least one other party
-// member. Used by the team_player title trigger; scanning the bucket is
-// cheap relative to game-over latency since rankings are bounded.
 func (d *DB) CountMultiplayerRuns(player string) (int, error) {
 	count := 0
 	err := d.db.View(func(tx *bolt.Tx) error {

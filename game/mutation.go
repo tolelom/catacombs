@@ -7,16 +7,12 @@ import (
 	"time"
 )
 
-// Mutation represents a weekly gameplay modifier. Effects are applied at
-// runtime via GameSession.hasMutation() rather than mutating shared config,
-// so concurrent sessions and week boundaries cannot leak state.
 type Mutation struct {
 	ID          string
 	Name        string
 	Description string
 }
 
-// Mutations is the list of all available mutations.
 var Mutations = []Mutation{
 	{ID: "no_skills", Name: "스킬 봉인", Description: "직업 스킬 사용 불가"},
 	{ID: "speed_run", Name: "스피드 런", Description: "턴 제한 시간 절반"},
@@ -25,8 +21,6 @@ var Mutations = []Mutation{
 	{ID: "elite_flood", Name: "엘리트 범람", Description: "모든 몬스터가 엘리트"},
 }
 
-// GetWeeklyMutation returns the mutation for the current week,
-// determined by a SHA-256 hash of the year and ISO week number.
 func GetWeeklyMutation() Mutation {
 	year, week := time.Now().ISOWeek()
 	h := sha256.Sum256([]byte(fmt.Sprintf("mutation:%d:%d", year, week)))

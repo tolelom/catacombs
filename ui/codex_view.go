@@ -9,40 +9,26 @@ import (
 	"github.com/tolelom/catacombs/store"
 )
 
-// Canonical entry names match what the game actually records. Monsters use
-// entity.Monster.BaseName, items match Item.Name and Relic.Name as written
-// in event.go/turn.go, and events use RandomEvent.Name from random_event.go.
 var allMonsters = []string{
-	// Regular (Mimic spawns from mimic rooms — 50% ambush)
 	"Slime", "Skeleton", "Orc", "Dark Knight", "Mimic",
-	// Mini-bosses (floors 4/9/14/19)
 	"Guardian's Herald", "Warden's Shadow", "Overlord's Lieutenant", "Archlich's Harbinger",
-	// Bosses (floors 5/10/15/20)
 	"Guardian", "Warden", "Overlord", "Archlich",
 }
 
 var allItems = []string{
-	// Weapons by tier
 	"Iron Sword", "Bronze Sword", "Steel Sword", "Mythril Blade",
-	// Armor by tier
 	"Iron Shield", "Bronze Shield", "Steel Shield", "Mythril Shield",
-	// Consumables / charms (shop entries are codex-recorded on shop entry)
 	"HP Potion", "행운 부적",
-	// Relics (boss drops)
 	"Vampiric Ring", "Power Amulet", "Iron Ward", "Gold Charm",
 	"Antidote Charm", "Flame Guard", "Life Siphon",
 }
 
-// allEvents must stay in sync with the Name fields in game.GetRandomEvents —
-// codex completion counts len(allEvents) and entries are recorded by name.
 var allEvents = []string{
 	"altar", "fountain", "merchant", "trap_room",
 	"shrine", "chest", "ghost", "mushroom",
 	"gravekeeper", "forge", "toll_bridge", "feast",
 }
 
-// bossNames is the codex-display order for the boss trophy tab. Kept here so
-// the lookup (NewCodexScreen) and the renderer agree.
 var bossNames = []string{"Guardian", "Warden", "Overlord", "Archlich"}
 
 var (
@@ -51,11 +37,10 @@ var (
 	totalEvents   = len(allEvents)
 )
 
-// CodexScreen displays the player's codex with discovered entries.
 type CodexScreen struct {
-	codex      store.Codex
-	tab        int // 0=monsters, 1=items, 2=events, 3=bosses
-	bossKills  map[string]int64
+	codex     store.Codex
+	tab       int
+	bossKills map[string]int64
 }
 
 func NewCodexScreen(ctx *Context) *CodexScreen {
@@ -95,7 +80,6 @@ func (s *CodexScreen) Update(msg tea.Msg, ctx *Context) (Screen, tea.Cmd) {
 func (s *CodexScreen) View(ctx *Context) string {
 	title := styleHeader.Render("-- 도감 --")
 
-	// Tab headers
 	tabNames := []string{"몬스터", "아이템", "이벤트", "보스 트로피"}
 	var tabs []string
 	for i, name := range tabNames {
@@ -111,7 +95,6 @@ func (s *CodexScreen) View(ctx *Context) string {
 	}
 	tabBar := lipgloss.JoinHorizontal(lipgloss.Center, tabs...)
 
-	// Entries
 	var entries string
 	var discovered map[string]bool
 	var allNames []string
@@ -131,7 +114,6 @@ func (s *CodexScreen) View(ctx *Context) string {
 		allNames = allEvents
 		total = totalEvents
 	case 3:
-		// Boss trophy tab — render directly and return early.
 		var b string
 		killCount := 0
 		for _, name := range bossNames {
@@ -161,14 +143,12 @@ func (s *CodexScreen) View(ctx *Context) string {
 	completion := lipgloss.NewStyle().Foreground(colorCyan).
 		Render(fmt.Sprintf("발견: %d/%d (%.0f%%)", count, total, pct))
 
-	// Sort discovered keys for consistent display
 	discoveredKeys := make([]string, 0, len(discovered))
 	for k := range discovered {
 		discoveredKeys = append(discoveredKeys, k)
 	}
 	sort.Strings(discoveredKeys)
 
-	// Build a set of discovered for quick lookup
 	discoveredSet := discovered
 
 	for _, name := range allNames {
@@ -191,7 +171,6 @@ func (s *CodexScreen) View(ctx *Context) string {
 		}
 	}
 
-	// Show any discovered entries not in the known list
 	for _, k := range discoveredKeys {
 		found := false
 		for _, name := range allNames {

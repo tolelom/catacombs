@@ -1,7 +1,5 @@
 package ui
 
-// monsterLore returns flavor text for a monster name. Empty string means "no
-// lore yet" and the codex falls back to the entry name only.
 func monsterLore(name string) string {
 	switch name {
 	case "Slime":
@@ -34,7 +32,6 @@ func monsterLore(name string) string {
 	return ""
 }
 
-// itemLore returns flavor text for items / relics / set pieces.
 func itemLore(name string) string {
 	switch name {
 	case "HP Potion":
@@ -59,7 +56,6 @@ func itemLore(name string) string {
 	return ""
 }
 
-// eventLore returns flavor text for random events.
 func eventLore(name string) string {
 	switch name {
 	case "altar":

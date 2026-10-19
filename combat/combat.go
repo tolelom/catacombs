@@ -7,9 +7,6 @@ import (
 	"github.com/tolelom/catacombs/entity"
 )
 
-// rngOrDefault returns the supplied rng, or a process-global fallback when
-// callers (mostly tests) pass nil. Production paths thread the per-session
-// RNG through so daily challenges remain deterministic.
 func rngOrDefault(rng *rand.Rand) *rand.Rand {
 	if rng != nil {
 		return rng
@@ -19,19 +16,8 @@ func rngOrDefault(rng *rand.Rand) *rand.Rand {
 
 var defaultRng = rand.New(rand.NewSource(1))
 
-// MinDamageFraction guarantees an attacker always lands at least this fraction
-// of its raw attack power (ATK*multiplier) regardless of the target's defense.
-//
-// Without it, the subtractive formula floors out-DEF'd damage at 1, and because
-// monster DEF scales exponentially (1.15x/floor) while player gear grows only
-// linearly, time-to-kill exploded super-linearly on late floors — a difficulty
-// cliff. With this floor, under-geared damage degrades gracefully instead.
-// Normal engagements (DEF below ~85% of ATK*mult) are unaffected: the
-// subtractive term dominates there, so existing balance is fully preserved.
 const MinDamageFraction = 0.15
 
-// CalcDamage: max(ATK*mult*MinDamageFraction, ATK*mult - DEF), never below 1,
-// then * random(0.85~1.15).
 func CalcDamage(rng *rand.Rand, atk, def int, multiplier float64) int {
 	r := rngOrDefault(rng)
 	raw := float64(atk) * multiplier
@@ -58,8 +44,8 @@ type AttackResult struct {
 	Damage      int
 	CoopApplied bool
 	IsAoE       bool
-	Missed      bool // monster dodged
-	Glanced     bool // partial hit (50% damage)
+	Missed      bool
+	Glanced     bool
 }
 
 func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.Monster, coopBonus float64) []AttackResult {
@@ -91,7 +77,7 @@ func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.M
 			results[i] = AttackResult{TargetIdx: -1, Damage: totalDmg, IsAoE: true}
 		} else {
 			if intent.TargetIdx < 0 || intent.TargetIdx >= len(monsters) {
-				results[i] = AttackResult{TargetIdx: -1} // mark as invalid
+				results[i] = AttackResult{TargetIdx: -1}
 				continue
 			}
 			m := monsters[intent.TargetIdx]
@@ -100,7 +86,6 @@ func ResolveAttacks(rng *rand.Rand, intents []AttackIntent, monsters []*entity.M
 				continue
 			}
 			r := rngOrDefault(rng)
-			// 5% dodge, 5% glance — non-elite/non-boss only (so bosses stay reliable)
 			if !m.IsBoss && !m.IsMiniBoss {
 				roll := r.Float64()
 				if roll < 0.05 {
@@ -140,7 +125,6 @@ func AttemptFlee(rng *rand.Rand, fleeChance float64) bool {
 
 func MonsterAI(rng *rand.Rand, m *entity.Monster, players []*entity.Player, turnNumber int) (targetIdx int, isAoE bool) {
 	r := rngOrDefault(rng)
-	// Phase 2 bosses AoE every 2 turns; base bosses + mini-bosses every 3.
 	aoeFreq := 3
 	if m.IsBoss && m.Phase >= 2 {
 		aoeFreq = 2
@@ -154,7 +138,6 @@ func MonsterAI(rng *rand.Rand, m *entity.Monster, players []*entity.Player, turn
 				return i, false
 			}
 		}
-		// No available warrior found — clear taunt
 		m.TauntTarget = false
 		m.TauntTurns = 0
 	}
@@ -170,7 +153,6 @@ func MonsterAI(rng *rand.Rand, m *entity.Monster, players []*entity.Player, turn
 		if minIdx >= 0 {
 			return minIdx, false
 		}
-		// Fall through to default targeting if no available player found
 	}
 	for i, p := range players {
 		if !p.IsOut() {

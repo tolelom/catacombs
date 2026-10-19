@@ -23,10 +23,10 @@ const (
 )
 
 type monsterBase struct {
-	Name     string
+	Name         string
 	HP, ATK, DEF int
-	MinFloor int
-	IsBoss   bool
+	MinFloor     int
+	IsBoss       bool
 }
 
 var monsterDefs = map[MonsterType]monsterBase{
@@ -46,15 +46,12 @@ var monsterDefs = map[MonsterType]monsterBase{
 
 type BossPattern int
 
-// All bosses already AoE every third turn via combat.MonsterAI; the patterns
-// below are the optional follow-up effect that fires after that AoE. Values
-// are not persisted — Monster lives only in memory — so reordering is safe.
 const (
-	PatternNone    BossPattern = iota
-	PatternPoison              // applies poison to all players after AoE
-	PatternBurn                // applies burn to all players after AoE
-	PatternHeal                // heals self for 10% MaxHP after AoE
-	PatternFreeze              // applies freeze to all players after AoE
+	PatternNone BossPattern = iota
+	PatternPoison
+	PatternBurn
+	PatternHeal
+	PatternFreeze
 )
 
 type Monster struct {
@@ -69,13 +66,12 @@ type Monster struct {
 	TauntTarget       bool
 	TauntTurns        int
 	Pattern           BossPattern
-	Phase             int  // 1 = base; 2 = enraged (boss < 50% HP)
-	PhaseTransitioned bool // true once Phase 2 effects have been applied
-	Vulnerable        bool // toggles every turn while B15 boss is in phase 2 — open windows take 1.5x damage
+	Phase             int
+	PhaseTransitioned bool
+	Vulnerable        bool
 	Effects           []ActiveEffect
 }
 
-// AddEffect refreshes an existing effect of the same type or appends a new one.
 func (m *Monster) AddEffect(e ActiveEffect) {
 	for i, existing := range m.Effects {
 		if existing.Type == e.Type {
@@ -86,7 +82,6 @@ func (m *Monster) AddEffect(e ActiveEffect) {
 	m.Effects = append(m.Effects, e)
 }
 
-// HasEffect reports whether the given status effect is active on the monster.
 func (m *Monster) HasEffect(t StatusEffect) bool {
 	for _, e := range m.Effects {
 		if e.Type == t {
@@ -96,8 +91,6 @@ func (m *Monster) HasEffect(t StatusEffect) bool {
 	return false
 }
 
-// TickEffects advances per-turn status effects on the monster, applying
-// damage and decrementing duration. Returns log messages.
 func (m *Monster) TickEffects() []string {
 	var msgs []string
 	remaining := m.Effects[:0]
@@ -122,8 +115,6 @@ func (m *Monster) TickEffects() []string {
 				m.HP = 0
 			}
 			msgs = append(msgs, fmt.Sprintf("%s 출혈 피해 %d", m.Name, e.Value))
-			// AddEffect replaces an existing Bleed rather than stacking, so
-			// the intensification only escalates between re-applications.
 			e.Value++
 		}
 		e.Duration--
@@ -135,16 +126,10 @@ func (m *Monster) TickEffects() []string {
 	return msgs
 }
 
-// CheckPhaseTransition returns true if a boss should enter phase 2 this turn.
-// Mini-bosses (IsMiniBoss) intentionally do NOT enrage — only true bosses
-// (floors 5/10/15/20). Phase 2 default threshold is 50% HP. Pass
-// thresholdPercent (e.g. 70 for the Cruel curse) to trigger earlier.
 func (m *Monster) CheckPhaseTransition() bool {
 	return m.CheckPhaseTransitionAt(50)
 }
 
-// CheckPhaseTransitionAt allows the caller to override the HP percentage at
-// which Phase 2 fires.
 func (m *Monster) CheckPhaseTransitionAt(thresholdPercent int) bool {
 	if !m.IsBoss {
 		return false
@@ -204,9 +189,6 @@ func (m *Monster) TickTaunt() {
 	}
 }
 
-// BaseName returns the unprefixed monster name (without elite affixes), so
-// the codex can record one entry per monster type instead of a separate
-// entry for every elite variant.
 func (m *Monster) BaseName() string {
 	if def, ok := monsterDefs[m.Type]; ok {
 		return def.Name

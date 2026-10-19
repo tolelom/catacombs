@@ -36,7 +36,6 @@ func (d *DB) RecordCodexEntry(fingerprint, category, id string) error {
 			if err := json.Unmarshal(v, &codex); err != nil {
 				return err
 			}
-			// Ensure maps are initialized after unmarshal
 			if codex.Monsters == nil {
 				codex.Monsters = make(map[string]bool)
 			}

@@ -34,8 +34,8 @@ const (
 
 type Room struct {
 	Type      RoomType
-	X, Y      int // top-left in tile space
-	W, H      int // dimensions in tiles
+	X, Y      int
+	W, H      int
 	Visited   bool
 	Cleared   bool
 	Neighbors []int

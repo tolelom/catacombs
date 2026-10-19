@@ -8,7 +8,6 @@ import (
 
 var bucketCounters = []byte("counters")
 
-// EnsureCountersBucket creates the counters bucket if missing.
 func (d *DB) EnsureCountersBucket() error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(bucketCounters)
@@ -16,7 +15,6 @@ func (d *DB) EnsureCountersBucket() error {
 	})
 }
 
-// IncCounter atomically adds delta to a per-fingerprint named counter.
 func (d *DB) IncCounter(fingerprint, name string, delta int64) error {
 	if delta == 0 {
 		return nil
@@ -38,7 +36,6 @@ func (d *DB) IncCounter(fingerprint, name string, delta int64) error {
 	})
 }
 
-// GetCounter returns the current value of a per-fingerprint counter.
 func (d *DB) GetCounter(fingerprint, name string) (int64, error) {
 	var n int64
 	err := d.db.View(func(tx *bolt.Tx) error {

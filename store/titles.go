@@ -46,7 +46,6 @@ func (d *DB) EarnTitle(fingerprint, titleID string) (bool, error) {
 			}
 		}
 
-		// Check if already earned
 		for _, e := range data.Earned {
 			if e == titleID {
 				return nil
@@ -56,7 +55,6 @@ func (d *DB) EarnTitle(fingerprint, titleID string) (bool, error) {
 		newlyEarned = true
 		data.Earned = append(data.Earned, titleID)
 
-		// Auto-set first earned title as active
 		if data.ActiveTitle == "" {
 			data.ActiveTitle = titleID
 		}
@@ -86,7 +84,6 @@ func (d *DB) SetActiveTitle(fingerprint, titleID string) error {
 			}
 		}
 
-		// Verify title is earned
 		found := false
 		for _, e := range data.Earned {
 			if e == titleID {

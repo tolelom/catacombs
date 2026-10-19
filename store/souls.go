@@ -11,16 +11,14 @@ import (
 var bucketSouls = []byte("souls")
 var bucketUpgrades = []byte("upgrades")
 
-// PermaUpgrade lists the per-fingerprint upgrades purchased so far. Each entry
-// stores the level (number of times bought).
 type PermaUpgrade string
 
 const (
-	UpgradeStartGold      PermaUpgrade = "start_gold"
-	UpgradeStartHP        PermaUpgrade = "start_hp"
-	UpgradeStartATK       PermaUpgrade = "start_atk"
-	UpgradeInvSlots       PermaUpgrade = "inv_slots"
-	UpgradeStartSkillPts  PermaUpgrade = "start_skill_pts"
+	UpgradeStartGold     PermaUpgrade = "start_gold"
+	UpgradeStartHP       PermaUpgrade = "start_hp"
+	UpgradeStartATK      PermaUpgrade = "start_atk"
+	UpgradeInvSlots      PermaUpgrade = "inv_slots"
+	UpgradeStartSkillPts PermaUpgrade = "start_skill_pts"
 )
 
 type UpgradeDef struct {
@@ -38,15 +36,12 @@ var upgradeDefs = []UpgradeDef{
 	{UpgradeStartSkillPts, "시작 스킬 포인트 +1", "런 시작시 추가 SP/레벨", 200, 3},
 }
 
-// AllUpgrades returns the catalog of available upgrades.
 func AllUpgrades() []UpgradeDef {
 	out := make([]UpgradeDef, len(upgradeDefs))
 	copy(out, upgradeDefs)
 	return out
 }
 
-// EnsureSoulsBuckets creates the souls/upgrades buckets if missing.
-// Called from Open via the catch-all CreateBucketIfNotExists block.
 func (d *DB) EnsureSoulsBuckets() error {
 	return d.db.Update(func(tx *bolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists(bucketSouls); err != nil {
@@ -59,7 +54,6 @@ func (d *DB) EnsureSoulsBuckets() error {
 	})
 }
 
-// GetSouls returns the current soul balance for a fingerprint.
 func (d *DB) GetSouls(fingerprint string) (int64, error) {
 	var n int64
 	err := d.db.View(func(tx *bolt.Tx) error {
@@ -76,8 +70,6 @@ func (d *DB) GetSouls(fingerprint string) (int64, error) {
 	return n, err
 }
 
-// AddSouls credits souls to a fingerprint. Idempotent on positive deltas only;
-// callers shouldn't pass negative.
 func (d *DB) AddSouls(fingerprint string, amount int64) error {
 	if amount <= 0 {
 		return nil
@@ -98,7 +90,6 @@ func (d *DB) AddSouls(fingerprint string, amount int64) error {
 	})
 }
 
-// GetUpgrades returns the per-upgrade level map for a fingerprint.
 func (d *DB) GetUpgrades(fingerprint string) (map[PermaUpgrade]int, error) {
 	out := make(map[PermaUpgrade]int)
 	err := d.db.View(func(tx *bolt.Tx) error {
@@ -118,8 +109,6 @@ func (d *DB) GetUpgrades(fingerprint string) (map[PermaUpgrade]int, error) {
 	return out, err
 }
 
-// BuyUpgrade attempts to spend souls to raise an upgrade by 1 level. Returns
-// (newLevel, error). Errors: not enough souls, max level reached, unknown id.
 func (d *DB) BuyUpgrade(fingerprint string, id PermaUpgrade) (int, error) {
 	var def *UpgradeDef
 	for i := range upgradeDefs {
@@ -143,9 +132,6 @@ func (d *DB) BuyUpgrade(fingerprint string, id PermaUpgrade) (int, error) {
 		}
 		levels := make(map[PermaUpgrade]int)
 		if v := ub.Get([]byte(fingerprint)); v != nil {
-			// Corrupted data must abort the buy: proceeding with zeroed
-			// levels would let the player re-buy from level 0 and then
-			// overwrite their real progression on Put.
 			if err := json.Unmarshal(v, &levels); err != nil {
 				return fmt.Errorf("corrupted upgrade data for %s: %w", fingerprint, err)
 			}
@@ -178,7 +164,6 @@ func (d *DB) BuyUpgrade(fingerprint string, id PermaUpgrade) (int, error) {
 	return newLevel, err
 }
 
-// UpgradeCost returns the cost to buy the next level of an upgrade.
 func UpgradeCost(currentLevel int, def UpgradeDef) int64 {
 	return int64(def.BaseCost * (currentLevel + 1))
 }

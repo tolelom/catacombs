@@ -1,7 +1,5 @@
 package entity
 
-// CoopAbility describes a class's coop ability. Effect logic lives in
-// combat/coop.go; this file only carries display metadata.
 type CoopAbility struct {
 	Name string
 	Desc string
@@ -14,7 +12,6 @@ var coopAbilities = map[Class]CoopAbility{
 	ClassRogue:   {Name: "정찰", Desc: "다음 방 종류 미리 공개. 층당 1회. 전투 외 사용."},
 }
 
-// GetCoopAbility returns the coop ability for the given class.
 func GetCoopAbility(c Class) CoopAbility {
 	return coopAbilities[c]
 }

@@ -7,7 +7,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-// GetTodayRunCount returns the number of daily challenge runs for today.
 func (d *DB) GetTodayRunCount() (int, error) {
 	today := time.Now().Format("2006-01-02")
 	count := 0
@@ -26,7 +25,6 @@ func (d *DB) GetTodayRunCount() (int, error) {
 	return count, err
 }
 
-// GetTodayAvgFloor returns the average floor reached in today's daily runs.
 func (d *DB) GetTodayAvgFloor() (float64, error) {
 	today := time.Now().Format("2006-01-02")
 	total := 0
