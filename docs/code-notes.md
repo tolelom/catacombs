@@ -9,7 +9,7 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `CalcDamage`: CalcDamage: max(ATK*mult*MinDamageFraction, ATK*mult - DEF), never below 1, then * random(0.85~1.15).
 - `AttackResult.Missed`: monster dodged
 - `AttackResult.Glanced`: partial hit (50% damage)
-- `ResolveAttacks`: 5% dodge, 5% glance — non-elite/non-boss only (so bosses stay reliable)
+- `resolveSingleTargetAttack`: 5% dodge, 5% glance — non-elite/non-boss only (so bosses stay reliable)
 - `MonsterAI`: Phase 2 bosses AoE every 2 turns; base bosses + mini-bosses every 3.
 
 ## combat/combo.go
@@ -54,15 +54,15 @@ Explanations that used to live in production-code comments, grouped by file and 
 
 ## dungeon/generator.go
 
-- `GenerateFloor`: We want 5-8 rooms. If we have more leaves, shuffle and trim.
-- `GenerateFloor`: Sort leaves by physical position (left-to-right, top-to-bottom) so room indices match their map positions
-- `GenerateFloor`: If we somehow have fewer than 5, that's fine — the BSP with 60x20 and min 12x8 gives ~5-8 naturally.
-- `GenerateFloor`: First room is always empty (safe starting area)
-- `GenerateFloor`: Last room is boss
-- `GenerateFloor`: On floors 4, 9, 14, 19: assign one room as mini-boss
-- `GenerateFloor`: Pick the second room (index 1), or any non-first non-last room
-- `GenerateFloor`: Connect rooms: linear chain for guaranteed connectivity
-- `GenerateFloor`: Add 1-2 extra connections
+- `pickRoomLeaves`: We want 5-8 rooms. If we have more leaves, shuffle and trim.
+- `pickRoomLeaves`: Sort leaves by physical position (left-to-right, top-to-bottom) so room indices match their map positions
+- `pickRoomLeaves`: If we somehow have fewer than 5, that's fine — the BSP with 60x20 and min 12x8 gives ~5-8 naturally.
+- `assignFixedRoomTypes`: First room is always empty (safe starting area)
+- `assignFixedRoomTypes`: Last room is boss
+- `assignFixedRoomTypes`: On floors 4, 9, 14, 19: assign one room as mini-boss
+- `assignFixedRoomTypes`: Pick the second room (index 1), or any non-first non-last room
+- `connectRoomsInChain`: Connect rooms: linear chain for guaranteed connectivity
+- `addExtraConnections`: Add 1-2 extra connections
 - `splitBSP`: Random chance to stop splitting (more likely at deeper levels)
 - `carveCorridor`: L-shaped corridor from center of a to center of b
 - `carveCorridor`: Go horizontal first, then vertical
@@ -74,9 +74,9 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `buildCorridorVisibility`: Seed: corridor tiles adjacent to visible/visited rooms
 - `buildCorridorVisibility`: Flood-fill along corridor tiles (4-directional)
 - `wallVisible`: wallVisibility determines if a wall tile should be shown based on adjacent rooms/corridors.
-- `RenderFloor`: Show current room and its neighbors (so player knows where to go)
-- `RenderFloor`: Player position at center of current room
-- `RenderFloor`: Visited but not current — dim
+- `roomMarkers`: Show current room and its neighbors (so player knows where to go)
+- `playerPosition`: Player position at center of current room
+- `renderCell`: Visited but not current — dim
 - `roomMarker`: Show room index number so player knows which key to press
 - `roomMarker`: looks like treasure on the map
 
@@ -399,14 +399,14 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `GameState`: cursed altar uses this run
 - `GameState`: Divine Grace revives this run
 - `GameState`: boss name → killed this run
-- `GameSession.GetState`: Deep copy players. Skip allocating zero-length slices (most players have no Effects between combats, fresh players have no Inventory or Relics). At ~5 Hz polling per client these allocations dominate idle CPU otherwise.
-- `GameSession.GetState`: Deep copy monsters
-- `GameSession.GetState`: Deep copy floor
+- `copyPlayers`: Deep copy players. Skip allocating zero-length slices (most players have no Effects between combats, fresh players have no Inventory or Relics). At ~5 Hz polling per client these allocations dominate idle CPU otherwise.
+- `copyMonsters`: Deep copy monsters
+- `copyFloor`: Deep copy floor
 - `GameSession.GetState`: Copy combat log only when non-empty.
 - `GameSession.GetState`: Copy submitted actions only when non-empty.
 - `GameSession.GetState`: Copy move votes
 - `GameSession.GetState`: Copy event votes
-- `GameSession.GetState`: Copy pending event view (deep — Choices slice + per-Choice Tags slice)
+- `copyPendingEvent`: Copy pending event view (deep — Choices slice + per-Choice Tags slice)
 - `GameSession.GetState`: Mirror shopLeavers for the UI's "N/M ready to leave" display.
 - `GameSession.GetState`: Copy pending logs
 - `GameSession.GetState`: Copy shop wares
@@ -523,9 +523,9 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `allEvents`: allEvents must stay in sync with the Name fields in game.GetRandomEvents — codex completion counts len(allEvents) and entries are recorded by name.
 - `bossNames`: bossNames is the codex-display order for the boss trophy tab. Kept here so the lookup (NewCodexScreen) and the renderer agree.
 - `CodexScreen.tab`: 0=monsters, 1=items, 2=events, 3=bosses
-- `CodexScreen.View`: Boss trophy tab — render directly and return early.
-- `CodexScreen.View`: Sort discovered keys for consistent display
-- `CodexScreen.View`: Show any discovered entries not in the known list
+- `CodexScreen.renderBossTrophies`: Boss trophy tab — render directly and return early.
+- `renderUnlistedDiscoveries`: Sort discovered keys for consistent display
+- `renderUnlistedDiscoveries`: Show any discovered entries not in the known list
 
 ## ui/context.go
 
@@ -568,21 +568,21 @@ Explanations that used to live in production-code comments, grouped by file and 
 
 - `LeaderboardScreen`: LeaderboardScreen shows the top runs.
 - `markIfMine`: markIfMine wraps a leaderboard line with a highlight when the row belongs to the calling user, using the provided id (player name for ranking records, fingerprint for daily records) to match.
-- `renderLeaderboard`: Tab header
+- `renderLeaderboardTabs`: Tab header
 - `renderLeaderboard`: By Floor
 - `renderLeaderboard`: By Gold
-- `renderLeaderboard`: Daily
-- `renderLeaderboard`: Daily records are keyed by fingerprint, not name.
+- `renderDailyRanking`: Daily
+- `renderDailyRanking`: Daily records are keyed by fingerprint, not name.
 
 ## ui/lobby_view.go
 
 - `LobbyScreen`: LobbyScreen shows available rooms and lets players create/join.
 - `LobbyScreen`: dailyDate is captured on lobby refresh so the header banner and the daily-challenge session created via [D] use the same date — avoids a midnight crossover where header shows yesterday's modifier but the run is created with today's.
-- `LobbyScreen.Update`: Join-by-code input mode
-- `LobbyScreen.Update`: Normal lobby key handling
-- `LobbyScreen.Update`: Joining a room we just created shouldn't fail, but if it does the player must see why instead of a ghost lobby.
-- `LobbyScreen.Update`: Daily Challenge: create a private solo daily session
-- `renderLobby`: Show players in selected room
+- `LobbyScreen.handleCodeEntryKey`: Join-by-code input mode
+- `LobbyScreen.handleLobbyKey`: Normal lobby key handling
+- `LobbyScreen.createAndJoinRoom`: Joining a room we just created shouldn't fail, but if it does the player must see why instead of a ghost lobby.
+- `LobbyScreen.startDailyChallenge`: Daily Challenge: create a private solo daily session
+- `renderRoomMembers`: Show players in selected room
 
 ## ui/lore.go
 
@@ -617,10 +617,10 @@ Explanations that used to live in production-code comments, grouped by file and 
 - `ResultScreen`: ResultScreen shows the end-of-run summary and rankings.
 - `ResultScreen.startNGPlus`: NG+ branch: leave current session, create new one with NGPlusLevel++ and a random curse
 - `findPlayerRank`: findPlayerRank returns the 1-indexed position of the player's best run in the supplied ranking slice, or 0 if they don't appear in the top N.
-- `renderResult`: Title
-- `renderResult`: Player summary
-- `renderResult`: Rankings
-- `renderResult`: Highlight the current player's row so they can find themselves.
+- `writeResultBanner`: Title
+- `writePartySummary`: Player summary
+- `writeBestRecords`: Rankings
+- `writeBestRecords`: Highlight the current player's row so they can find themselves.
 
 ## ui/screen.go
 
