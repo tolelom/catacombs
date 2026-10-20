@@ -407,6 +407,7 @@ func (s *GameSession) runExtraActions() {
 	if len(extras) == 0 {
 		return
 	}
+	aliveBefore := s.aliveMonsterIndicesLocked()
 	results := combat.ResolveAttacks(s.rng, extras, s.state.Monsters, s.cfg.Game.CoopBonus)
 	for i, r := range results {
 		owner := owners[i]
@@ -418,6 +419,7 @@ func (s *GameSession) runExtraActions() {
 			s.addLog(fmt.Sprintf("%s 추가 공격: %s에게 %d 피해", owner, s.state.Monsters[r.TargetIdx].Name, r.Damage))
 		}
 	}
+	s.awardKills(aliveBefore)
 }
 
 func (s *GameSession) applyCoopComboEffect(eff combat.ComboEffect) {

@@ -50,3 +50,26 @@ func TestPoisonKillPaysKillReward(t *testing.T) {
 		t.Errorf("poison kill was not logged as a kill; log %v", s.state.CombatLog)
 	}
 }
+
+// TestTimeGlassKillPaysBossReward pins that a boss finished by a Time Glass
+// extra attack counts as a boss kill. If it breaks, the party clears the boss
+// room without gold, relic, BossKilled or the per-run boss record.
+func TestTimeGlassKillPaysBossReward(t *testing.T) {
+	s, p := killRewardSession(t)
+	boss := entity.NewMonster(entity.MonsterBoss5, 5, 1.15)
+	boss.HP = 1
+	s.state.Monsters = []*entity.Monster{boss}
+	s.extraActionNext = map[string]bool{p.Fingerprint: true}
+
+	s.resolveTurnLocked()
+
+	if p.Gold == 0 {
+		t.Errorf("Time Glass boss kill paid no gold; log %v", s.state.CombatLog)
+	}
+	if !s.state.BossKilled || !s.state.BossesKilledThisRun[boss.Name] {
+		t.Errorf("BossKilled=%v BossesKilledThisRun=%v, want the boss recorded", s.state.BossKilled, s.state.BossesKilledThisRun)
+	}
+	if len(p.Relics) != 1 {
+		t.Errorf("got %d relics, want the boss relic", len(p.Relics))
+	}
+}
