@@ -188,6 +188,7 @@ func (s *GameSession) tickPlayerEffects(p *entity.Player, theme dungeon.ThemeMod
 }
 
 func (s *GameSession) tickMonsterEffectsLocked() {
+	aliveBefore := s.aliveMonsterIndicesLocked()
 	for _, m := range s.state.Monsters {
 		if !m.IsDead() {
 			for _, msg := range m.TickEffects() {
@@ -195,6 +196,7 @@ func (s *GameSession) tickMonsterEffectsLocked() {
 			}
 		}
 	}
+	s.awardKills(aliveBefore)
 }
 
 func (s *GameSession) aliveMonsterIndicesLocked() map[int]bool {
