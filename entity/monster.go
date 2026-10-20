@@ -131,7 +131,7 @@ func (m *Monster) CheckPhaseTransition() bool {
 }
 
 func (m *Monster) CheckPhaseTransitionAt(thresholdPercent int) bool {
-	if !m.IsBoss {
+	if !m.IsBoss || m.IsDead() {
 		return false
 	}
 	if m.PhaseTransitioned {
