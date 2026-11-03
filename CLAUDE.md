@@ -24,9 +24,10 @@ docker-compose up                 # SSH on :2222, HTTP on :8080
 
 ## Deployment (tolelom.xyz)
 
-Pushing to `master` deploys: Gitea Actions (`.gitea/workflows/deploy.yml`) builds and pushes
-`git.tolelom.xyz/tolelom/catacombs:main`, Renovate bumps the digest in the `server-config` repo
-(`m4/apps/catacombs/docker-compose.yml`), and its GitOps sync redeploys the container on the M4 Mac Mini.
+Pushing to `master` deploys: GitHub Actions (`.github/workflows/ci.yml`) runs the tests, then builds
+the arm64 image and pushes `ghcr.io/tolelom/catacombs:main`. Renovate bumps the digest in the
+`server-config` repo (`server/apps/catacombs/docker-compose.yml`), and its GitOps sync redeploys the
+container on the server Mac Mini.
 Traefik routes `catacombs.tolelom.xyz` to port 8080. The SSH port is not published; outside players
 reach the game only through the web bridge.
 
