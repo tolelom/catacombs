@@ -3,3 +3,4 @@ catacombs
 catacombs.exe
 .ssh/
 .claude/scheduled_tasks.lock
+.claude/settings.local.json
