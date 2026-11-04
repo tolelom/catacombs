@@ -1,6 +1,8 @@
 package store
 
 import (
+	"errors"
+
 	bolt "go.etcd.io/bbolt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,13 +17,23 @@ func init() {
 	}
 }
 
-func (d *DB) SavePassword(nickname, password string) error {
+// ErrPasswordExists means the nickname already has a password; the caller
+// must log in instead of creating one.
+var ErrPasswordExists = errors.New("password already set for nickname")
+
+// CreatePassword sets the password only if the nickname has none. The check
+// and the write share one transaction so two sessions cannot both claim it.
+func (d *DB) CreatePassword(nickname, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	return d.db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket(bucketPasswords).Put([]byte(nickname), hash)
+		b := tx.Bucket(bucketPasswords)
+		if b.Get([]byte(nickname)) != nil {
+			return ErrPasswordExists
+		}
+		return b.Put([]byte(nickname), hash)
 	})
 }
 

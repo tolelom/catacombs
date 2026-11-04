@@ -2,6 +2,7 @@ package ui
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/tolelom/catacombs/store"
 )
 
 type nicknamePhase int
@@ -109,6 +111,13 @@ func (s *NicknameScreen) updatePasswordLogin(key tea.KeyMsg, ctx *Context) (Scre
 		if ctx.Store == nil {
 			return s.finishLogin(ctx)
 		}
+		if ctx.LoginLimiter != nil {
+			if blocked, _ := ctx.LoginLimiter.Blocked(s.input); blocked {
+				s.error = "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요"
+				s.password = ""
+				return s, nil
+			}
+		}
 		ok, err := ctx.Store.CheckPassword(s.input, s.password)
 		if err != nil {
 			s.error = "오류가 발생했습니다"
@@ -116,9 +125,15 @@ func (s *NicknameScreen) updatePasswordLogin(key tea.KeyMsg, ctx *Context) (Scre
 			return s, nil
 		}
 		if !ok {
+			if ctx.LoginLimiter != nil {
+				ctx.LoginLimiter.Fail(s.input)
+			}
 			s.error = "비밀번호가 틀렸습니다"
 			s.password = ""
 			return s, nil
+		}
+		if ctx.LoginLimiter != nil {
+			ctx.LoginLimiter.Reset(s.input)
 		}
 
 		ctx.Fingerprint = webFingerprint(s.input)
@@ -152,7 +167,14 @@ func (s *NicknameScreen) updatePasswordConfirm(key tea.KeyMsg, ctx *Context) (Sc
 			return s, nil
 		}
 		if ctx.Store != nil {
-			if err := ctx.Store.SavePassword(s.input, s.password); err != nil {
+			err := ctx.Store.CreatePassword(s.input, s.password)
+			if errors.Is(err, store.ErrPasswordExists) {
+				s.phase = phaseNickname
+				s.password, s.confirm = "", ""
+				s.error = "이미 사용 중인 닉네임입니다"
+				return s, nil
+			}
+			if err != nil {
 				s.error = "저장 오류가 발생했습니다"
 				slog.Error("failed to save password", "error", err)
 				return s, nil

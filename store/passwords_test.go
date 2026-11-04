@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -18,7 +19,7 @@ func TestPasswordRoundTrip(t *testing.T) {
 	}
 
 	// Save and check password.
-	if err := db.SavePassword("alice", "secret123"); err != nil {
+	if err := db.CreatePassword("alice", "secret123"); err != nil {
 		t.Fatal(err)
 	}
 	if !db.HasPassword("alice") {
@@ -48,5 +49,26 @@ func TestPasswordRoundTrip(t *testing.T) {
 	}
 	if ok {
 		t.Fatal("expected non-existent user to fail")
+	}
+}
+
+func TestCreatePasswordRefusesExistingNickname(t *testing.T) {
+	db, err := Open(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	if err := db.CreatePassword("alice", "first-secret"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.CreatePassword("alice", "attacker-pw"); !errors.Is(err, ErrPasswordExists) {
+		t.Fatalf("second CreatePassword err = %v, want ErrPasswordExists", err)
+	}
+	if ok, _ := db.CheckPassword("alice", "first-secret"); !ok {
+		t.Fatal("original password must still work")
+	}
+	if ok, _ := db.CheckPassword("alice", "attacker-pw"); ok {
+		t.Fatal("second password must not replace the first")
 	}
 }
