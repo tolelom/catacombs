@@ -24,7 +24,7 @@ func TestTitleToLobby(t *testing.T) {
 	db := testDB(t)
 	defer func() { _ = db.Close(); _ = os.Remove("test_ui.db") }()
 
-	m := NewModel(80, 24, "testfp", lobby, db)
+	m := NewModel(80, 24, "testfp", lobby, db, nil)
 
 	if m.screenType() != screenTitle {
 		t.Fatalf("initial screen: got %d, want screenTitle(0)", m.screenType())
@@ -61,7 +61,7 @@ func TestLobbyCreateRoom(t *testing.T) {
 	db := testDB(t)
 	defer func() { _ = db.Close(); _ = os.Remove("test_ui.db") }()
 
-	m := NewModel(80, 24, "testfp2", lobby, db)
+	m := NewModel(80, 24, "testfp2", lobby, db, nil)
 
 	// Go to nickname screen (first-time player)
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -92,7 +92,7 @@ func TestClassSelectToGame(t *testing.T) {
 	db := testDB(t)
 	defer func() { _ = db.Close(); _ = os.Remove("test_ui.db") }()
 
-	m := NewModel(80, 24, "testfp3", lobby, db)
+	m := NewModel(80, 24, "testfp3", lobby, db, nil)
 
 	// Title -> Nickname -> Lobby
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -137,9 +137,9 @@ func TestClassSelectToGame(t *testing.T) {
 // listed.
 func TestFindPlayerRankAndMissing(t *testing.T) {
 	rankings := []store.RunRecord{
-		{Player: "Top",    Floor: 20},
+		{Player: "Top", Floor: 20},
 		{Player: "Second", Floor: 18},
-		{Player: "Me",     Floor: 12},
+		{Player: "Me", Floor: 12},
 	}
 	if got := findPlayerRank(rankings, "Me"); got != 3 {
 		t.Errorf("expected rank 3 for Me, got %d", got)

@@ -12,7 +12,7 @@ import (
 
 func newSizeTestModel(width, height int) Model {
 	cfg, _ := config.Load("")
-	return NewModel(width, height, "", game.NewLobby(cfg), nil)
+	return NewModel(width, height, "", game.NewLobby(cfg), nil, nil)
 }
 
 // assertViewWithin fails when the rendered frame exceeds the terminal size cap.

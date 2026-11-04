@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
+	"github.com/tolelom/catacombs/throttle"
 )
 
 type tickMsg struct {
@@ -47,14 +48,15 @@ type Model struct {
 	ctx           *Context
 }
 
-func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB) Model {
+func NewModel(width, height int, fingerprint string, lobby *game.Lobby, db *store.DB, loginLimiter *throttle.Limiter) Model {
 	width, height = normalizeTerminalSize(width, height)
 	ctx := &Context{
-		Width:       width,
-		Height:      height,
-		Fingerprint: fingerprint,
-		Lobby:       lobby,
-		Store:       db,
+		Width:        width,
+		Height:       height,
+		Fingerprint:  fingerprint,
+		Lobby:        lobby,
+		Store:        db,
+		LoginLimiter: loginLimiter,
 	}
 	var initialScreen Screen
 	if fingerprint != "" && db != nil {

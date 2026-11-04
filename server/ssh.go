@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/ssh"
@@ -12,11 +13,14 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
+	"github.com/tolelom/catacombs/throttle"
 	"github.com/tolelom/catacombs/ui"
 	gossh "golang.org/x/crypto/ssh"
 )
 
 func NewServer(addr, hostKeyPath string, lobby *game.Lobby, db *store.DB) (*ssh.Server, error) {
+	// One limiter for every session so failed web logins add up per nickname.
+	loginLimiter := throttle.New(time.Minute, 5, 5*time.Minute)
 	s, err := wish.NewServer(
 		wish.WithAddress(addr),
 		wish.WithHostKeyPath(hostKeyPath),
@@ -28,7 +32,7 @@ func NewServer(addr, hostKeyPath string, lobby *game.Lobby, db *store.DB) (*ssh.
 		}),
 		wish.WithMiddleware(
 			bubbletea.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return newSessionModel(s, lobby, db)
+				return newSessionModel(s, lobby, db, loginLimiter)
 			}),
 			releaseOnDisconnect(lobby),
 		),
@@ -39,7 +43,7 @@ func NewServer(addr, hostKeyPath string, lobby *game.Lobby, db *store.DB) (*ssh.
 	return s, nil
 }
 
-func newSessionModel(s ssh.Session, lobby *game.Lobby, db *store.DB) (tea.Model, []tea.ProgramOption) {
+func newSessionModel(s ssh.Session, lobby *game.Lobby, db *store.DB, loginLimiter *throttle.Limiter) (tea.Model, []tea.ProgramOption) {
 	fingerprint, err := sessionFingerprint(s)
 	if err != nil {
 		slog.Error("anon fingerprint RNG failed; refusing session", "error", err)
@@ -48,7 +52,7 @@ func newSessionModel(s ssh.Session, lobby *game.Lobby, db *store.DB) (tea.Model,
 	}
 	pty, _, _ := s.Pty()
 	slog.Info("new SSH session", "fingerprint", fingerprint, "width", pty.Window.Width, "height", pty.Window.Height)
-	m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db)
+	m := ui.NewModel(pty.Window.Width, pty.Window.Height, fingerprint, lobby, db, loginLimiter)
 	s.Context().SetValue(sessionModelKey{}, m)
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }

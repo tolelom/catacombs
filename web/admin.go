@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/tolelom/catacombs/config"
 	"github.com/tolelom/catacombs/game"
 	"github.com/tolelom/catacombs/store"
+	"github.com/tolelom/catacombs/throttle"
 )
 
 type AdminStats struct {
@@ -23,52 +23,7 @@ type AdminStats struct {
 	AvgFloorReach float64 `json:"avg_floor_reached"`
 	UptimeSeconds int64   `json:"uptime_seconds"`
 }
-type authThrottle struct {
-	mu       sync.Mutex
-	fails    map[string][]time.Time
-	window   time.Duration
-	max      int
-	cooldown time.Duration
-}
 
-func newAuthThrottle() *authThrottle {
-	return &authThrottle{
-		fails:    make(map[string][]time.Time),
-		window:   1 * time.Minute,
-		max:      5,
-		cooldown: 5 * time.Minute,
-	}
-}
-func (a *authThrottle) blocked(ip string) (bool, time.Duration) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	now := time.Now()
-	cutoff := now.Add(-a.window)
-	keep := a.fails[ip][:0]
-	for _, t := range a.fails[ip] {
-		if t.After(cutoff) {
-			keep = append(keep, t)
-		}
-	}
-	a.fails[ip] = keep
-	if len(keep) >= a.max {
-		oldest := keep[0]
-		return true, a.cooldown - now.Sub(oldest)
-	}
-	return false, 0
-}
-
-func (a *authThrottle) recordFail(ip string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.fails[ip] = append(a.fails[ip], time.Now())
-}
-
-func (a *authThrottle) recordSuccess(ip string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	delete(a.fails, ip)
-}
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		if i := strings.LastIndexByte(xff, ','); i >= 0 {
@@ -83,10 +38,10 @@ func clientIP(r *http.Request) string {
 	return host
 }
 func AdminHandler(creds config.AdminConfig, lobby *game.Lobby, db *store.DB, startTime time.Time) http.Handler {
-	throttle := newAuthThrottle()
+	throttle := throttle.New(time.Minute, 5, 5*time.Minute)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := clientIP(r)
-		if blocked, remaining := throttle.blocked(ip); blocked {
+		if blocked, remaining := throttle.Blocked(ip); blocked {
 			retry := int(remaining.Seconds())
 			if retry < 1 {
 				retry = 1
@@ -96,12 +51,12 @@ func AdminHandler(creds config.AdminConfig, lobby *game.Lobby, db *store.DB, sta
 			return
 		}
 		if !checkAuth(r, creds) {
-			throttle.recordFail(ip)
+			throttle.Fail(ip)
 			w.Header().Set("WWW-Authenticate", `Basic realm="Catacombs Admin"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		throttle.recordSuccess(ip)
+		throttle.Reset(ip)
 
 		todayRuns, err1 := db.GetTodayRunCount()
 		avgFloor, err2 := db.GetTodayAvgFloor()
