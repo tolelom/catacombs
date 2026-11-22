@@ -30,6 +30,7 @@ SSH와 웹은 같은 `Lobby`와 DB를 씁니다. 웹 브리지에는 공개 키�
 | `server/` | Wish SSH 서버, 연결 종료 때 `Lobby.Disconnect` |
 | `web/` | WebSocket→SSH 브리지, 내장 xterm.js 화면, `/admin` |
 | `config/` | `config.yaml` 읽기와 환경 변수 덮어쓰기 |
+| `throttle/` | 인증 실패 제한(`/admin`은 IP별, 게임 로그인은 닉네임별) |
 
 ## 지켜야 할 규칙
 
