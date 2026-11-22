@@ -10,12 +10,12 @@
                                   ui (Bubble Tea) ──▶ game (Lobby, GameSession) ──▶ store (BoltDB)
 ```
 
-SSH와 웹은 같은 `Lobby`와 DB를 쓴다. 웹 브리지에는 공개 키가 없어서 연결마다 `anon:<hex>` 지문을
-만든다.
+SSH와 웹은 같은 `Lobby`와 DB를 씁니다. 웹 브리지에는 공개 키가 없어서 연결마다 `anon:<hex>` 지문을
+만듭니다.
 
 ## 코드 지도
 
-의존 방향은 `main` → `server`·`web`·`store` → `game` → `dungeon` → `entity` → `combat`이다.
+의존 방향은 `main` → `server`·`web`·`store` → `game` → `dungeon` → `entity` → `combat`입니다.
 
 | 패키지 | 책임 |
 |---|---|
@@ -33,8 +33,8 @@ SSH와 웹은 같은 `Lobby`와 DB를 쓴다. 웹 브리지에는 공개 키가 
 
 ## 지켜야 할 규칙
 
-- `GameSession.mu`가 세션 상태 전부를 지키고, UI는 `GetState()` 깊은 복사본을 읽는다. `Lobby.mu`는
-  방 목록만 지키며, 로비 잠금을 쥔 채 세션을 부르지 않는다.
-- 일일 도전은 `DailySeed(날짜) + 층`으로 세션 RNG를 다시 시드한다. 콘텐츠 경로에서 패키지 수준
-  `rand`를 부르지 않고 세션 RNG를 넘긴다.
-- 업적·해금·칭호·도감·일일 기록은 지문으로, 랭킹과 통계는 플레이어 이름으로 묶는다.
+- `GameSession.mu`가 세션 상태 전부를 지키고, UI는 `GetState()` 깊은 복사본을 읽습니다. `Lobby.mu`는
+  방 목록만 지키며, 로비 잠금을 쥔 채 세션을 부르지 않습니다.
+- 일일 도전은 `DailySeed(날짜) + 층`으로 세션 RNG를 다시 시드합니다. 콘텐츠 경로에서 패키지 수준
+  `rand`를 부르지 않고 세션 RNG를 넘깁니다.
+- 업적·해금·칭호·도감·일일 기록은 지문으로, 랭킹과 통계는 플레이어 이름으로 묶습니다.
